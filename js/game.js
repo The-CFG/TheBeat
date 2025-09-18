@@ -9,6 +9,8 @@ const Game = {
             longNoteProbability: CONFIG.LONG_NOTE_PROBABILITY.normal,
             lanes: 4,
             musicSrc: null,
+            musicVolume: 100,
+            sfxVolume: 100,
         },
         keyMapping: [],
         activeLanes: [],
@@ -23,6 +25,7 @@ const Game = {
         isPaused: false,
         pauseStartTime: 0,
         totalPausedTime: 0,
+        previousScreen: 'menu',
     },
     resetState() {
         this.state.score = 0;
