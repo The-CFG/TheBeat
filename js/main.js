@@ -11,8 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.settings.iconMenu.addEventListener('click', showSettingsScreen);
         DOM.settings.iconPlaying.addEventListener('click', showSettingsScreen);
         DOM.settings.backBtn.addEventListener('click', () => {
+            // [핵심] gameState를 이전 화면의 상태로 되돌립니다.
+            Game.state.gameState = Game.state.previousScreen; 
+            
             UI.showScreen(Game.state.previousScreen);
-            // 일시정지 상태에서 설정으로 들어왔다면, 버튼 상태 유지
+            
             if (Game.state.previousScreen === 'playing' && Game.state.isPaused) {
                 DOM.pauseGameBtn.classList.add('hidden');
                 DOM.resumeGameBtn.classList.remove('hidden');
@@ -120,6 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
             Game.state.gameState = 'editor';
             Editor.init()
         });
+        DOM.editor.backBtn.addEventListener('click', () => {
+            Game.state.gameState = 'menu'; // gameState를 'menu'로 설정
+            UI.showScreen('menu');
+        });
 
         DOM.settings.tabsContainer.addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
@@ -191,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        Game.state.previousScreen = Game.state.gameState;
+        Game.state.previousScreen = Game.state.gameState === 'countdown' ? 'playing' : Game.state.gameState;
         Game.state.gameState = 'settings'; 
         UI.showScreen('settings');
     
