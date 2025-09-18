@@ -26,6 +26,7 @@ const Game = {
         pauseStartTime: 0,
         totalPausedTime: 0,
         previousScreen: 'menu',
+        countdownIntervalId: null, // 카운트다운 타이머 ID를 저장할 변수
     },
     resetState() {
         this.state.score = 0;
@@ -35,44 +36,49 @@ const Game = {
         this.state.isPaused = false;
         this.state.totalPausedTime = 0;
     },
-    startCountdown() {
-      const countdownEl = DOM.countdownTextEl;
-      let count = 3;
-  
-      const nextCount = () => {
-          countdownEl.classList.remove('show');
-  
-          setTimeout(() => {
-              if (count > 0) {
-                  countdownEl.textContent = count;
-                  countdownEl.classList.add('show');
-                  Audio.playCountdownTick();
-                  count--;
-                  setTimeout(nextCount, 800);
-              } else {
-                  countdownEl.textContent = 'START!';
-                  countdownEl.classList.add('show');
-                  Audio.playCountdownStart();
-                  setTimeout(() => {
-                      countdownEl.classList.remove('show');
-                      this.startGameplay();
-                  }, 1000);
-              }
-          }, 100);
-      };
-  
-      nextCount();
+    
+    /**
+     * [ NEW ] 모든 카운트다운을 관리하는 중앙 함수
+     * @param {function} onComplete - 카운트다운이 끝난 후 실행할 콜백 함수
+     */
+    runCountdown(onComplete) {
+        this.cancelCountdown(); // 혹시 실행 중인 카운트다운이 있다면 즉시 취소
+
+        let count = 3;
+        const countdownEl = DOM.countdownTextEl;
+
+        const tick = () => {
+            if (count > 0) {
+                countdownEl.textContent = count;
+                countdownEl.classList.add('show');
+                Audio.playCountdownTick();
+                count--;
+            } else if (count === 0) {
+                countdownEl.textContent = 'START!';
+                Audio.playCountdownStart();
+                count--;
+            } else {
+                // 카운트다운 종료
+                this.cancelCountdown();
+                onComplete(); // 콜백 함수 실행
+            }
+        };
+
+        tick(); // 첫 카운트를 즉시 실행
+        this.state.countdownIntervalId = setInterval(tick, 1000); // 1초마다 반복
     },
-    startGameplay() {
-        // [수정] 게임이 진짜 시작되는 이 시점에 gameState를 'playing'으로 설정합니다.
-        this.state.gameState = 'playing';
-        if (this.state.settings.mode === 'music') {
-            DOM.musicPlayer.currentTime = 0;
-            DOM.musicPlayer.play();
+
+    /**
+     * [ NEW ] 진행 중인 카운트다운을 확실하게 취소하고 UI를 정리하는 함수
+     */
+    cancelCountdown() {
+        if (this.state.countdownIntervalId) {
+            clearInterval(this.state.countdownIntervalId);
+            this.state.countdownIntervalId = null;
         }
-        this.state.gameStartTime = performance.now();
-        this.loop();
+        DOM.countdownTextEl.classList.remove('show');
     },
+
     start() {
         this.resetState();
 
@@ -94,9 +100,16 @@ const Game = {
         DOM.playingStatusLabel.textContent = '플레이 중';
         UI.updateScoreboard();
         
-        // [수정] gameState를 'countdown'으로만 설정하여 상태 흐름을 명확하게 합니다.
-        this.state.gameState = 'countdown'; 
-        this.startCountdown();
+        this.state.gameState = 'countdown';
+        this.runCountdown(() => {
+            this.state.gameState = 'playing'; // 카운트다운이 끝나면 playing 상태로 변경
+            if (this.state.settings.mode === 'music') {
+                DOM.musicPlayer.currentTime = 0;
+                DOM.musicPlayer.play();
+            }
+            this.state.gameStartTime = performance.now();
+            this.loop();
+        });
     },
     end() {
         const activeStates = ['playing', 'countdown'];
@@ -104,12 +117,10 @@ const Game = {
             return;
         }
 
+        this.cancelCountdown(); // 포기 시 카운트다운을 확실하게 취소
         cancelAnimationFrame(this.state.animationFrameId);
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
         
-        // [추가] 포기 시 카운트다운 텍스트를 확실히 숨깁니다.
-        DOM.countdownTextEl.classList.remove('show');
-
         this.state.gameState = 'result';
         resetPlayingScreenUI();
         UI.updateResultScreen();
@@ -152,7 +163,6 @@ const Game = {
         const isLongNote = note.type === 'long_head';
         const noteHeight = isLongNote
           ? (note.duration / 10) * this.state.settings.noteSpeed
-          //
           : 25;
         
         const noteTopPosition = noteBottomPosition - noteHeight;
@@ -219,19 +229,19 @@ const Game = {
     },
     handleKeyDown(e) {
         if (e.keyCode === 27) {
-            Game.togglePause();
+            this.togglePause();
             return;
         }
-        if (Game.state.gameState !== 'playing' || Game.state.isPaused) return;
-        const laneIndex = Game.state.keyMapping.indexOf(e.keyCode);
-        if (laneIndex === -1 || Game.state.activeLanes[laneIndex]) return; 
-        Game.handleInputDown(laneIndex);
+        if (this.state.gameState !== 'playing' || this.state.isPaused) return;
+        const laneIndex = this.state.keyMapping.indexOf(e.keyCode);
+        if (laneIndex === -1 || this.state.activeLanes[laneIndex]) return; 
+        this.handleInputDown(laneIndex);
     },
     handleKeyUp(e) {
-        if (Game.state.gameState !== 'playing' || Game.state.isPaused) return;
-        const laneIndex = Game.state.keyMapping.indexOf(e.keyCode);
+        if (this.state.gameState !== 'playing' || this.state.isPaused) return;
+        const laneIndex = this.state.keyMapping.indexOf(e.keyCode);
         if (laneIndex === -1) return;
-        Game.handleInputUp(laneIndex);
+        this.handleInputUp(laneIndex);
     },
     handleInputDown(laneIndex) {
         this.state.activeLanes[laneIndex] = true;
@@ -279,6 +289,7 @@ const Game = {
         if (this.state.isPaused) {
             this.resumeGame();
         } else {
+            this.cancelCountdown(); // 게임 시작 카운트다운 중에 일시정지하면 카운트다운 취소
             this.state.isPaused = true; 
             this.state.pauseStartTime = performance.now();
             cancelAnimationFrame(this.state.animationFrameId);
@@ -294,30 +305,12 @@ const Game = {
         DOM.resumeGameBtn.classList.add('hidden');
         DOM.playingStatusLabel.textContent = '플레이 중';
 
-        const countdownEl = DOM.countdownTextEl;
-        let count = 3;
-
-        const resumeCount = () => {
-            countdownEl.classList.remove('show');
-            setTimeout(() => {
-                if (count > 0) {
-                    countdownEl.textContent = count;
-                    countdownEl.classList.add('show');
-                    Audio.playCountdownTick();
-                    count--;
-                    setTimeout(resumeCount, 800);
-                } else {
-                    countdownEl.classList.remove('show');
-                    
-                    this.state.isPaused = false;
-                    this.state.totalPausedTime += performance.now() - this.state.pauseStartTime;
-                    if (this.state.settings.mode === 'music') DOM.musicPlayer.play();
-                    
-                    this.loop();
-                }
-            }, 100);
-        };
-        resumeCount();
+        this.runCountdown(() => {
+            this.state.isPaused = false;
+            this.state.totalPausedTime += performance.now() - this.state.pauseStartTime;
+            if (this.state.settings.mode === 'music') DOM.musicPlayer.play();
+            this.loop();
+        });
     },
     setupLanes() {
       DOM.lanesContainer.innerHTML = '';
