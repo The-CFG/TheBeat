@@ -64,6 +64,7 @@ const Game = {
       nextCount();
     },
     startGameplay() {
+        // [수정] 게임이 진짜 시작되는 이 시점에 gameState를 'playing'으로 설정합니다.
         this.state.gameState = 'playing';
         if (this.state.settings.mode === 'music') {
             DOM.musicPlayer.currentTime = 0;
@@ -89,13 +90,11 @@ const Game = {
         }
 
         this.setupLanes();
-        
-        this.state.gameState = 'playing'; 
         UI.showScreen('playing');
-        
         DOM.playingStatusLabel.textContent = '플레이 중';
         UI.updateScoreboard();
         
+        // [수정] gameState를 'countdown'으로만 설정하여 상태 흐름을 명확하게 합니다.
         this.state.gameState = 'countdown'; 
         this.startCountdown();
     },
@@ -108,6 +107,9 @@ const Game = {
         cancelAnimationFrame(this.state.animationFrameId);
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
         
+        // [추가] 포기 시 카운트다운 텍스트를 확실히 숨깁니다.
+        DOM.countdownTextEl.classList.remove('show');
+
         this.state.gameState = 'result';
         resetPlayingScreenUI();
         UI.updateResultScreen();
@@ -150,6 +152,7 @@ const Game = {
         const isLongNote = note.type === 'long_head';
         const noteHeight = isLongNote
           ? (note.duration / 10) * this.state.settings.noteSpeed
+          //
           : 25;
         
         const noteTopPosition = noteBottomPosition - noteHeight;
@@ -388,9 +391,7 @@ const Game = {
                 currentTime += duration;
                 generatedNotesCount += 1;
             } else {
-                // 일반 노트 생성
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
-                // [핵심 수정] 오타를 수정합니다.
                 this.state.notes.push({ lane: lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
             }
