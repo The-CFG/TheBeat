@@ -113,9 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('back-to-menu-btn').addEventListener('click', () => {
             DOM.lanesContainer.innerHTML = '';
             resetPlayingScreenUI();
+            Game.state.gameState = 'menu';
             UI.showScreen('menu');
         });
-        document.getElementById('editor-btn').addEventListener('click', () => Editor.init());
+        document.getElementById('editor-btn').addEventListener('click', () => {
+            Game.state.gameState = 'editor';
+            Editor.init()
+        });
 
         DOM.settings.tabsContainer.addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
@@ -181,13 +185,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
         }
     
-        function showSettingsScreen() {
+    function showSettingsScreen() {
         // 게임 플레이 중이면서 일시정지가 아닐 때는 설정에 들어갈 수 없음
         if (Game.state.gameState === 'playing' && !Game.state.isPaused) {
             return;
         }
         
         Game.state.previousScreen = Game.state.gameState;
+        Game.state.gameState = 'settings'; 
         UI.showScreen('settings');
     
         // 현재 설정된 볼륨 값으로 슬라이더와 텍스트 초기화
