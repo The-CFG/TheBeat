@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TheCFG TheBeat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background-color: #2d3748; /* UI 영역 배경색과 통일 */
+            color: #e2e8f0;
+            overscroll-behavior: none;
+        }
+        .key-hint {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a0aec0;
+            transition: opacity 0.3s ease;
+        }
+        .judgement-line {
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.8), rgba(255,255,255,0.2));
+            box-shadow: 0 0 10px #fff, 0 0 20px #fff;
+        }
+        .note {
+            position: absolute;
+            width: 100%;
+            height: 25px;
+            background-color: #63b3ed;
+            border-radius: 5px;
+            will-change: transform;
+        }
+        /* [롱노트 추가] 롱노트를 위한 스타일 */
+        .note.long {
+            background: linear-gradient(to top, #818cf8, #a78bfa);
+            opacity: 0.9;
+        }
+        .judgement-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: bold;
+            color: white;
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            text-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+        .judgement-text.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+        .combo-text {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #f6e05e;
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        .combo-text.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        .countdown-text {
+          position: absolute;
+          top: 40%; /* 살짝 위쪽에 표시 */
+          left: 50%;
+          transform: translate(-50%, -50%) scale(1.5);
+          font-size: 8rem; /* 텍스트 크기를 매우 크게 */
+          font-weight: bold;
+          color: white;
+          opacity: 0;
+          transition: all 0.3s ease-out;
+          text-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* 가독성을 위한 그림자 */
+          pointer-events: none; /* 클릭 방지 */
+        }
+        
+        .countdown-text.show {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+        .lane {
+            position: relative;
+            height: 100%;
+            border-left: 1px solid #4a5568;
+            border-right: 1px solid #4a5568;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+        }
+        .lane.active-feedback {
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: background-color 0.05s ease;
+        }
+        .btn-group button.active {
+            background-color: #4299e1;
+            color: white;
+        }
+        /* Editor Styles */
+        #editor-timeline {
+            position: relative;
+            background-color: #2d3748;
+            cursor: pointer;
+            min-height: 200px;
+        }
+        .beat-line {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background-color: #4a5568;
+        }
+        .beat-line.measure {
+            background-color: #a0aec0;
+        }
+        .editor-note {
+            position: absolute;
+            height: 8px;
+            background-color: #63b3ed;
+            border-radius: 2px;
+            box-sizing: border-box;
+            border: 1px solid #1a202c;
+        }
+        #editor-playhead {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #f56565;
+            z-index: 10;
+        }
+        #editor-container {
+            overflow: auto;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex items-center justify-center bg-[#2d3748]">
+
+<div class="w-full max-w-7xl h-full max-h-[900px] flex flex-col md:flex-row rounded-2xl shadow-2xl overflow-hidden">
+    <!-- Game Area -->
+    <div id="game-area" class="w-full md:w-1/2 h-1/2 md:h-full bg-black relative flex justify-center transition-all duration-300">
+        <div id="lanes-container" class="h-full flex relative">
+            <!-- Lanes will be generated here -->
+        </div>
+        <div id="judgement-text-container" class="absolute inset-0 pointer-events-none">
+            <div id="judgement-text" class="judgement-text"></div>
+            <div id="combo-text" class="combo-text"></div>
+            <div id="countdown-text" class="countdown-text"></div>
+        </div>
+    </div>
+
+    <!-- UI Area -->
+    <div id="ui-area" class="w-full md:w-1/2 h-1/2 md:h-full p-8 flex flex-col justify-start bg-[#2d3748] overflow-y-auto transition-all duration-300">
+        <!-- Menu Screen -->
+        <div id="menu-screen" class="flex flex-col flex-shrink-0">
+            <h1 class="text-4xl font-bold mb-8 text-white"><a href="http://the-cfg.kro.kr">TheBeat v1.8</a></h1>
+            <p class="text=l font-bold mb-8 text-white">2025/09/18 20:16 snapshot</p>
+            <div id="menu-message" class="hidden p-3 mb-4 text-center text-white bg-red-500 rounded-lg"></div>
+
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xl mb-2 text-gray-300">게임 모드</h3>
+                    <div class="flex space-x-2 btn-group" id="mode-selector">
+                        <button data-mode="random" class="w-full py-3 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">랜덤 모드</button>
+                        <button data-mode="music" class="w-full py-3 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition">뮤직 모드</button>
+                    </div>
+                </div>
+
+                <div id="music-mode-controls" class="hidden mt-2 space-y-2">
+                    <div class="flex space-x-2">
+                        <label for="chart-file-input" class="cursor-pointer text-center block w-full py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded-lg transition">차트 불러오기</label>
+                        <input type="file" id="chart-file-input" class="hidden" accept=".json">
+                        <label for="music-file-input" class="cursor-pointer text-center block w-full py-2 px-4 bg-teal-600 hover:bg-teal-500 rounded-lg transition">음악 불러오기</label>
+                        <input type="file" id="music-file-input" class="hidden" accept="audio/*">
+                    </div>
+                    <p id="chart-file-name" class="text-sm text-gray-400 truncate"></p>
+                    <p id="music-file-name" class="text-sm text-gray-400 truncate"></p>
+                </div>
+
+                <div id="note-count-container">
+                    <h3 class="text-xl mb-2 text-gray-300">노트 수 (랜덤 모드)</h3>
+                    <input type="number" id="note-count-input" value="100" min="10" max="500" class="w-full p-3 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-xl text-gray-300">난이도</h3>
+                        <button id="toggle-details-btn" class="p-1 rounded-full hover:bg-gray-600 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex space-x-2 btn-group" id="difficulty-selector">
+                        <button data-difficulty="easy" class="w-full py-3 px-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">쉬움</button>
+                        <button data-difficulty="normal" class="w-full py-3 px-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">보통</button>
+                        <button data-difficulty="hard" class="w-full py-3 px-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">어려움</button>
+                    </div>
+                </div>
+                
+                <div id="detailed-difficulty-settings" class="hidden mt-4 p-4 bg-gray-800 rounded-lg space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center text-gray-300">
+                            <label for="note-speed-slider">노트 속도</label>
+                            <span id="note-speed-value" class="font-mono">7</span>
+                        </div>
+                        <input id="note-speed-slider" type="range" min="1" max="20" value="7" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center text-gray-300">
+                            <label for="dongta-prob-slider">동시타 확률</label>
+                            <span id="dongta-prob-value" class="font-mono">25%</span>
+                        </div>
+                        <input id="dongta-prob-slider" type="range" min="0" max="100" value="25" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                    <!-- [롱노트 추가] 롱노트 확률 슬라이더 UI -->
+                    <div>
+                        <div class="flex justify-between items-center text-gray-300">
+                            <label for="long-note-prob-slider">롱노트 확률</label>
+                            <span id="long-note-prob-value" class="font-mono">15%</span>
+                        </div>
+                        <input id="long-note-prob-slider" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </div>
+
+                <div>
+                  <h3 class="text-xl mb-2 text-gray-300">레인 수</h3>
+                  <!-- [수정] 버튼 그룹을 select 요소로 변경 -->
+                  <select id="lanes-selector" class="w-full p-3 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="4" selected>4 레인</option>
+                      <option value="5">5 레인</option>
+                      <option value="6">6 레인</option>
+                      <option value="7">7 레인</option>
+                      <option value="8">8 레인</option>
+                  </select>
+                </div>
+
+                <div class="mt-10 space-y-3">
+                    <button id="start-game-btn" class="w-full py-4 text-xl font-bold bg-green-600 hover:bg-green-500 rounded-lg transition">게임 시작</button>
+                    <button id="editor-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg transition">에디터</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Playing Screen -->
+        <div id="playing-screen" class="hidden h-full flex flex-col justify-between">
+            <div>
+                <h2 id="playing-status-label" class="text-3xl font-bold mb-4 text-white">플레이 중</h2>
+                <div class="grid grid-cols-2 gap-4 text-lg">
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <p class="text-gray-400">점수</p>
+                        <p id="score" class="text-3xl font-bold">0</p>
+                    </div>
+                    <div class="bg-gray-700 p-4 rounded-lg">
+                        <p class="text-gray-400">콤보</p>
+                        <p id="combo" class="text-3xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="mt-4 bg-gray-700 p-4 rounded-lg">
+                    <h3 class="text-xl mb-2 text-gray-300">판정</h3>
+                    <div class="space-y-1 text-lg">
+                        <p>PERFECT: <span id="perfect-count">0</span></p>
+                        <p>GOOD: <span id="good-count">0</span></p>
+                        <p>BAD: <span id="bad-count">0</span></p>
+                        <p>MISS: <span id="miss-count">0</span></p>
+                    </div>
+                </div>
+            </div>
+            <div class="space-y-3 mt-auto">
+                <div id="pause-resume-container">
+                    <button id="pause-game-btn" class="w-full py-3 text-lg font-bold bg-yellow-600 hover:bg-yellow-500 rounded-lg transition">일시 정지</button>
+                    <button id="resume-game-btn" class="hidden w-full py-3 text-lg font-bold bg-green-600 hover:bg-green-500 rounded-lg transition">계속하기</button>
+                </div>
+                <button id="give-up-btn" class="w-full py-3 text-lg font-bold bg-red-600 hover:bg-red-500 rounded-lg transition">포기하기</button>
+            </div>
+        </div>
+        
+        <div id="pause-screen-ui" class="hidden h-full flex flex-col justify-center items-center text-center">
+             <h2 class="text-5xl font-bold mb-8 text-white">일시 정지</h2>
+            <div class="w-full max-w-sm space-y-4">
+                <button id="resume-btn-from-pause" class="w-full py-4 text-xl font-bold bg-green-600 hover:bg-green-500 rounded-lg transition">계속하기</button>
+                <button id="give-up-btn-from-pause" class="w-full py-4 text-xl font-bold bg-red-600 hover:bg-red-500 rounded-lg transition">포기하기</button>
+            </div>
+        </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden h-full flex flex-col justify-center items-center text-center">
+             <h2 class="text-5xl font-bold mb-4 text-white">게임 결과</h2>
+            <div class="w-full bg-gray-700 p-6 rounded-lg">
+                <p class="text-2xl text-gray-400 mb-2">최종 점수</p>
+                <p id="final-score" class="text-6xl font-bold mb-6">0</p>
+                <p class="text-2xl text-gray-400 mb-2">랭크</p>
+                <p id="rank" class="text-7xl font-bold text-yellow-400 mb-8">C</p>
+                <div class="grid grid-cols-2 gap-4 text-xl">
+                    <p>PERFECT: <span id="final-perfect">0</span></p>
+                    <p>GOOD: <span id="final-good">0</span></p>
+                    <p>BAD: <span id="final-bad">0</span></p>
+                    <p>MISS: <span id="final-miss">0</span></p>
+                </div>
+            </div>
+            <button id="back-to-menu-btn" class="mt-8 w-full max-w-sm py-4 text-xl font-bold bg-blue-600 hover:bg-blue-500 rounded-lg transition">메인으로 돌아가기</button>
+        </div>
+
+        <!-- Editor Screen -->
+        <div id="editor-screen" class="hidden flex flex-col h-full">
+            <h2 class="text-3xl font-bold mb-4 text-white">차트 에디터</h2>
+            <div id="editor-message" class="hidden p-3 mb-4 text-center text-white bg-red-500 rounded-lg"></div>
+            <div class="flex-grow flex flex-col space-y-4 overflow-hidden">
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="audio-file-input-editor" accept="audio/*" class="hidden">
+                    <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition">음악 파일 선택</label>
+                    <span id="audio-file-name-editor" class="text-sm text-gray-400 flex-1 truncate">선택된 파일 없음</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <label for="bpm-input" class="text-lg">BPM:</label>
+                    <input type="number" id="bpm-input" value="120" class="w-24 p-2 bg-gray-700 rounded">
+                    <div id="editor-lanes-selector" class="flex space-x-2 btn-group">
+                        <button data-lanes="4" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">4L</button>
+                        <button data-lanes="5" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">5L</button>
+                        <button data-lanes="7" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">7L</button>
+                    </div>
+                </div>
+                <div class="flex-grow relative bg-black min-h-0" id="editor-container">
+                    <div id="editor-timeline" class="h-full">
+                        <div id="editor-playhead"></div>
+                    </div>
+                </div>
+                <input type="file" id="editor-load-input" class="hidden" accept=".json">
+                <div class="flex space-x-4 mt-2">
+                    <button id="editor-play-pause-btn" class="w-full py-2 bg-green-600 hover:bg-green-500 rounded">재생</button>
+                    <button id="editor-load-btn" class="w-full py-2 bg-purple-600 hover:bg-purple-500 rounded">불러오기</button>
+                    <button id="editor-save-btn" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded">저장</button>
+                    <button id="editor-back-btn" class="w-full py-2 bg-gray-600 hover:bg-gray-500 rounded">메인 메뉴로</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<audio id="music-player"></audio>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ===================================================================
+    // 1. 상수 및 설정 관리 (Configuration)
+    // ===================================================================
+    const CONFIG = {
+        DIFFICULTY_SPEED: { easy: 4, normal: 7, hard: 10 },
+        JUDGEMENT_WINDOWS_MS: { perfect: 50, good: 100, bad: 150, miss: 200 },
+        VALID_LANES: [4, 5, 6, 7, 8],
+        SIMULTANEOUS_NOTE_PROBABILITY: {
+            easy: 0.1,
+            normal: 0.25,
+            hard: 0.4,
+        },
+        // [롱노트 추가] 난이도별 롱노트 기본 확률
+        LONG_NOTE_PROBABILITY: {
+            easy: 0.1,
+            normal: 0.15,
+            hard: 0.2,
+        },
+        LANE_KEYS: {
+          4: ['D', 'F', 'J', 'K'],
+          5: ['D', 'F', 'Space', 'J', 'K'],
+          6: ['S', 'D', 'F', 'J', 'K', 'L'],
+          7: ['S', 'D', 'F', 'Space', 'J', 'K', 'L'],
+          8: ['A', 'S', 'D', 'F', 'J', 'K', 'L', 'Semicolon']
+        },
+        KEY_CODES: {
+            A: 65, S: 83, D: 68, F: 70, J: 74, K: 75, L: 76, Space: 32, Semicolon: 186
+        },
+        POINTS: { perfect: 10, good: 5, bad: 2, miss: 0 },
+        NOTE_COUNT_MIN: 10,
+        NOTE_COUNT_MAX: 500,
+        DEFAULT_NOTE_COUNT: 100,
+        NOTE_SPACING_FACTOR: 20,
+        FEEDBACK_DURATION_MS: 50,
+        MESSAGE_DURATION_MS: 3000,
+        JUDGEMENT_ANIMATION_MS: 300,
+        EDITOR_BEAT_HEIGHT: 20,
+    };
+
+    // ===================================================================
+    // 2. DOM 요소 관리 (DOM Elements)
+    // ===================================================================
+    const DOM = {
+        judgementTextContainer: document.getElementById('judgement-text-container'), // [추가]
+        gameArea: document.getElementById('game-area'),
+        uiArea: document.getElementById('ui-area'),
+        lanesContainer: document.getElementById('lanes-container'),
+        scoreEl: document.getElementById('score'),
+        comboEl: document.getElementById('combo'),
+        judgementTextEl: document.getElementById('judgement-text'),
+        comboTextEl: document.getElementById('combo-text'),
+        musicPlayer: document.getElementById('music-player'),
+        countdownTextEl: document.getElementById('countdown-text'),
+        noteCountContainer: document.getElementById('note-count-container'),
+        noteCountInput: document.getElementById('note-count-input'),
+        musicModeControls: document.getElementById('music-mode-controls'),
+        chartFileNameEl: document.getElementById('chart-file-name'),
+        musicFileNameEl: document.getElementById('music-file-name'),
+        pauseGameBtn: document.getElementById('pause-game-btn'),
+        resumeGameBtn: document.getElementById('resume-game-btn'),
+        playingStatusLabel: document.getElementById('playing-status-label'),
+        screens: {
+            menu: document.getElementById('menu-screen'),
+            playing: document.getElementById('playing-screen'),
+            result: document.getElementById('result-screen'),
+            editor: document.getElementById('editor-screen'),
+        },
+        messages: {
+            menu: document.getElementById('menu-message'),
+            editor: document.getElementById('editor-message'),
+        },
+        difficulty: {
+            toggleBtn: document.getElementById('toggle-details-btn'),
+            toggleIcon: document.querySelector('#toggle-details-btn svg'),
+            detailsPanel: document.getElementById('detailed-difficulty-settings'),
+            speedSlider: document.getElementById('note-speed-slider'),
+            speedValue: document.getElementById('note-speed-value'),
+            dongtaSlider: document.getElementById('dongta-prob-slider'),
+            dongtaValue: document.getElementById('dongta-prob-value'),
+            // [롱노트 추가] 롱노트 UI 요소 추가
+            longNoteSlider: document.getElementById('long-note-prob-slider'),
+            longNoteValue: document.getElementById('long-note-prob-value'),
+        },
+        finalScoreEl: document.getElementById('final-score'),
+        rankEl: document.getElementById('rank'),
+        finalPerfectEl: document.getElementById('final-perfect'),
+        finalGoodEl: document.getElementById('final-good'),
+        finalBadEl: document.getElementById('final-bad'),
+        finalMissEl: document.getElementById('final-miss'),
+        editor: {
+            container: document.getElementById('editor-container'),
+            timeline: document.getElementById('editor-timeline'),
+            playhead: document.getElementById('editor-playhead'),
+            audioFileInput: document.getElementById('audio-file-input-editor'),
+            audioFileNameEl: document.getElementById('audio-file-name-editor'),
+            bpmInput: document.getElementById('bpm-input'),
+            lanesSelector: document.getElementById('editor-lanes-selector'),
+            loadInput: document.getElementById('editor-load-input'),
+            playPauseBtn: document.getElementById('editor-play-pause-btn'),
+            saveBtn: document.getElementById('editor-save-btn'),
+            loadBtn: document.getElementById('editor-load-btn'),
+            backBtn: document.getElementById('editor-back-btn'),
+        }
+    };
+
+    // ===================================================================
+    // 3. 오디오 모듈 (Audio Module)
+    // ===================================================================
+    const Audio = {
+        isReady: false,
+        hitSound: new Tone.Synth({
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 }
+        }).toDestination(),
+        missSound: new Tone.Synth({
+            oscillator: { type: 'square' },
+            envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
+        }).toDestination(),
+        countdownTickSound: new Tone.Synth({
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.2 }
+        }).toDestination(),
+        countdownStartSound: new Tone.Synth({
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.2 }
+        }).toDestination(),
+        async start() {
+            if (Audio.isReady) return;
+            try {
+                await Tone.start();
+                Audio.isReady = true;
+                console.log("Audio context started");
+                document.body.removeEventListener('click', Audio.start);
+                document.body.removeEventListener('touchstart', Audio.start);
+            } catch (e) {
+                console.error("Could not start audio context", e);
+            }
+        },
+        playHitSound() {
+            if (!this.isReady) return;
+            this.hitSound.triggerAttackRelease("G5", "16n", Tone.now());
+        },
+        playMissSound() {
+            if (!this.isReady) return;
+            this.missSound.triggerAttackRelease("C3", "8n", Tone.now());
+        },
+        playCountdownTick() {
+            if (!this.isReady) return;
+            // 3, 2, 1 카운트 시 'A4' 음을 재생합니다.
+            this.countdownTickSound.triggerAttackRelease("A4", "16n", Tone.now());
+        },
+        
+        playCountdownStart() {
+            if (!this.isReady) return;
+            // 'START!' 표시 시 'A5' 음을 재생합니다.
+            this.countdownStartSound.triggerAttackRelease("A5", "8n", Tone.now());
+        }
+    };
+
+    // ===================================================================
+    // 4. UI 모듈 (UI Module)
+    // ===================================================================
+    const UI = {
+        showScreen(screenName) {
+            Object.values(DOM.screens).forEach(screen => screen.classList.add('hidden'));
+            DOM.screens[screenName].classList.remove('hidden');
+            Game.state.gameState = screenName;
+        },
+        showMessage(type, message) {
+            const el = DOM.messages[type];
+            if (!el) return;
+            el.textContent = message;
+            el.classList.remove('hidden');
+            setTimeout(() => {
+                el.classList.add('hidden');
+            }, CONFIG.MESSAGE_DURATION_MS);
+        },
+        updateScoreboard() {
+            DOM.scoreEl.textContent = Game.state.score;
+            DOM.comboEl.textContent = Game.state.combo;
+            document.getElementById('perfect-count').textContent = Game.state.judgements.perfect;
+            document.getElementById('good-count').textContent = Game.state.judgements.good;
+            document.getElementById('bad-count').textContent = Game.state.judgements.bad;
+            document.getElementById('miss-count').textContent = Game.state.judgements.miss;
+        },
+        showJudgementFeedback(judgement, currentCombo) {
+            DOM.judgementTextEl.textContent = judgement;
+            DOM.judgementTextEl.className = 'judgement-text';
+            void DOM.judgementTextEl.offsetWidth;
+            DOM.judgementTextEl.classList.add('show');
+            setTimeout(() => DOM.judgementTextEl.classList.remove('show'), CONFIG.JUDGEMENT_ANIMATION_MS);
+
+            if (currentCombo > 2) {
+                DOM.comboTextEl.textContent = `${currentCombo} COMBO`;
+                DOM.comboTextEl.className = 'combo-text';
+                void DOM.comboTextEl.offsetWidth;
+                DOM.comboTextEl.classList.add('show');
+                setTimeout(() => DOM.comboTextEl.classList.remove('show'), CONFIG.JUDGEMENT_ANIMATION_MS);
+            }
+        },
+        updateResultScreen() {
+            DOM.finalScoreEl.textContent = Game.state.score;
+            let rank = 'C';
+            if (Game.state.totalNotes > 0) {
+                const maxScore = Game.state.totalNotes * CONFIG.POINTS.perfect;
+                const percentage = (Game.state.score / maxScore) * 100;
+                if (percentage === 100) rank = 'S';
+                else if (percentage >= 90) rank = 'A';
+                else if (percentage >= 70) rank = 'B';
+            }
+            DOM.rankEl.textContent = rank;
+            DOM.finalPerfectEl.textContent = Game.state.judgements.perfect;
+            DOM.finalGoodEl.textContent = Game.state.judgements.good;
+            DOM.finalBadEl.textContent = Game.state.judgements.bad;
+            DOM.finalMissEl.textContent = Game.state.judgements.miss;
+        }
+    };
+
+    // ===================================================================
+    // 5. 게임 로직 모듈 (Game Module)
+    // ===================================================================
+    const Game = {
+        state: {
+            gameState: 'menu',
+            settings: {
+                mode: 'random',
+                difficulty: 'normal',
+                noteSpeed: CONFIG.DIFFICULTY_SPEED.normal,
+                dongtaProbability: CONFIG.SIMULTANEOUS_NOTE_PROBABILITY.normal,
+                // [롱노트 추가] 게임 상태에 롱노트 확률 설정 추가
+                longNoteProbability: CONFIG.LONG_NOTE_PROBABILITY.normal,
+                lanes: 4,
+                musicSrc: null,
+            },
+            keyMapping: [],
+            activeLanes: [],
+            notes: [],
+            score: 0,
+            combo: 0,
+            judgements: { perfect: 0, good: 0, bad: 0, miss: 0 },
+            gameStartTime: 0,
+            animationFrameId: null,
+            totalNotes: 0,
+            processedNotes: 0,
+            isPaused: false,
+            pauseStartTime: 0,
+            totalPausedTime: 0,
+        },
+        resetState() {
+            this.state.score = 0;
+            this.state.combo = 0;
+            this.state.judgements = { perfect: 0, good: 0, bad: 0, miss: 0 };
+            this.state.processedNotes = 0;
+            this.state.isPaused = false;
+            this.state.totalPausedTime = 0;
+        },
+        startCountdown() {
+          const countdownEl = DOM.countdownTextEl;
+          let count = 3;
+      
+          const nextCount = () => {
+              // 이전 숫자가 사라지도록 잠시 숨김 처리
+              countdownEl.classList.remove('show');
+      
+              setTimeout(() => {
+                  if (count > 0) {
+                      countdownEl.textContent = count;
+                      countdownEl.classList.add('show');
+                      
+                      Audio.playCountdownTick();
+                      count--;
+                      setTimeout(nextCount, 800); // 1초마다 다음 숫자 표시
+                  } else {
+                      countdownEl.textContent = 'START!';
+                      countdownEl.classList.add('show');
+                      Audio.playCountdownStart();
+                      // "START!" 텍스트가 1초간 보인 후 게임 시작
+                      setTimeout(() => {
+                          countdownEl.classList.remove('show');
+                          this.startGameplay();
+                      }, 1000);
+                  }
+              }, 100); // 숫자가 바뀌는 느낌을 주기 위한 짧은 딜레이
+          };
+      
+          nextCount();
+      },
+      
+      startGameplay() {
+          this.state.gameState = 'playing';
+          if (this.state.settings.mode === 'music') {
+              DOM.musicPlayer.currentTime = 0;
+              DOM.musicPlayer.play();
+          }
+          this.state.gameStartTime = performance.now();
+          this.loop(); // 실제 게임 루프 시작
+      },
+        start() {
+          this.resetState();
+      
+          if (this.state.settings.mode === 'random') {
+              this.generateRandomNotes();
+          } else { // music mode
+              if (!this.state.notes || this.state.notes.length === 0) {
+                  UI.showMessage('menu', '뮤직 모드를 시작하려면 차트 파일을 먼저 불러와주세요.');
+                  return;
+              }
+              if (!this.state.settings.musicSrc) {
+                  UI.showMessage('menu', '뮤직 모드를 시작하려면 음악 파일을 먼저 불러와주세요.');
+                  return;
+              }
+          }
+      
+          this.setupLanes();
+          UI.showScreen('playing');
+            DOM.playingStatusLabel.textContent = '플레이 중'; 
+          UI.updateScoreboard();
+          
+          this.state.gameState = 'countdown';
+          // 즉시 게임을 시작하는 대신 카운트다운을 시작합니다.
+          this.startCountdown();
+      },
+        end() {
+            if (this.state.gameState !== 'playing') return;
+            cancelAnimationFrame(this.state.animationFrameId);
+            if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
+            resetPlayingScreenUI();
+            UI.updateResultScreen();
+            UI.showScreen('result');
+        },
+        togglePause() {
+            if (this.state.gameState !== 'playing') return;
+
+            // [핵심 수정] isPaused 상태를 여기서 토글하지 않습니다.
+            // 대신, 현재 상태에 따라 pause 또는 resume을 결정합니다.
+            if (this.state.isPaused) {
+                // 이미 일시정지 상태라면, 재개 절차를 시작합니다.
+                this.resumeGame();
+            } else {
+                // 플레이 중인 상태라면, 게임을 일시정지합니다.
+                this.state.isPaused = true; 
+                this.state.pauseStartTime = performance.now();
+                cancelAnimationFrame(this.state.animationFrameId);
+                if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
+                
+                DOM.pauseGameBtn.classList.add('hidden');
+                DOM.resumeGameBtn.classList.remove('hidden');
+                DOM.playingStatusLabel.textContent = '일시 정지 중';
+            }
+        },
+        resumeGame() {
+            // UI를 먼저 복구합니다.
+            DOM.pauseGameBtn.classList.remove('hidden');
+            DOM.resumeGameBtn.classList.add('hidden');
+            DOM.playingStatusLabel.textContent = '플레이 중';
+
+            // 재개 카운트다운을 시작합니다.
+            // 이 시간 동안 isPaused는 여전히 true 상태를 유지합니다.
+            const countdownEl = DOM.countdownTextEl;
+            let count = 3;
+
+            const resumeCount = () => {
+                countdownEl.classList.remove('show');
+                setTimeout(() => {
+                    if (count > 0) {
+                        countdownEl.textContent = count;
+                        countdownEl.classList.add('show');
+                        Audio.playCountdownTick();
+                        count--;
+                        setTimeout(resumeCount, 800);
+                    } else {
+                        countdownEl.classList.remove('show');
+                        
+                        // [핵심 수정] 모든 카운트다운이 끝나고,
+                        // 게임 루프가 시작되기 직전에 isPaused 상태를 false로 변경합니다.
+                        this.state.isPaused = false;
+                        this.state.totalPausedTime += performance.now() - this.state.pauseStartTime;
+                        if (this.state.settings.mode === 'music') DOM.musicPlayer.play();
+                        
+                        // 이제 게임 루프를 다시 시작합니다.
+                        this.loop();
+                    }
+                }, 100);
+            };
+            resumeCount();
+        },
+        loop(timestamp) {
+            const self = Game;
+            const elapsedTime = self.state.settings.mode === 'music' ?
+                DOM.musicPlayer.currentTime * 1000 :
+                timestamp - self.state.gameStartTime - self.state.totalPausedTime;
+
+            self.updateNotes(elapsedTime);
+            
+            if (self.state.processedNotes >= self.state.totalNotes && self.state.notes.length > 0) {
+                setTimeout(() => self.end(), 500);
+                return;
+            }
+
+            self.state.animationFrameId = requestAnimationFrame(self.loop);
+        },
+        updateNotes(elapsedTime) {
+          const gameHeight = DOM.lanesContainer.clientHeight;
+          if (gameHeight === 0) return;
+        
+          for (const note of this.state.notes) {
+            // [핵심 수정] 노트가 처리되었더라도 시각적 요소가 남아있다면 계속 업데이트합니다.
+            if (note.processed && !note.element) {
+              continue;
+            }
+        
+            // [추가] 진행 중인 롱노트 키를 뗐을 때 즉시 MISS 판정하는 로직
+            // 롱노트 시작점(head)이 성공적으로 처리되었고,
+            if (note.type === 'long_head' && note.processed) {
+              const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
+              
+              // 아직 끝점(tail)이 처리되지 않았는데 해당 레인의 키에서 손을 뗀 경우,
+              if (tailNote && !tailNote.processed && !this.state.activeLanes[note.lane]) {
+                // 끝점을 즉시 MISS 처리합니다.
+                this.handleJudgement('miss', tailNote);
+              }
+            }
+        
+        
+            const timeToHit = note.time - elapsedTime;
+            const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
+        
+            const isLongNote = note.type === 'long_head';
+            const noteHeight = isLongNote
+              ? (note.duration / 10) * this.state.settings.noteSpeed
+              : 25;
+            
+            const noteTopPosition = noteBottomPosition - noteHeight;
+        
+            // 노트 엘리먼트 생성 로직 (note.processed 체크 추가)
+            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote)) {
+              if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
+                const laneEl = DOM.lanesContainer.children[note.lane];
+                if (laneEl) {
+                  note.element = document.createElement('div');
+                  note.element.className = 'note';
+                  if (isLongNote) {
+                    note.element.classList.add('long');
+                    note.element.style.height = `${noteHeight}px`;
+                  }
+                  laneEl.appendChild(note.element);
+                }
+              }
+            }
+        
+            // 노트 위치 업데이트 로직
+            if (note.element && note.element.isConnected) {
+              // [핵심 수정] 모든 노트(롱노트 포함)는 항상 자신의 위치로 계속 이동합니다.
+              note.element.style.transform = `translateY(${noteTopPosition}px)`;
+            }
+        
+            // 자동 MISS 판정 로직
+            if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
+              this.handleJudgement('miss', note);
+            }
+          }
+        },
+        handleJudgement(judgement, note) {
+          if (note.processed) return;
+          note.processed = true;
+        
+          // [수정] 롱노트 꼬리 또는 탭노트일 때 시각적 요소를 제거하는 로직
+          // 롱노트 꼬리(tail)가 어떤 판정을 받든, 연결된 head의 시각적 요소를 제거합니다.
+          if (note.type === 'long_tail') {
+            const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
+            if (headNote && headNote.element) {
+              headNote.element.remove();
+              headNote.element = null;
+            }
+          } else if (note.type === 'tap' && note.element) {
+            note.element.remove();
+            note.element = null;
+          }
+        
+          this.state.judgements[judgement]++;
+          if (note.type !== 'long_head') { this.state.processedNotes++; }
+        
+          this.state.score += CONFIG.POINTS[judgement];
+        
+          if (judgement === 'miss' || judgement === 'bad') {
+            this.state.combo = 0;
+          } else {
+            this.state.combo++;
+            // [추가] 롱노트 head를 성공적으로 쳤음을 tail에게 알려주는 플래그
+            if (note.type === 'long_head') {
+              const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
+              if (tailNote) tailNote.headProcessed = true;
+            }
+          }
+        
+          if (judgement === 'perfect' || judgement === 'good') Audio.playHitSound();
+          else Audio.playMissSound();
+        
+          UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
+          UI.updateScoreboard();
+        },
+        // 키보드를 '눌렀을 때' 호출
+        handleKeyDown(e) {
+            if (e.keyCode === 27) { // 27 is the keyCode for Escape
+                Game.togglePause();
+                return;
+            }
+            
+            if (Game.state.gameState !== 'playing' || Game.state.isPaused) return;
+            const laneIndex = Game.state.keyMapping.indexOf(e.keyCode);
+            // 유효하지 않거나 이미 눌려있는 키는 무시
+            if (laneIndex === -1 || Game.state.activeLanes[laneIndex]) return; 
+            Game.handleInputDown(laneIndex);
+        },
+        
+        // 키보드를 '뗐을 때' 호출
+        handleKeyUp(e) {
+            if (Game.state.gameState !== 'playing') return;
+            const laneIndex = Game.state.keyMapping.indexOf(e.keyCode);
+            if (laneIndex === -1) return;
+            Game.handleInputUp(laneIndex);
+        },
+        // (키보드/터치) 입력을 '시작했을 때'의 공통 판정 로직
+        handleInputDown(laneIndex) {
+            this.state.activeLanes[laneIndex] = true;
+            const laneEl = DOM.lanesContainer.children[laneIndex];
+            if (laneEl) laneEl.classList.add('active-feedback');
+            
+            // [핵심 수정] elapsedTime 계산 시 totalPausedTime을 빼줍니다.
+            const elapsedTime = this.state.settings.mode === 'music' ? 
+                DOM.musicPlayer.currentTime * 1000 : 
+                performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+            
+            // 탭 노트와 롱노트 '시작점'을 판정
+            const hittableNotes = this.state.notes.filter(n =>
+                !n.processed && n.lane === laneIndex && (n.type === 'tap' || n.type === 'long_head') && Math.abs(n.time - elapsedTime) <= CONFIG.JUDGEMENT_WINDOWS_MS.miss
+            );
+            if (hittableNotes.length > 0) {
+                const noteToHit = hittableNotes.sort((a, b) => Math.abs(a.time - elapsedTime) - Math.abs(b.time - elapsedTime))[0];
+                const timeDiff = Math.abs(noteToHit.time - elapsedTime);
+                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', noteToHit);
+                else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', noteToHit);
+                else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', noteToHit);
+            }
+        },
+        // (키보드/터치) 입력을 '끝냈을 때'의 공통 판정 로직
+        handleInputUp(laneIndex) {
+            this.state.activeLanes[laneIndex] = false;
+            const laneEl = DOM.lanesContainer.children[laneIndex];
+            if (laneEl) laneEl.classList.remove('active-feedback');
+            
+            // [핵심 수정] elapsedTime 계산 시 totalPausedTime을 빼줍니다.
+            const elapsedTime = this.state.settings.mode === 'music' ? 
+                DOM.musicPlayer.currentTime * 1000 : 
+                performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+            
+            // 롱노트 '끝점'만 판정
+            const hittableNotes = this.state.notes.filter(n =>
+                !n.processed && n.lane === laneIndex && n.type === 'long_tail' && n.headProcessed && Math.abs(n.time - elapsedTime) <= CONFIG.JUDGEMENT_WINDOWS_MS.miss
+            );
+            if (hittableNotes.length > 0) {
+                const noteToHit = hittableNotes.sort((a, b) => Math.abs(a.time - elapsedTime) - Math.abs(b.time - elapsedTime))[0];
+                const timeDiff = Math.abs(noteToHit.time - elapsedTime);
+                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', noteToHit);
+                else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', noteToHit);
+                else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', noteToHit);
+            }
+        },
+        setupLanes() {
+          DOM.lanesContainer.innerHTML = '';
+          DOM.lanesContainer.style.width = `${this.state.settings.lanes * 100}px`;
+          this.state.activeLanes = Array(this.state.settings.lanes).fill(false);
+          
+          const keysForCurrentLanes = CONFIG.LANE_KEYS[this.state.settings.lanes];
+          if (!keysForCurrentLanes) { console.error(`Invalid number of lanes: ${this.state.settings.lanes}.`); UI.showScreen('menu'); return; }
+          this.state.keyMapping = keysForCurrentLanes.map(key => CONFIG.KEY_CODES[key]).filter(Boolean);
+      
+          // [추가] 키 힌트 표시를 위한 맵
+          const keyHintMap = { 'Space': '⎵', 'Semicolon': ';' };
+      
+          for (let i = 0; i < this.state.settings.lanes; i++) {
+              const lane = document.createElement('div');
+              lane.className = 'lane';
+              lane.style.width = '100px';
+              lane.dataset.laneIndex = i;
+      
+              const keyHint = document.createElement('div');
+              keyHint.className = 'key-hint';
+              
+              // [수정] 맵을 사용하여 키 힌트 텍스트 설정
+              const keyName = keysForCurrentLanes[i];
+              keyHint.textContent = keyHintMap[keyName] || keyName || '';
+              
+              lane.appendChild(new DOMParser().parseFromString('<div class="judgement-line"></div>', "text/html").body.firstChild);
+              lane.appendChild(keyHint);
+              
+              lane.addEventListener('mousedown', (e) => { e.preventDefault(); this.handleInputDown(i); });
+              lane.addEventListener('mouseup', (e) => { e.preventDefault(); this.handleInputUp(i); });
+              lane.addEventListener('mouseleave', (e) => { if (this.state.activeLanes[i]) this.handleInputUp(i); });
+              lane.addEventListener('touchstart', (e) => { e.preventDefault(); this.handleInputDown(i); });
+              lane.addEventListener('touchend', (e) => { e.preventDefault(); this.handleInputUp(i); });
+              
+              DOM.lanesContainer.appendChild(lane);
+          }
+      },
+        // [롱노트 추가] 랜덤 노트 생성 로직 수정
+        generateRandomNotes() {
+            this.state.notes = [];
+            let totalNotesToGenerate = parseInt(DOM.noteCountInput.value) || CONFIG.DEFAULT_NOTE_COUNT;
+            if (totalNotesToGenerate < CONFIG.NOTE_COUNT_MIN) totalNotesToGenerate = CONFIG.NOTE_COUNT_MIN;
+            if (totalNotesToGenerate > CONFIG.NOTE_COUNT_MAX) totalNotesToGenerate = CONFIG.NOTE_COUNT_MAX;
+
+            const simProbability = this.state.settings.dongtaProbability;
+            const longNoteProbability = this.state.settings.longNoteProbability;
+            
+            let generatedNotesCount = 0; // [롱노트 카운트 수정] 실제 생성된 액션 수를 카운트
+            let currentTime = 1000;
+            let noteIdCounter = 0;
+
+            while (generatedNotesCount < totalNotesToGenerate) {
+                const canGenerateSimultaneous = this.state.settings.lanes > 1 && (totalNotesToGenerate - generatedNotesCount >= 2);
+                const canGenerateLongNote = (totalNotesToGenerate - generatedNotesCount >= 1); // 롱노트는 1개의 액션이므로 조건 변경
+
+                if (canGenerateSimultaneous && Math.random() < simProbability) {
+                    const availableLanes = Array.from({ length: this.state.settings.lanes }, (_, i) => i);
+                    for (let i = availableLanes.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [availableLanes[i], availableLanes[j]] = [availableLanes[j], availableLanes[i]];
+                    }
+                    this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: 'tap' });
+                    this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: 'tap' });
+                    generatedNotesCount += 2;
+                } else if (canGenerateLongNote && Math.random() < longNoteProbability) {
+                    // 롱노트 생성
+                    const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                    const duration = 500 + Math.random() * 1000;
+                    const noteId = noteIdCounter++;
+                    
+                    this.state.notes.push({ lane, time: currentTime, duration, type: 'long_head', noteId });
+                    this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
+                    
+                    currentTime += duration;
+                    generatedNotesCount += 1; // [롱노트 카운트 수정] 롱노트는 1개로 카운트
+                } else {
+                    // 일반 노트 생성
+                    const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                    this.state.notes.push({ lane, time: currentTime, type: 'tap' });
+                    generatedNotesCount++;
+                }
+                currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+            }
+            // [롱노트 카운트 수정] totalNotes를 실제 액션 수(totalNotesToGenerate)로 설정
+            this.state.totalNotes = totalNotesToGenerate;
+        },
+        loadChartNotes(chartData) {
+            if (!chartData.lanes || !CONFIG.VALID_LANES.includes(chartData.lanes)) {
+                UI.showMessage('menu', `오류: 차트의 레인 수(${chartData.lanes || '없음'})가 잘못되었습니다.`);
+                return false;
+            }
+            this.state.notes = [];
+            this.state.settings.lanes = chartData.lanes;
+            document.querySelectorAll('#lanes-selector button').forEach(b => {
+                b.classList.toggle('active', parseInt(b.dataset.lanes) === this.state.settings.lanes);
+            });
+            this.state.notes = chartData.notes.map(note => ({
+                ...note,
+                type: note.duration ? 'long_head' : 'tap', // 차트 로딩 시 롱노트 타입 지정 (에디터 호환성)
+                element: null,
+                processed: false
+            }));
+            this.state.totalNotes = this.state.notes.length;
+            return true;
+        },
+    };
+
+    // ===================================================================
+    // 6. 에디터 로직 모듈 (Editor Module)
+    // ===================================================================
+    const Editor = {
+        state: {
+            notes: [],
+            bpm: 120,
+            lanes: 4,
+            audioFileName: '',
+            isPlaying: false,
+            animationFrameId: null,
+        },
+        init() {
+            this.state.isPlaying = false;
+            this.state.notes = [];
+            DOM.musicPlayer.pause();
+            DOM.musicPlayer.src = '';
+            UI.showScreen('editor');
+            this.drawGrid();
+            this.renderNotes();
+        },
+        loop() {
+            const self = Editor;
+            if (!self.state.isPlaying) return;
+            const beatsPerSecond = self.state.bpm / 60;
+            const beats = DOM.musicPlayer.currentTime * beatsPerSecond;
+            const playheadPosition = beats * CONFIG.EDITOR_BEAT_HEIGHT;
+            DOM.editor.playhead.style.top = `${playheadPosition}px`;
+            DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
+            self.state.animationFrameId = requestAnimationFrame(self.loop);
+        },
+        drawGrid() {
+            while (DOM.editor.timeline.firstChild && DOM.editor.timeline.firstChild !== DOM.editor.playhead) {
+                DOM.editor.timeline.removeChild(DOM.editor.timeline.firstChild);
+            }
+            const duration = DOM.musicPlayer.duration || 300;
+            const beatsPerSecond = this.state.bpm / 60;
+            const totalBeats = duration * beatsPerSecond;
+            const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+            DOM.editor.timeline.style.height = `${timelineHeight}px`;
+            for (let i = 0; i < totalBeats; i++) {
+                const line = document.createElement('div');
+                line.className = 'beat-line';
+                if (i % 4 === 0) line.classList.add('measure');
+                line.style.top = `${i * CONFIG.EDITOR_BEAT_HEIGHT}px`;
+                DOM.editor.timeline.insertBefore(line, DOM.editor.playhead);
+            }
+        },
+        renderNotes() {
+            DOM.editor.timeline.querySelectorAll('.editor-note').forEach(n => n.remove());
+            const laneWidth = 100 / this.state.lanes;
+            const beatsPerSecond = this.state.bpm / 60;
+            this.state.notes.forEach(note => {
+                const noteEl = document.createElement('div');
+                noteEl.className = 'editor-note';
+                noteEl.style.width = `${laneWidth}%`;
+                noteEl.style.left = `${note.lane * laneWidth}%`;
+                const timeInSeconds = note.time / 1000;
+                const beats = timeInSeconds * beatsPerSecond;
+                noteEl.style.top = `${beats * CONFIG.EDITOR_BEAT_HEIGHT - 4}px`;
+                noteEl.dataset.time = note.time;
+                noteEl.dataset.lane = note.lane;
+                DOM.editor.timeline.insertBefore(noteEl, DOM.editor.playhead);
+            });
+        },
+        loadChart(chartData) {
+            this.state.notes = chartData.notes || [];
+            this.state.bpm = chartData.bpm || 120;
+            this.state.lanes = chartData.lanes || 4;
+            DOM.editor.bpmInput.value = this.state.bpm;
+            document.querySelectorAll('#editor-lanes-selector button').forEach(b => {
+                b.classList.toggle('active', parseInt(b.dataset.lanes) === this.state.lanes);
+            });
+            DOM.musicPlayer.src = '';
+            this.state.audioFileName = '';
+            DOM.editor.audioFileNameEl.textContent = `"${chartData.songName || 'Unknown'}" 음악 파일을 선택해주세요.`;
+            this.drawGrid();
+            this.renderNotes();
+        },
+        handleTimelineClick(e) {
+            if (e.target.classList.contains('editor-note')) {
+                const time = parseFloat(e.target.dataset.time);
+                const lane = parseInt(e.target.dataset.lane);
+                this.state.notes = this.state.notes.filter(n => !(n.time === time && n.lane === lane));
+                this.renderNotes();
+                return;
+            }
+            const rect = DOM.editor.container.getBoundingClientRect();
+            const y = e.clientY - rect.top + DOM.editor.container.scrollTop;
+            const x = e.clientX - rect.left;
+            const lane = Math.floor(x / (rect.width / this.state.lanes));
+            const beatsPerSecond = this.state.bpm / 60;
+            const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
+            const timeInSeconds = beat / beatsPerSecond;
+            const timeInMs = Math.round(timeInSeconds * 1000);
+            if (!this.state.notes.some(n => Math.abs(n.time - timeInMs) < 10 && n.lane === lane)) {
+                this.state.notes.push({ time: timeInMs, lane: lane });
+                this.renderNotes();
+            }
+        },
+        togglePlay() {
+            if (this.state.isPlaying) {
+                DOM.musicPlayer.pause();
+                DOM.editor.playPauseBtn.textContent = "재생";
+                cancelAnimationFrame(this.state.animationFrameId);
+            } else {
+                if (!DOM.musicPlayer.src) {
+                    UI.showMessage('editor', '먼저 음악 파일을 선택해주세요.');
+                    return;
+                }
+                DOM.musicPlayer.play();
+                DOM.editor.playPauseBtn.textContent = "일시정지";
+                this.loop();
+            }
+            this.state.isPlaying = !this.state.isPlaying;
+        },
+        saveChart() {
+            const songName = this.state.audioFileName ? this.state.audioFileName.split('.')[0] : 'chart';
+            const chart = {
+                songName: songName,
+                bpm: this.state.bpm,
+                lanes: this.state.lanes,
+                notes: this.state.notes.sort((a, b) => a.time - b.time),
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", songName + ".json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+    };
+
+    // ===================================================================
+    // 7. 이벤트 리스너 설정 (Event Listeners)
+    // ===================================================================
+    function resetPlayingScreenUI() {
+        // '일시 정지' 버튼은 보이게
+        DOM.pauseGameBtn.classList.remove('hidden');
+        // '계속하기' 버튼은 숨기기
+        DOM.resumeGameBtn.classList.add('hidden');
+        // 상태 레이블은 '플레이 중'으로
+        DOM.playingStatusLabel.textContent = '플레이 중';
+    }
+    
+    function setupEventListeners() {
+        document.body.addEventListener('click', Audio.start);
+        document.body.addEventListener('touchstart', Audio.start);
+        window.addEventListener('keydown', Game.handleKeyDown);
+        window.addEventListener('keyup', Game.handleKeyUp);
+        DOM.pauseGameBtn.addEventListener('click', () => Game.togglePause());
+        DOM.resumeGameBtn.addEventListener('click', () => Game.togglePause());
+        
+        document.getElementById('mode-selector').addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            Game.state.settings.mode = e.target.dataset.mode;
+            document.querySelectorAll('#mode-selector button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            const isMusicMode = Game.state.settings.mode === 'music';
+            DOM.musicModeControls.classList.toggle('hidden', !isMusicMode);
+            DOM.noteCountContainer.classList.toggle('hidden', isMusicMode);
+            
+            if (!isMusicMode) {
+                DOM.chartFileNameEl.textContent = '';
+                DOM.musicFileNameEl.textContent = '';
+                Game.state.notes = [];
+                Game.state.settings.musicSrc = null;
+            }
+        });
+        
+        document.getElementById('difficulty-selector').addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            const preset = e.target.dataset.difficulty;
+            Game.state.settings.difficulty = preset;
+            Game.state.settings.noteSpeed = CONFIG.DIFFICULTY_SPEED[preset];
+            Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
+            // [롱노트 추가] 난이도 프리셋 변경 시 롱노트 확률도 변경
+            Game.state.settings.longNoteProbability = CONFIG.LONG_NOTE_PROBABILITY[preset];
+            
+            updateDetailedSettingsUI();
+            
+            document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+        });
+        
+        DOM.difficulty.toggleBtn.addEventListener('click', () => {
+            DOM.difficulty.detailsPanel.classList.toggle('hidden');
+            DOM.difficulty.toggleIcon.classList.toggle('rotate-180');
+        });
+
+        DOM.difficulty.speedSlider.addEventListener('input', (e) => {
+            const newSpeed = parseInt(e.target.value);
+            Game.state.settings.noteSpeed = newSpeed;
+            DOM.difficulty.speedValue.textContent = newSpeed;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
+            const newProb = parseInt(e.target.value);
+            Game.state.settings.dongtaProbability = newProb / 100;
+            DOM.difficulty.dongtaValue.textContent = `${newProb}%`;
+            setCustomDifficulty();
+        });
+
+        // [롱노트 추가] 롱노트 확률 슬라이더 이벤트 리스너
+        DOM.difficulty.longNoteSlider.addEventListener('input', (e) => {
+            const newProb = parseInt(e.target.value);
+            Game.state.settings.longNoteProbability = newProb / 100;
+            DOM.difficulty.longNoteValue.textContent = `${newProb}%`;
+            setCustomDifficulty();
+        });
+        
+        document.getElementById('lanes-selector').addEventListener('change', (e) => {
+            const selectedLanes = parseInt(e.target.value);
+            Game.state.settings.lanes = selectedLanes;
+            updateGameAreaWidth(selectedLanes);
+        });
+
+        document.getElementById('chart-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const chartData = JSON.parse(event.target.result);
+                    if (Game.loadChartNotes(chartData)) {
+                        DOM.chartFileNameEl.textContent = `차트: ${file.name}`;
+                    }
+                } catch (error) {
+                    UI.showMessage('menu', '잘못된 차트 파일 형식입니다.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('music-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                Game.state.settings.musicSrc = URL.createObjectURL(file);
+                DOM.musicFileNameEl.textContent = `음악: ${file.name}`;
+            }
+        });
+
+        document.getElementById('start-game-btn').addEventListener('click', () => Game.start());
+        document.getElementById('give-up-btn').addEventListener('click', () => Game.end());
+        document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+            DOM.lanesContainer.innerHTML = '';
+            UI.showScreen('menu');
+        });
+        document.getElementById('editor-btn').addEventListener('click', () => Editor.init());
+        // 에디터 관련 이벤트 리스너는 수정되지 않았으므로 생략합니다.
+        
+        document.getElementById('give-up-btn').addEventListener('click', () => Game.end());
+        document.getElementById('back-to-menu-btn').addEventListener('click', () => {
+            DOM.lanesContainer.innerHTML = '';
+            resetPlayingScreenUI();
+            UI.showScreen('menu');
+        });
+    }
+    
+    function updateGameAreaWidth(lanes) {
+      // [수정] 7레인 이상일 경우 (7레인, 8레인) 화면 비율을 조정하도록 변경
+      if (lanes >= 7) { 
+          DOM.gameArea.classList.remove('md:w-1/2');
+          DOM.gameArea.classList.add('md:w-2/3');
+          DOM.uiArea.classList.remove('md:w-1/2');
+          DOM.uiArea.classList.add('md:w-1/3');
+      } else { // 6레인 이하일 경우 (4, 5, 6레인)
+          DOM.gameArea.classList.remove('md:w-2/3');
+          DOM.gameArea.classList.add('md:w-1/2');
+          DOM.uiArea.classList.remove('md:w-1/3');
+          DOM.uiArea.classList.add('md:w-1/2');
+      }
+  }
+
+    // [롱노트 추가] 세부 설정 UI 업데이트 함수 수정
+    function updateDetailedSettingsUI() {
+        const speed = Game.state.settings.noteSpeed;
+        const dongtaProb = Math.round(Game.state.settings.dongtaProbability * 100);
+        const longNoteProb = Math.round(Game.state.settings.longNoteProbability * 100);
+
+        DOM.difficulty.speedSlider.value = speed;
+        DOM.difficulty.speedValue.textContent = speed;
+        
+        DOM.difficulty.dongtaSlider.value = dongtaProb;
+        DOM.difficulty.dongtaValue.textContent = `${dongtaProb}%`;
+
+        DOM.difficulty.longNoteSlider.value = longNoteProb;
+        DOM.difficulty.longNoteValue.textContent = `${longNoteProb}%`;
+    }
+
+    function setCustomDifficulty() {
+        Game.state.settings.difficulty = 'custom';
+        document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
+    }
+
+    // ===================================================================
+    // 8. 애플리케이션 초기화 (Initialization)
+    // ===================================================================
+    function initialize() {
+        setupEventListeners();
+        document.querySelector('#mode-selector button[data-mode="random"]').classList.add('active');
+        document.querySelector('#difficulty-selector button[data-difficulty="normal"]').classList.add('active');
+        updateDetailedSettingsUI();
+    }
+
+    initialize();
+});
+</script>
+</body>
+</html>
