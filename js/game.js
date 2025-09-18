@@ -89,17 +89,19 @@ const Game = {
         }
 
         this.setupLanes();
+        this.state.gameState = 'playing'; 
         UI.showScreen('playing');
         DOM.playingStatusLabel.textContent = '플레이 중';
         UI.updateScoreboard();
         
-        this.state.gameState = 'countdown';
+        this.state.gameState = 'countdown'; 
         this.startCountdown();
     },
     end() {
-        if (this.state.gameState !== 'playing') return;
+        if (this.state.gameState !== 'playing' && this.state.gameState !== 'countdown' && !this.state.isPaused) return;
         cancelAnimationFrame(this.state.animationFrameId);
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
+        this.state.gameState = 'result';
         resetPlayingScreenUI();
         UI.updateResultScreen();
         UI.showScreen('result');
