@@ -18,6 +18,7 @@ const DOM = {
         playing: document.getElementById('playing-screen'),
         result: document.getElementById('result-screen'),
         editor: document.getElementById('editor-screen'),
+        settings: document.getElementById('settings-screen'),
     },
     messages: {
         menu: document.getElementById('menu-message'),
@@ -57,4 +58,15 @@ const DOM = {
     pauseGameBtn: document.getElementById('pause-game-btn'),
     resumeGameBtn: document.getElementById('resume-game-btn'),
     playingStatusLabel: document.getElementById('playing-status-label'),
+    settings: {
+        iconMenu: document.getElementById('settings-icon-menu'),
+        iconPlaying: document.getElementById('settings-icon-playing'),
+        backBtn: document.getElementById('settings-back-btn'),
+        tabsContainer: document.getElementById('settings-tabs'),
+        tabContents: document.querySelectorAll('.tab-content'),
+        musicVolumeSlider: document.getElementById('volume-slider-music'),
+        musicVolumeValue: document.getElementById('volume-value-music'),
+        sfxVolumeSlider: document.getElementById('volume-slider-sfx'),
+        sfxVolumeValue: document.getElementById('volume-value-sfx'),
+    }
 };
