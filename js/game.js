@@ -26,7 +26,7 @@ const Game = {
         pauseStartTime: 0,
         totalPausedTime: 0,
         previousScreen: 'menu',
-        countdownIntervalId: null, // 카운트다운 타이머 ID를 저장할 변수
+        countdownIntervalId: null,
     },
     resetState() {
         this.state.score = 0;
@@ -37,12 +37,8 @@ const Game = {
         this.state.totalPausedTime = 0;
     },
     
-    /**
-     * [ NEW ] 모든 카운트다운을 관리하는 중앙 함수
-     * @param {function} onComplete - 카운트다운이 끝난 후 실행할 콜백 함수
-     */
     runCountdown(onComplete) {
-        this.cancelCountdown(); // 혹시 실행 중인 카운트다운이 있다면 즉시 취소
+        this.cancelCountdown();
 
         let count = 3;
         const countdownEl = DOM.countdownTextEl;
@@ -58,19 +54,15 @@ const Game = {
                 Audio.playCountdownStart();
                 count--;
             } else {
-                // 카운트다운 종료
                 this.cancelCountdown();
-                onComplete(); // 콜백 함수 실행
+                onComplete();
             }
         };
 
-        tick(); // 첫 카운트를 즉시 실행
-        this.state.countdownIntervalId = setInterval(tick, 1000); // 1초마다 반복
+        tick();
+        this.state.countdownIntervalId = setInterval(tick, 1000);
     },
 
-    /**
-     * [ NEW ] 진행 중인 카운트다운을 확실하게 취소하고 UI를 정리하는 함수
-     */
     cancelCountdown() {
         if (this.state.countdownIntervalId) {
             clearInterval(this.state.countdownIntervalId);
@@ -81,6 +73,7 @@ const Game = {
 
     start() {
         this.resetState();
+        resetPlayingScreenUI(); // [추가] 게임 시작 시 플레이 화면 UI를 초기 상태로 리셋
 
         if (this.state.settings.mode === 'random') {
             this.generateRandomNotes();
@@ -97,12 +90,11 @@ const Game = {
 
         this.setupLanes();
         UI.showScreen('playing');
-        DOM.playingStatusLabel.textContent = '플레이 중';
         UI.updateScoreboard();
         
         this.state.gameState = 'countdown';
         this.runCountdown(() => {
-            this.state.gameState = 'playing'; // 카운트다운이 끝나면 playing 상태로 변경
+            this.state.gameState = 'playing';
             if (this.state.settings.mode === 'music') {
                 DOM.musicPlayer.currentTime = 0;
                 DOM.musicPlayer.play();
@@ -117,7 +109,7 @@ const Game = {
             return;
         }
 
-        this.cancelCountdown(); // 포기 시 카운트다운을 확실하게 취소
+        this.cancelCountdown();
         cancelAnimationFrame(this.state.animationFrameId);
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
         
@@ -289,7 +281,7 @@ const Game = {
         if (this.state.isPaused) {
             this.resumeGame();
         } else {
-            this.cancelCountdown(); // 게임 시작 카운트다운 중에 일시정지하면 카운트다운 취소
+            this.cancelCountdown();
             this.state.isPaused = true; 
             this.state.pauseStartTime = performance.now();
             cancelAnimationFrame(this.state.animationFrameId);
@@ -298,17 +290,21 @@ const Game = {
             DOM.pauseGameBtn.classList.add('hidden');
             DOM.resumeGameBtn.classList.remove('hidden');
             DOM.playingStatusLabel.textContent = '일시 정지 중';
+            DOM.settings.iconPlaying.classList.remove('hidden'); // [핵심 수정] 일시정지 시 설정 아이콘 보이기
         }
     },
     resumeGame() {
         DOM.pauseGameBtn.classList.remove('hidden');
         DOM.resumeGameBtn.classList.add('hidden');
         DOM.playingStatusLabel.textContent = '플레이 중';
+        DOM.settings.iconPlaying.classList.add('hidden'); // [핵심 수정] 재개 시 설정 아이콘 숨기기
 
         this.runCountdown(() => {
             this.state.isPaused = false;
             this.state.totalPausedTime += performance.now() - this.state.pauseStartTime;
             if (this.state.settings.mode === 'music') DOM.musicPlayer.play();
+            // 재개 시에는 gameState를 'playing'으로 유지/복구
+            this.state.gameState = 'playing';
             this.loop();
         });
     },
