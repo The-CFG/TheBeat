@@ -1,0 +1,137 @@
+body {
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    background-color: #2d3748; /* UI 영역 배경색과 통일 */
+    color: #e2e8f0;
+    overscroll-behavior: none;
+}
+.key-hint {
+    position: absolute;
+    bottom: 60px;
+    width: 100%;
+    text-align: center;
+    font-size: 0.9rem;
+    color: #a0aec0;
+    transition: opacity 0.3s ease;
+}
+.judgement-line {
+    position: absolute;
+    bottom: 100px;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.8), rgba(255,255,255,0.2));
+    box-shadow: 0 0 10px #fff, 0 0 20px #fff;
+}
+.note {
+    position: absolute;
+    width: 100%;
+    height: 25px;
+    background-color: #63b3ed;
+    border-radius: 5px;
+    will-change: transform;
+}
+.note.long {
+    background: linear-gradient(to top, #818cf8, #a78bfa);
+    opacity: 0.9;
+}
+.judgement-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    font-weight: bold;
+    color: white;
+    opacity: 0;
+    transition: all 0.3s ease-out;
+    text-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+.judgement-text.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+}
+.combo-text {
+    position: absolute;
+    top: 60%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #f6e05e;
+    opacity: 0;
+    transition: all 0.3s ease-out;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+.combo-text.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+.countdown-text {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(1.5);
+  font-size: 8rem;
+  font-weight: bold;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+.countdown-text.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.lane {
+    position: relative;
+    height: 100%;
+    border-left: 1px solid #4a5568;
+    border-right: 1px solid #4a5568;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+}
+.lane.active-feedback {
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: background-color 0.05s ease;
+}
+.btn-group button.active {
+    background-color: #4299e1;
+    color: white;
+}
+#editor-timeline {
+    position: relative;
+    background-color: #2d3748;
+    cursor: pointer;
+    min-height: 200px;
+}
+.beat-line {
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    background-color: #4a5568;
+}
+.beat-line.measure {
+    background-color: #a0aec0;
+}
+.editor-note {
+    position: absolute;
+    height: 8px;
+    background-color: #63b3ed;
+    border-radius: 2px;
+    box-sizing: border-box;
+    border: 1px solid #1a202c;
+}
+#editor-playhead {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #f56565;
+    z-index: 10;
+}
+#editor-container {
+    overflow: auto;
+}
