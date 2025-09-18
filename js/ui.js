@@ -2,7 +2,6 @@ const UI = {
     showScreen(screenName) {
         Object.values(DOM.screens).forEach(screen => screen.classList.add('hidden'));
         DOM.screens[screenName].classList.remove('hidden');
-        Game.state.gameState = screenName;
     },
     showMessage(type, message) {
         const el = DOM.messages[type];
