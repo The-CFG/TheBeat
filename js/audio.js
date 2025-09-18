@@ -45,4 +45,21 @@ const Audio = {
         if (!this.isReady) return;
         this.countdownStartSound.triggerAttackRelease("A5", "8n", Tone.now());
     }
+
+    setMusicVolume(value) { // value: 0 ~ 100
+        const volume = value / 100;
+        DOM.musicPlayer.volume = volume;
+    },
+
+    setSfxVolume(value) { // value: 0 ~ 100
+        // Tone.js의 볼륨은 데시벨(dB) 단위입니다.
+        // 0-100 값을 -40dB(거의 안들림) ~ 0dB(최대) 범위로 변환합니다.
+        const db = (value - 100) * 0.5; // 0.5 계수는 조절 가능
+        const volume = (value === 0) ? -Infinity : db; // 0일때는 음소거
+
+        this.hitSound.volume.value = volume;
+        this.missSound.volume.value = volume;
+        this.countdownTickSound.volume.value = volume;
+        this.countdownStartSound.volume.value = volume;
+    }
 };
