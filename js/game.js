@@ -89,8 +89,10 @@ const Game = {
         }
 
         this.setupLanes();
+        
         this.state.gameState = 'playing'; 
         UI.showScreen('playing');
+        
         DOM.playingStatusLabel.textContent = '플레이 중';
         UI.updateScoreboard();
         
@@ -98,7 +100,6 @@ const Game = {
         this.startCountdown();
     },
     end() {
-        // 게임이 활성화된 상태(playing, countdown, paused)가 아니면 함수를 종료합니다.
         const activeStates = ['playing', 'countdown'];
         if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) {
             return;
@@ -270,7 +271,7 @@ const Game = {
         }
     },
     togglePause() {
-        if (this.state.gameState !== 'playing') return;
+        if (this.state.gameState !== 'playing' && this.state.gameState !== 'countdown') return;
 
         if (this.state.isPaused) {
             this.resumeGame();
@@ -387,8 +388,10 @@ const Game = {
                 currentTime += duration;
                 generatedNotesCount += 1;
             } else {
+                // 일반 노트 생성
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
-                this.state.notes.push({ lane: currentTime, type: 'tap' });
+                // [핵심 수정] 오타를 수정합니다.
+                this.state.notes.push({ lane: lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
             }
             currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
