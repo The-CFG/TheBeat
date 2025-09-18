@@ -165,58 +165,7 @@
             </div>
         </div>
 
-        <!-- Result Screen -->
-        <div id="result-screen" class="hidden h-full flex flex-col justify-center items-center text-center">
-             <h2 class="text-5xl font-bold mb-4 text-white">게임 결과</h2>
-            <div class="w-full bg-gray-700 p-6 rounded-lg">
-                <p class="text-2xl text-gray-400 mb-2">최종 점수</p>
-                <p id="final-score" class="text-6xl font-bold mb-6">0</p>
-                <p class="text-2xl text-gray-400 mb-2">랭크</p>
-                <p id="rank" class="text-7xl font-bold text-yellow-400 mb-8">C</p>
-                <div class="grid grid-cols-2 gap-4 text-xl">
-                    <p>PERFECT: <span id="final-perfect">0</span></p>
-                    <p>GOOD: <span id="final-good">0</span></p>
-                    <p>BAD: <span id="final-bad">0</span></p>
-                    <p>MISS: <span id="final-miss">0</span></p>
-                </div>
-            </div>
-            <button id="back-to-menu-btn" class="mt-8 w-full max-w-sm py-4 text-xl font-bold bg-blue-600 hover:bg-blue-500 rounded-lg transition">메인으로 돌아가기</button>
-        </div>
-
-        <!-- Editor Screen -->
-        <div id="editor-screen" class="hidden flex flex-col h-full">
-            <h2 class="text-3xl font-bold mb-4 text-white">차트 에디터</h2>
-            <div id="editor-message" class="hidden p-3 mb-4 text-center text-white bg-red-500 rounded-lg"></div>
-            <div class="flex-grow flex flex-col space-y-4 overflow-hidden">
-                <div class="flex items-center space-x-4">
-                    <input type="file" id="audio-file-input-editor" accept="audio/*" class="hidden">
-                    <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition">음악 파일 선택</label>
-                    <span id="audio-file-name-editor" class="text-sm text-gray-400 flex-1 truncate">선택된 파일 없음</span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <label for="bpm-input" class="text-lg">BPM:</label>
-                    <input type="number" id="bpm-input" value="120" class="w-24 p-2 bg-gray-700 rounded">
-                    <div id="editor-lanes-selector" class="flex space-x-2 btn-group">
-                        <button data-lanes="4" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">4L</button>
-                        <button data-lanes="5" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">5L</button>
-                        <button data-lanes="7" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">7L</button>
-                    </div>
-                </div>
-                <div class="flex-grow relative bg-black min-h-0" id="editor-container">
-                    <div id="editor-timeline" class="h-full">
-                        <div id="editor-playhead"></div>
-                    </div>
-                </div>
-                <input type="file" id="editor-load-input" class="hidden" accept=".json">
-                <div class="flex space-x-4 mt-2">
-                    <button id="editor-play-pause-btn" class="w-full py-2 bg-green-600 hover:bg-green-500 rounded">재생</button>
-                    <button id="editor-load-btn" class="w-full py-2 bg-purple-600 hover:bg-purple-500 rounded">불러오기</button>
-                    <button id="editor-save-btn" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded">저장</button>
-                    <button id="editor-back-btn" class="w-full py-2 bg-gray-600 hover:bg-gray-500 rounded">메인 메뉴로</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        
     <div id="settings-screen" class="hidden h-full flex flex-col justify-between">
         <div class="flex-grow flex flex-col min-h-0">
             <h2 class="text-3xl font-bold mb-4 text-white">환경설정</h2>
@@ -274,6 +223,59 @@
             </div>
             
             <button id="settings-back-btn" class="w-full py-3 text-lg font-bold bg-blue-600 hover:bg-blue-500 rounded-lg transition mt-4 flex-shrink-0">돌아가기</button>
+        </div>
+    </div>
+
+        <!-- Result Screen -->
+        <div id="result-screen" class="hidden h-full flex flex-col justify-center items-center text-center">
+             <h2 class="text-5xl font-bold mb-4 text-white">게임 결과</h2>
+            <div class="w-full bg-gray-700 p-6 rounded-lg">
+                <p class="text-2xl text-gray-400 mb-2">최종 점수</p>
+                <p id="final-score" class="text-6xl font-bold mb-6">0</p>
+                <p class="text-2xl text-gray-400 mb-2">랭크</p>
+                <p id="rank" class="text-7xl font-bold text-yellow-400 mb-8">C</p>
+                <div class="grid grid-cols-2 gap-4 text-xl">
+                    <p>PERFECT: <span id="final-perfect">0</span></p>
+                    <p>GOOD: <span id="final-good">0</span></p>
+                    <p>BAD: <span id="final-bad">0</span></p>
+                    <p>MISS: <span id="final-miss">0</span></p>
+                </div>
+            </div>
+            <button id="back-to-menu-btn" class="mt-8 w-full max-w-sm py-4 text-xl font-bold bg-blue-600 hover:bg-blue-500 rounded-lg transition">메인으로 돌아가기</button>
+        </div>
+
+        <!-- Editor Screen -->
+        <div id="editor-screen" class="hidden flex flex-col h-full">
+            <h2 class="text-3xl font-bold mb-4 text-white">차트 에디터</h2>
+            <div id="editor-message" class="hidden p-3 mb-4 text-center text-white bg-red-500 rounded-lg"></div>
+            <div class="flex-grow flex flex-col space-y-4 overflow-hidden">
+                <div class="flex items-center space-x-4">
+                    <input type="file" id="audio-file-input-editor" accept="audio/*" class="hidden">
+                    <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition">음악 파일 선택</label>
+                    <span id="audio-file-name-editor" class="text-sm text-gray-400 flex-1 truncate">선택된 파일 없음</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <label for="bpm-input" class="text-lg">BPM:</label>
+                    <input type="number" id="bpm-input" value="120" class="w-24 p-2 bg-gray-700 rounded">
+                    <div id="editor-lanes-selector" class="flex space-x-2 btn-group">
+                        <button data-lanes="4" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">4L</button>
+                        <button data-lanes="5" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">5L</button>
+                        <button data-lanes="7" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">7L</button>
+                    </div>
+                </div>
+                <div class="flex-grow relative bg-black min-h-0" id="editor-container">
+                    <div id="editor-timeline" class="h-full">
+                        <div id="editor-playhead"></div>
+                    </div>
+                </div>
+                <input type="file" id="editor-load-input" class="hidden" accept=".json">
+                <div class="flex space-x-4 mt-2">
+                    <button id="editor-play-pause-btn" class="w-full py-2 bg-green-600 hover:bg-green-500 rounded">재생</button>
+                    <button id="editor-load-btn" class="w-full py-2 bg-purple-600 hover:bg-purple-500 rounded">불러오기</button>
+                    <button id="editor-save-btn" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded">저장</button>
+                    <button id="editor-back-btn" class="w-full py-2 bg-gray-600 hover:bg-gray-500 rounded">메인 메뉴로</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
