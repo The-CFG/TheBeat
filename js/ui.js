@@ -57,4 +57,5 @@ function resetPlayingScreenUI() {
     DOM.pauseGameBtn.classList.remove('hidden');
     DOM.resumeGameBtn.classList.add('hidden');
     DOM.playingStatusLabel.textContent = '플레이 중';
+    DOM.settings.iconPlaying.classList.add('hidden'); // [추가] 설정 아이콘을 숨깁니다.
 }
