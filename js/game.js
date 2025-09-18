@@ -98,9 +98,15 @@ const Game = {
         this.startCountdown();
     },
     end() {
-        if (this.state.gameState !== 'playing' && this.state.gameState !== 'countdown' && !this.state.isPaused) return;
+        // 게임이 활성화된 상태(playing, countdown, paused)가 아니면 함수를 종료합니다.
+        const activeStates = ['playing', 'countdown'];
+        if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) {
+            return;
+        }
+
         cancelAnimationFrame(this.state.animationFrameId);
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
+        
         this.state.gameState = 'result';
         resetPlayingScreenUI();
         UI.updateResultScreen();
