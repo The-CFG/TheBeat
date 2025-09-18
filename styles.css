@@ -1,6 +1,5 @@
 body {
     font-family: 'Inter', sans-serif;
-    overflow: hidden;
     background-color: #2d3748; /* UI 영역 배경색과 통일 */
     color: #e2e8f0;
     overscroll-behavior: none;
