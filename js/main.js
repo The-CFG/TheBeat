@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         DOM.pauseGameBtn.addEventListener('click', () => Game.togglePause());
         DOM.resumeGameBtn.addEventListener('click', () => Game.togglePause());
+        DOM.settings.iconMenu.addEventListener('click', showSettingsScreen);
+        DOM.settings.iconPlaying.addEventListener('click', showSettingsScreen);
+        DOM.settings.backBtn.addEventListener('click', () => {
+            UI.showScreen(Game.state.previousScreen);
+            // 일시정지 상태에서 설정으로 들어왔다면, 버튼 상태 유지
+            if (Game.state.previousScreen === 'playing' && Game.state.isPaused) {
+                DOM.pauseGameBtn.classList.add('hidden');
+                DOM.resumeGameBtn.classList.remove('hidden');
+            }
+        });
 
         document.getElementById('mode-selector').addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
@@ -106,6 +116,35 @@ document.addEventListener('DOMContentLoaded', () => {
             UI.showScreen('menu');
         });
         document.getElementById('editor-btn').addEventListener('click', () => Editor.init());
+
+        DOM.settings.tabsContainer.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+    
+            const tabName = e.target.dataset.tab;
+    
+            // 모든 탭 버튼과 컨텐츠에서 active 클래스 제거
+            DOM.settings.tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            DOM.settings.tabContents.forEach(content => content.classList.add('hidden'));
+    
+            // 클릭된 탭 버튼과 컨텐츠에 active 클래스 추가
+            e.target.classList.add('active');
+            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+        });
+    
+        // [추가] 볼륨 슬라이더 이벤트
+        DOM.settings.musicVolumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            Game.state.settings.musicVolume = value;
+            DOM.settings.musicVolumeValue.textContent = value;
+            Audio.setMusicVolume(value);
+        });
+    
+        DOM.settings.sfxVolumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            Game.state.settings.sfxVolume = value;
+            DOM.settings.sfxVolumeValue.textContent = value;
+            Audio.setSfxVolume(value);
+        });
     }
     
     function updateGameAreaWidth(lanes) {
@@ -138,8 +177,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setCustomDifficulty() {
-        Game.state.settings.difficulty = 'custom';
-        document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
+            Game.state.settings.difficulty = 'custom';
+            document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
+        }
+    
+        function showSettingsScreen() {
+        // 게임 플레이 중이면서 일시정지가 아닐 때는 설정에 들어갈 수 없음
+        if (Game.state.gameState === 'playing' && !Game.state.isPaused) {
+            return;
+        }
+        
+        Game.state.previousScreen = Game.state.gameState;
+        UI.showScreen('settings');
+    
+        // 현재 설정된 볼륨 값으로 슬라이더와 텍스트 초기화
+        DOM.settings.musicVolumeSlider.value = Game.state.settings.musicVolume;
+        DOM.settings.musicVolumeValue.textContent = Game.state.settings.musicVolume;
+        DOM.settings.sfxVolumeSlider.value = Game.state.settings.sfxVolume;
+        DOM.settings.sfxVolumeValue.textContent = Game.state.settings.sfxVolume;
     }
 
     function initialize() {
