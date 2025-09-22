@@ -1,8 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     function setupEventListeners() {
-        window.addEventListener('keydown', Game.handleKeyDown);
-        window.addEventListener('keyup', Game.handleKeyUp);
+        window.addEventListener('keydown', (e) => Game.handleKeyDown(e));
+        window.addEventListener('keyup', (e) => Game.handleKeyUp(e));
         
         DOM.pauseGameBtn.addEventListener('click', () => Game.togglePause());
         DOM.resumeGameBtn.addEventListener('click', () => Game.togglePause());
