@@ -15,7 +15,7 @@ const CONFIG = {
     KEY_BINDING_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
     
     DEFAULT_KEYS: {
-        L4: 'F', L3: 'D', L2: 'S', L1: 'A',
+        L4: 'A', L3: 'S', L2: 'D', L1: 'F',
         C1: 'Space',
         R1: 'J', R2: 'K', R3: 'L', R4: 'Semicolon'
     },
