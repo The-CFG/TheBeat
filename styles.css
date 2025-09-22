@@ -122,6 +122,7 @@ body {
     border-radius: 2px;
     box-sizing: border-box;
     border: 1px solid #1a202c;
+    z-index: 10; /* [추가] 이 한 줄이 문제를 해결합니다. */
 }
 #editor-playhead {
     position: sticky;
