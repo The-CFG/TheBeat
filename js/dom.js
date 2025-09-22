@@ -51,16 +51,23 @@ const DOM = {
         container: document.getElementById('editor-container'),
         timeline: document.getElementById('editor-timeline'),
         playhead: document.getElementById('editor-playhead'),
+        
+        // 상단 컨트롤
         audioFileInput: document.getElementById('audio-file-input-editor'),
         audioFileNameEl: document.getElementById('audio-file-name-editor'),
+        startTimeInput: document.getElementById('editor-start-time'),
         bpmInput: document.getElementById('bpm-input'),
-        lanesSelector: document.getElementById('editor-lanes-selector'),
-        loadInput: document.getElementById('editor-load-input'),
+        noteTypeSelector: document.getElementById('editor-note-type-selector'),
+        
+        // 관리 버튼
         playPauseBtn: document.getElementById('editor-play-pause-btn'),
         saveBtn: document.getElementById('editor-save-btn'),
         loadBtn: document.getElementById('editor-load-btn'),
+        resetBtn: document.getElementById('editor-reset-btn'),
         backBtn: document.getElementById('editor-back-btn'),
-        noteTypeSelector: document.getElementById('editor-note-type-selector'),
+        
+        // 기타 UI
+        loadInput: document.getElementById('editor-load-input'),
         statusLabel: document.getElementById('editor-status-label'),
     },
     pauseGameBtn: document.getElementById('pause-game-btn'),
