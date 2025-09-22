@@ -13,6 +13,7 @@ const Game = {
             musicVolume: 100,
             sfxVolume: 100,
             userKeyMappings: null,
+            requiredSongName: null,
         },
         keyMapping: [],
         activeLanes: [],
@@ -40,6 +41,7 @@ const Game = {
         this.state.isPaused = false;
         this.state.totalPausedTime = 0;
         this.state.unprocessedNoteIndex = 0;
+        this.state.settings.requiredSongName = null;
     },
 
     runCountdown(onComplete) {
@@ -85,10 +87,6 @@ const Game = {
         } else {
             if (!this.state.notes || this.state.notes.length === 0) {
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 차트 파일을 먼저 불러와주세요.');
-                return;
-            }
-            if (!this.state.settings.musicSrc) {
-                UI.showMessage('menu', '뮤직 모드를 시작하려면 음악 파일을 먼저 불러와주세요.');
                 return;
             }
         }
@@ -435,6 +433,8 @@ const Game = {
             UI.showMessage('menu', `오류: 차트의 레인 수(${chartData.lanes || '없음'})가 잘못되었습니다.`);
             return false;
         }
+        this.state.settings.requiredSongName = chartData.songName || null;
+        
         this.state.notes = [];
         this.state.settings.lanes = chartData.lanes;
         document.getElementById('lanes-selector').value = chartData.lanes;
