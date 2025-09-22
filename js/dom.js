@@ -10,6 +10,7 @@ const DOM = {
     countdownTextEl: document.getElementById('countdown-text'),
     noteCountContainer: document.getElementById('note-count-container'),
     noteCountInput: document.getElementById('note-count-input'),
+    difficultyControls: document.getElementById('difficulty-controls'),
     musicModeControls: document.getElementById('music-mode-controls'),
     chartFileNameEl: document.getElementById('chart-file-name'),
     musicFileNameEl: document.getElementById('music-file-name'),
