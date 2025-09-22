@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cancelKeyBinding();
             }
         });
-    
+
         // --- 게임 플레이 및 화면 전환 리스너 ---
         DOM.pauseGameBtn.addEventListener('click', () => Game.togglePause());
         DOM.resumeGameBtn.addEventListener('click', () => Game.togglePause());
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Game.state.gameState = 'menu';
             UI.showScreen('menu');
         });
-    
+
         // --- 메뉴 화면 설정 리스너 ---
         document.getElementById('mode-selector').addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
@@ -69,19 +69,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 Game.state.settings.musicSrc = null;
             }
         });
-    
-        // [수정된 부분] 난이도 프리셋과 가짜 노트 로직이 완벽히 통합된 리스너
+
         document.getElementById('difficulty-selector').addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
             const preset = e.target.dataset.difficulty;
             
-            // 기존의 게임 상태 설정 로직
             Game.state.settings.difficulty = preset;
             Game.state.settings.noteSpeed = CONFIG.DIFFICULTY_SPEED[preset];
             Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
             Game.state.settings.longNoteProbability = CONFIG.LONG_NOTE_PROBABILITY[preset];
             
-            // 새로 추가된 가짜 노트 기본값 설정 로직
             if (preset === 'hard') {
                 Game.state.settings.isFalseNoteEnabled = true;
                 Game.state.settings.falseNoteProbability = 0.03;
@@ -90,12 +87,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 Game.state.settings.falseNoteProbability = 0;
             }
             
-            updateDetailedSettingsUI(); // 모든 UI를 현재 상태와 동기화
+            updateDetailedSettingsUI(); // **<-- 이 부분이 가장 중요합니다!**
             
             document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
         });
-    
+
         // 세부 난이도 설정 리스너들
         DOM.difficulty.toggleBtn.addEventListener('click', () => {
             DOM.difficulty.detailsPanel.classList.toggle('hidden');
@@ -108,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
-            DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
+            DOM.difficulty.dongValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
         DOM.difficulty.longNoteSlider.addEventListener('input', (e) => {
@@ -136,19 +133,57 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.difficulty.falseNoteProbValue.textContent = `${prob}%`;
             setCustomDifficulty();
         });
-    
+
         // 레인 및 파일 입력 리스너
         document.getElementById('lanes-selector').addEventListener('change', (e) => {
             Game.state.settings.lanes = parseInt(e.target.value);
             updateGameAreaWidth(parseInt(e.target.value));
         });
-        document.getElementById('chart-file-input').addEventListener('change', (e) => { /* ... */ });
-        document.getElementById('music-file-input').addEventListener('change', (e) => { /* ... */ });
-    
+        document.getElementById('chart-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const chartData = JSON.parse(event.target.result);
+                    if (Game.loadChartNotes(chartData)) {
+                        DOM.chartFileNameEl.textContent = `차트: ${file.name}`;
+                    }
+                } catch (error) {
+                    UI.showMessage('menu', '잘못된 차트 파일 형식입니다.');
+                }
+            };
+            reader.readAsText(file);
+        });
+        document.getElementById('music-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                Game.state.settings.musicSrc = URL.createObjectURL(file);
+                DOM.musicFileNameEl.textContent = `음악: ${file.name}`;
+            }
+        });
+
         // 설정 화면 내부 리스너
-        DOM.settings.tabsContainer.addEventListener('click', (e) => { /* ... */ });
-        DOM.settings.musicVolumeSlider.addEventListener('input', (e) => { /* ... */ });
-        DOM.settings.sfxVolumeSlider.addEventListener('input', (e) => { /* ... */ });
+        DOM.settings.tabsContainer.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            const tabName = e.target.dataset.tab;
+            DOM.settings.tabsContainer.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            DOM.settings.tabContents.forEach(content => content.classList.add('hidden'));
+            e.target.classList.add('active');
+            document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+        });
+        DOM.settings.musicVolumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            Game.state.settings.musicVolume = value;
+            DOM.settings.musicVolumeValue.textContent = value;
+            Audio.setMusicVolume(value);
+        });
+        DOM.settings.sfxVolumeSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            Game.state.settings.sfxVolume = value;
+            DOM.settings.sfxVolumeValue.textContent = value;
+            Audio.setSfxVolume(value);
+        });
         DOM.settings.controls.keybindBoxes.forEach(box => {
             box.addEventListener('click', () => {
                 if (isListeningForKey) cancelKeyBinding();
@@ -157,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         DOM.settings.controls.saveBtn.addEventListener('click', () => saveKeyBindings());
     }
+
     // --- 키 바인딩 관련 함수들 ---
 
     function populateKeybindUI() {
