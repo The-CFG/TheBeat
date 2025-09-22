@@ -173,32 +173,26 @@ const Game = {
         }
     },
 
-    handleJudgement(judgement, note) {
-        if (note.processed) return;
+    _processSingleJudgement(judgement, note) {
         note.processed = true;
     
-        // 1. 노트 요소 제거 로직 (더 명확하게 재구성)
+        // 1. 노트 요소 제거
         if (note.type === 'long_tail') {
-            // 꼬리 노트가 판정되면, 머리 노트의 요소를 찾아서 제거
             const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
             if (headNote && headNote.element) {
                 headNote.element.remove();
                 headNote.element = null;
             }
         } else if (note.element) {
-            // 탭 노트와 롱노트 머리는 자신의 요소를 직접 제거
             note.element.remove();
             note.element = null;
         }
     
-        // 2. 점수 및 콤보 계산 로직 (기존과 거의 동일)
+        // 2. 점수 및 콤보 계산
         this.state.judgements[judgement]++;
-        
-        // 롱노트의 '머리' 부분은 전체 노트 수에서 카운트하지 않음 (꼬리가 대신 카운트)
         if (note.type !== 'long_head') {
             this.state.processedNotes++;
         }
-    
         this.state.score += CONFIG.POINTS[judgement];
     
         if (judgement === 'miss' || judgement === 'bad') {
@@ -210,13 +204,36 @@ const Game = {
                 if (tailNote) tailNote.headProcessed = true;
             }
         }
+    },
     
-        // 3. 효과음 및 UI 피드백
-        if (judgement === 'perfect' || judgement === 'good') Audio.playHitSound();
-        else Audio.playMissSound();
-        
-        UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
-        UI.updateScoreboard();
+    handleJudgement(judgement, note) {
+        if (note.processed) return;
+    
+        // [핵심 수정] 시간 기반 MISS의 경우, 동일 시간의 모든 노트를 그룹으로 처리
+        if (judgement === 'miss' && note.time > 0) {
+            const notesAtSameTime = this.state.notes.filter(n =>
+                !n.processed && n.time === note.time
+            );
+    
+            notesAtSameTime.forEach(n => this._processSingleJudgement('miss', n));
+    
+            // 사운드와 UI 피드백은 그룹 전체에 대해 한 번만 실행
+            Audio.playMissSound();
+            UI.showJudgementFeedback('MISS', this.state.combo);
+            UI.updateScoreboard();
+    
+        } else { // 키 입력으로 인한 판정 (Perfect, Good, Bad)은 개별 처리
+            this._processSingleJudgement(judgement, note);
+    
+            if (judgement === 'perfect' || judgement === 'good') {
+                Audio.playHitSound();
+            } else { // 'bad' 판정
+                Audio.playMissSound();
+            }
+            
+            UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
+            UI.updateScoreboard();
+        }
     },
 
     handleKeyDown(e) {
