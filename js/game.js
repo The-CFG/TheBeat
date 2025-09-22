@@ -412,14 +412,26 @@ const Game = {
         const shouldBeFalseNote = () => isFalseNoteEnabled && Math.random() < falseNoteProbability;
     
         while (generatedNotesCount < totalNotesToGenerate) {
-            // ...
-            if (canGenerateSimultaneous && Math.random() < dongtaProbability) {
-                // ... (레인 섞는 로직) ...
-                this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
-                this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
+            // 사용 가능한 레인 인덱스 배열 생성 (예: [0, 1, 2, 3])
+            const allLanes = Array.from(Array(lanes).keys()); 
+            
+            if (allLanes.length >= 2 && Math.random() < dongtaProbability) {
+                // 모든 레인 중 2개를 무작위로 선택
+                const shuffledLanes = allLanes.sort(() => 0.5 - Math.random());
+                const lane1 = shuffledLanes[0];
+                const lane2 = shuffledLanes[1];
+
+                this.state.notes.push({ lane: lane1, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
+                this.state.notes.push({ lane: lane2, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount += 2;
-            } else if (canGenerateLongNote && Math.random() < longNoteProbability) {
-                // ... (롱노트 생성 로직, 가짜 롱노트는 없으므로 그대로) ...
+            } else if (Math.random() < longNoteProbability) {
+                const lane = Math.floor(Math.random() * lanes);
+                const duration = 200; // 롱노트 길이 (예: 200ms)
+                const noteId = noteIdCounter++;
+                
+                this.state.notes.push({ time: currentTime, lane: lane, duration: duration, type: 'long_head', noteId: noteId });
+                this.state.notes.push({ time: currentTime + duration, lane: lane, type: 'long_tail', noteId: noteId });
+                generatedNotesCount++; // 롱노트는 1개의 노트로 계산
             } else {
                 this.state.notes.push({ lane: Math.floor(Math.random() * lanes), time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount++;
