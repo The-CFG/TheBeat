@@ -121,11 +121,6 @@ const Editor = {
     },
 
     handleTimelineClick(e) {
-        // 클릭된 요소가 레인 또는 노트가 아니면 무시
-        if (!e.target.classList.contains('editor-lane') && !e.target.classList.contains('editor-note')) {
-            return;
-        }
-
         // 노트 삭제 로직
         if (e.target.classList.contains('editor-note')) {
             const time = parseFloat(e.target.dataset.time);
