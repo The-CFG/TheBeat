@@ -12,6 +12,11 @@ const CONFIG = {
         normal: 0.15,
         hard: 0.2,
     },
+    FALSE_NOTE_PROBABILITY: {
+        easy: 0,
+        normal: 0,
+        hard: 0.03, // 3%
+    },
     KEY_BINDING_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
     
     DEFAULT_KEYS: {

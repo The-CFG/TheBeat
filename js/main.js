@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Game.state.settings.noteSpeed = CONFIG.DIFFICULTY_SPEED[preset];
             Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
             Game.state.settings.longNoteProbability = CONFIG.LONG_NOTE_PROBABILITY[preset];
+            Game.state.settings.falseNoteProbability = CONFIG.FALSE_NOTE_PROBABILITY[preset];
             updateDetailedSettingsUI();
             document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
@@ -110,6 +111,28 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.difficulty.longNoteSlider.addEventListener('input', (e) => {
             Game.state.settings.longNoteProbability = parseInt(e.target.value) / 100;
             DOM.difficulty.longNoteValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.falseNoteToggle.addEventListener('change', (e) => {
+            const isEnabled = e.target.checked;
+            DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !isEnabled);
+            if (isEnabled) {
+                // 켰을 때 슬라이더 값으로 확률 설정
+                const probValue = parseInt(DOM.difficulty.falseNoteProbSlider.value);
+                Game.state.settings.falseNoteProbability = probValue / 1000; // 50 -> 0.05 (5%)
+            } else {
+                // 껐을 때 확률 0으로 설정
+                Game.state.settings.falseNoteProbability = 0;
+            }
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.falseNoteProbSlider.addEventListener('input', (e) => {
+            const probValue = parseInt(e.target.value);
+            // 슬라이더 값(0~50)을 확률(0~0.05) 및 퍼센트(0~5%)로 변환
+            Game.state.settings.falseNoteProbability = probValue / 1000;
+            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10)}%`; 
             setCustomDifficulty();
         });
 
@@ -271,12 +294,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const speed = Game.state.settings.noteSpeed;
         const dongtaProb = Math.round(Game.state.settings.dongtaProbability * 100);
         const longNoteProb = Math.round(Game.state.settings.longNoteProbability * 100);
+        const falseNoteProb = Game.state.settings.falseNoteProbability;
         DOM.difficulty.speedSlider.value = speed;
         DOM.difficulty.speedValue.textContent = speed;
         DOM.difficulty.dongtaSlider.value = dongtaProb;
         DOM.difficulty.dongtaValue.textContent = `${dongtaProb}%`;
         DOM.difficulty.longNoteSlider.value = longNoteProb;
         DOM.difficulty.longNoteValue.textContent = `${longNoteProb}%`;
+        const falseNoteEnabled = falseNoteProb > 0;
+        DOM.difficulty.falseNoteToggle.checked = falseNoteEnabled;
+        DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !falseNoteEnabled);
+        
+        // 확률(0~0.05)을 슬라이더 값(0~50) 및 퍼센트로 변환
+        const sliderValue = Math.round(falseNoteProb * 1000);
+        DOM.difficulty.falseNoteProbSlider.value = sliderValue;
+        DOM.difficulty.falseNoteProbValue.textContent = `${(sliderValue / 10).toFixed(1)}%`;
     }
 
     function setCustomDifficulty() {

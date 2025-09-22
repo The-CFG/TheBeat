@@ -7,6 +7,7 @@ const Game = {
             noteSpeed: CONFIG.DIFFICULTY_SPEED.normal,
             dongtaProbability: CONFIG.SIMULTANEOUS_NOTE_PROBABILITY.normal,
             longNoteProbability: CONFIG.LONG_NOTE_PROBABILITY.normal,
+            falseNoteProbability: CONFIG.FALSE_NOTE_PROBABILITY.normal,
             lanes: 4,
             musicSrc: null,
             musicVolume: 100,
@@ -159,7 +160,7 @@ const Game = {
             const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
             const noteTopPosition = noteBottomPosition - noteHeight;
 
-            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote)) {
+            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                 if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
                     const laneEl = DOM.lanesContainer.children[note.lane];
                     if (laneEl) {
@@ -168,6 +169,9 @@ const Game = {
                         if (isLongNote) {
                             note.element.classList.add('long');
                             note.element.style.height = `${noteHeight}px`;
+                        }
+                        if (note.type === 'false') {
+                            note.element.classList.add('false');
                         }
                         laneEl.appendChild(note.element);
                     }
@@ -219,6 +223,14 @@ const Game = {
     handleJudgement(judgement, note) {
         if (note.processed) return;
 
+        if (note.type === 'false') {
+            if (judgement === 'miss') { // 가짜 노트를 성공적으로 무시한 경우
+                judgement = 'perfect'; 
+            } else { // 가짜 노트를 잘못 건드린 경우
+                judgement = 'miss';
+            }
+        }
+
         if (judgement === 'miss' && note.time > 0) {
             const notesAtSameTime = this.state.notes.filter(n =>
                 !n.processed && n.time === note.time
@@ -266,7 +278,7 @@ const Game = {
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
             if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
-            if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head')) {
+            if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
                     smallestDiff = timeDiff;
@@ -379,6 +391,7 @@ const Game = {
         if (totalNotesToGenerate > CONFIG.NOTE_COUNT_MAX) totalNotesToGenerate = CONFIG.NOTE_COUNT_MAX;
         const simProbability = this.state.settings.dongtaProbability;
         const longNoteProbability = this.state.settings.longNoteProbability;
+        const falseNoteProbability = this.state.settings.falseNoteProbability;
         let generatedNotesCount = 0;
         let currentTime = 1000;
         let noteIdCounter = 0;
@@ -402,6 +415,10 @@ const Game = {
                 this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
                 currentTime += duration;
                 generatedNotesCount += 1;
+            } else if (falseNoteProbability > 0 && Math.random() < falseNoteProbability) {
+                const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                this.state.notes.push({ lane: lane, time: currentTime, type: 'false' });
+                generatedNotesCount++;
             } else {
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
                 this.state.notes.push({ lane: lane, time: currentTime, type: 'tap' });
