@@ -102,6 +102,20 @@
                         </div>
                         <input id="long-note-prob-slider" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                     </div>
+                    <div class="border-t border-gray-700 pt-4 space-y-4">
+                        <div class="flex items-center justify-between text-gray-300">
+                            <label for="false-note-toggle">가짜 노트 활성화</label>
+                            <input id="false-note-toggle" type="checkbox" class="h-5 w-5 bg-gray-700 rounded border-gray-600 text-blue-500 focus:ring-blue-500">
+                        </div>
+                
+                        <div id="false-note-prob-container" class="hidden">
+                            <div class="flex justify-between items-center text-gray-300">
+                                <label for="false-note-prob-slider">가짜 노트 등장 확률</label>
+                                <span id="false-note-prob-value" class="font-mono">0%</span>
+                            </div>
+                            <input id="false-note-prob-slider" type="range" min="0" max="50" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
                 </div>
 
                 <div>
