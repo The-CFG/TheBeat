@@ -105,11 +105,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         DOM.difficulty.falseNoteToggle.addEventListener('change', (e) => {
-            Game.state.settings.isFalseNoteEnabled = e.target.checked;
-            // 활성화 시 기본 확률, 비활성화 시 0으로 설정 (사용자가 직접 조절하게 하려면 슬라이더 추가 필요)
-            Game.state.settings.falseNoteProbability = e.target.checked ? 0.03 : 0;
+            const isEnabled = e.target.checked;
+            Game.state.settings.isFalseNoteEnabled = isEnabled;
+            
+            // [수정] 슬라이더 컨테이너의 표시/숨김을 관리
+            DOM.difficulty.falseNoteSliderContainer.classList.toggle('hidden', !isEnabled);
+            
+            // 토글을 끌 경우 확률을 0으로 리셋
+            if (!isEnabled) {
+                Game.state.settings.falseNoteProbability = 0;
+            } else {
+                // 켤 경우, 슬라이더의 현재 값을 확률로 설정
+                const currentProbValue = parseInt(DOM.difficulty.falseNoteProbSlider.value);
+                Game.state.settings.falseNoteProbability = currentProbValue / 100;
+            }
             setCustomDifficulty();
         });
+        
+        DOM.difficulty.falseNoteProbSlider.addEventListener('input', (e) => {
+            const prob = parseInt(e.target.value);
+            Game.state.settings.falseNoteProbability = prob / 100;
+            DOM.difficulty.falseNoteProbValue.textContent = `${prob}%`;
+            setCustomDifficulty();
+        });
+
 
         DOM.difficulty.toggleBtn.addEventListener('click', () => {
             DOM.difficulty.detailsPanel.classList.toggle('hidden');
@@ -321,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.difficulty.longNoteValue.textContent = `${longNoteProb}%`;
 
         DOM.difficulty.falseNoteToggle.checked = Game.state.settings.isFalseNoteEnabled;
+
     }
 
     function setCustomDifficulty() {
