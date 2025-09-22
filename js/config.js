@@ -17,6 +17,7 @@ const CONFIG = {
         normal: 0,
         hard: 0.03, // 3%
     },
+    EDITOR_LANE_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
     KEY_BINDING_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
     
     DEFAULT_KEYS: {
