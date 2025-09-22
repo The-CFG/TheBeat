@@ -67,21 +67,21 @@ body {
     transform: translate(-50%, -50%) scale(1.1);
 }
 .countdown-text {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(1.5);
-  font-size: 8rem;
-  font-weight: bold;
-  color: white;
-  opacity: 0;
-  transition: all 0.3s ease-out;
-  text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1.5);
+    font-size: 8rem;
+    font-weight: bold;
+    color: white;
+    opacity: 0;
+    transition: all 0.3s ease-out;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
 }
 .countdown-text.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 .lane {
     position: relative;
@@ -155,16 +155,10 @@ body {
     transition: all 0.2s ease-in-out;
     font-weight: bold;
 }
-
 .keybind-box:hover {
     background-color: #718096;
 }
-
 .keybind-box.listening {
-    border-color: #f6e05e; /* 노란색 테두리 */
+    border-color: #f6e05e;
     background-color: #2d3748;
-}
-.note.false {
-    background-color: #fca5a5; /* 파스텔 톤의 빨간색 */
-    border: 1px solid #ef4444;
 }
