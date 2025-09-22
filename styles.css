@@ -164,3 +164,7 @@ body {
     border-color: #f6e05e; /* 노란색 테두리 */
     background-color: #2d3748;
 }
+.note.false {
+    background-color: #fca5a5; /* 파스텔 톤의 빨간색 */
+    border: 1px solid #ef4444;
+}
