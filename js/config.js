@@ -12,12 +12,20 @@ const CONFIG = {
         normal: 0.15,
         hard: 0.2,
     },
-    LANE_KEYS: {
-      4: ['D', 'F', 'J', 'K'],
-      5: ['D', 'F', 'Space', 'J', 'K'],
-      6: ['S', 'D', 'F', 'J', 'K', 'L'],
-      7: ['S', 'D', 'F', 'Space', 'J', 'K', 'L'],
-      8: ['A', 'S', 'D', 'F', 'J', 'K', 'L', 'Semicolon']
+    KEY_BINDING_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
+    
+    DEFAULT_KEYS: {
+        L4: 'A', L3: 'S', L2: 'D', L1: 'F',
+        C1: 'Space',
+        R1: 'J', R2: 'K', R3: 'L', R4: 'Semicolon'
+    },
+
+    LANE_KEY_MAPPING_ORDER: {
+        4: ['L1', 'L2', 'R1', 'R2'],
+        5: ['L1', 'L2', 'C1', 'R1', 'R2'],
+        6: ['L2', 'L1', 'L3', 'R1', 'R2', 'R3'],
+        7: ['L2', 'L1', 'L3', 'C1', 'R1', 'R2', 'R3'],
+        8: ['L4', 'L3', 'L2', 'L1', 'R1', 'R2', 'R3', 'R4'],
     },
     KEY_CODES: {
         A: 65, S: 83, D: 68, F: 70, J: 74, K: 75, L: 76, Space: 32, Semicolon: 186
