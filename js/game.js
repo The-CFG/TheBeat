@@ -12,6 +12,8 @@ const Game = {
             musicVolume: 100,
             sfxVolume: 100,
             userKeyMappings: null, 
+            isFalseNoteEnabled: false,
+            falseNoteProbability: 0,
         },
         keyMapping: [],
         activeLanes: [],
@@ -168,7 +170,11 @@ const Game = {
                 note.element.style.transform = `translateY(${noteTopPosition}px)`;
             }
             if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
-                this.handleJudgement('miss', note);
+                if (note.type === 'false') {
+                    this.handleJudgement('perfect', note); // 가짜 노트는 누르지 않으면 PERFECT
+                } else {
+                    this.handleJudgement('miss', note); // 다른 노트는 MISS
+                }
             }
         }
     },
@@ -266,17 +272,11 @@ const Game = {
         let bestMatch = null;
         let smallestDiff = Infinity;
     
-        // [수정된 핵심 로직]
-        // 이미 처리된 노드는 건너뛰고, 앞으로 나올 노트들만 효율적으로 탐색합니다.
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
+            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
     
-            // 최적화: 노트가 너무 미래에 있으면 탐색 중단
-            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
-                break;
-            }
-    
-            if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head')) {
+            if (!note.processed && note.lane === laneIndex) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
                     smallestDiff = timeDiff;
@@ -286,9 +286,14 @@ const Game = {
         }
     
         if (bestMatch) {
-            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+            // [수정] 가짜 노트를 눌렀는지 먼저 확인
+            if (bestMatch.type === 'false') {
+                this.handleJudgement('miss', bestMatch); // 가짜 노트는 누르면 MISS
+            } else if (bestMatch.type === 'tap' || bestMatch.type === 'long_head') {
+                if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
+                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
+                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+            }
         }
     },
     
@@ -396,39 +401,30 @@ const Game = {
     generateRandomNotes() {
         this.state.notes = [];
         let totalNotesToGenerate = parseInt(DOM.noteCountInput.value) || CONFIG.DEFAULT_NOTE_COUNT;
-        if (totalNotesToGenerate < CONFIG.NOTE_COUNT_MIN) totalNotesToGenerate = CONFIG.NOTE_COUNT_MIN;
-        if (totalNotesToGenerate > CONFIG.NOTE_COUNT_MAX) totalNotesToGenerate = CONFIG.NOTE_COUNT_MAX;
-        const simProbability = this.state.settings.dongtaProbability;
-        const longNoteProbability = this.state.settings.longNoteProbability;
+        // ... (min/max 검사) ...
+        const { isFalseNoteEnabled, falseNoteProbability, dongtaProbability, longNoteProbability, lanes } = this.state.settings;
+        
         let generatedNotesCount = 0;
         let currentTime = 1000;
         let noteIdCounter = 0;
+    
+        // 가짜 노트를 생성할지 결정하는 헬퍼 함수
+        const shouldBeFalseNote = () => isFalseNoteEnabled && Math.random() < falseNoteProbability;
+    
         while (generatedNotesCount < totalNotesToGenerate) {
-            const canGenerateSimultaneous = this.state.settings.lanes > 1 && (totalNotesToGenerate - generatedNotesCount >= 2);
-            const canGenerateLongNote = (totalNotesToGenerate - generatedNotesCount >= 1);
-            if (canGenerateSimultaneous && Math.random() < simProbability) {
-                const availableLanes = Array.from({ length: this.state.settings.lanes }, (_, i) => i);
-                for (let i = availableLanes.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [availableLanes[i], availableLanes[j]] = [availableLanes[j], availableLanes[i]];
-                }
-                this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: 'tap' });
-                this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: 'tap' });
+            // ...
+            if (canGenerateSimultaneous && Math.random() < dongtaProbability) {
+                // ... (레인 섞는 로직) ...
+                this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
+                this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount += 2;
             } else if (canGenerateLongNote && Math.random() < longNoteProbability) {
-                const lane = Math.floor(Math.random() * this.state.settings.lanes);
-                const duration = 500 + Math.random() * 1000;
-                const noteId = noteIdCounter++;
-                this.state.notes.push({ lane, time: currentTime, duration, type: 'long_head', noteId });
-                this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
-                currentTime += duration;
-                generatedNotesCount += 1;
+                // ... (롱노트 생성 로직, 가짜 롱노트는 없으므로 그대로) ...
             } else {
-                const lane = Math.floor(Math.random() * this.state.settings.lanes);
-                this.state.notes.push({ lane: lane, time: currentTime, type: 'tap' });
+                this.state.notes.push({ lane: Math.floor(Math.random() * lanes), time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount++;
             }
-            currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+            currentTime += 500 - lanes * CONFIG.NOTE_SPACING_FACTOR;
         }
         this.state.totalNotes = generatedNotesCount;
     },
