@@ -341,6 +341,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.falseNoteToggle.checked = Game.state.settings.isFalseNoteEnabled;
 
+        const isFalseEnabled = Game.state.settings.isFalseNoteEnabled;
+        DOM.difficulty.falseNoteToggle.checked = isFalseEnabled;
+        
+        // [수정] 슬라이더 UI 및 표시 상태 업데이트
+        DOM.difficulty.falseNoteSliderContainer.classList.toggle('hidden', !isFalseEnabled);
+        
+        const falseProb = Math.round(Game.state.settings.falseNoteProbability * 100);
+        DOM.difficulty.falseNoteProbSlider.value = falseProb;
+        DOM.difficulty.falseNoteProbValue.textContent = `${falseProb}%`;
     }
 
     function setCustomDifficulty() {
