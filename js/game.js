@@ -11,6 +11,7 @@ const Game = {
             musicSrc: null,
             musicVolume: 100,
             sfxVolume: 100,
+            userKeyMappings: null, 
         },
         keyMapping: [],
         activeLanes: [],
@@ -321,39 +322,55 @@ const Game = {
         });
     },
     setupLanes() {
-      DOM.lanesContainer.innerHTML = '';
-      DOM.lanesContainer.style.width = `${this.state.settings.lanes * 100}px`;
-      this.state.activeLanes = Array(this.state.settings.lanes).fill(false);
-      
-      const keysForCurrentLanes = CONFIG.LANE_KEYS[this.state.settings.lanes];
-      if (!keysForCurrentLanes) { console.error(`Invalid number of lanes: ${this.state.settings.lanes}.`); UI.showScreen('menu'); return; }
-      this.state.keyMapping = keysForCurrentLanes.map(key => CONFIG.KEY_CODES[key]).filter(Boolean);
-  
-      const keyHintMap = { 'Space': '⎵', 'Semicolon': ';' };
-  
-      for (let i = 0; i < this.state.settings.lanes; i++) {
-          const lane = document.createElement('div');
-          lane.className = 'lane';
-          lane.style.width = '100px';
-          lane.dataset.laneIndex = i;
-  
-          const keyHint = document.createElement('div');
-          keyHint.className = 'key-hint';
-          
-          const keyName = keysForCurrentLanes[i];
-          keyHint.textContent = keyHintMap[keyName] || keyName || '';
-          
-          lane.appendChild(new DOMParser().parseFromString('<div class="judgement-line"></div>', "text/html").body.firstChild);
-          lane.appendChild(keyHint);
-          
-          lane.addEventListener('mousedown', (e) => { e.preventDefault(); this.handleInputDown(i); });
-          lane.addEventListener('mouseup', (e) => { e.preventDefault(); this.handleInputUp(i); });
-          lane.addEventListener('mouseleave', (e) => { if (this.state.activeLanes[i]) this.handleInputUp(i); });
-          lane.addEventListener('touchstart', (e) => { e.preventDefault(); this.handleInputDown(i); });
-          lane.addEventListener('touchend', (e) => { e.preventDefault(); this.handleInputUp(i); });
-          
-          DOM.lanesContainer.appendChild(lane);
-      }
+        DOM.lanesContainer.innerHTML = '';
+        DOM.lanesContainer.style.width = `${this.state.settings.lanes * 100}px`;
+        this.state.activeLanes = Array(this.state.settings.lanes).fill(false);
+
+        const laneCount = this.state.settings.lanes;
+        const keyOrder = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+        
+        // 사용할 키 맵을 결정 (사용자 설정 우선)
+        const activeKeyMap = this.state.settings.userKeyMappings || CONFIG.DEFAULT_KEYS;
+
+        if (!keyOrder) {
+            console.error(`Invalid number of lanes: ${laneCount}.`);
+            UI.showScreen('menu');
+            return;
+        }
+
+        const keysForCurrentLanes = keyOrder.map(keyId => activeKeyMap[keyId]);
+        this.state.keyMapping = keysForCurrentLanes.map(keyName => {
+            // 'Space'와 같은 특수 키 이름에 대응하는 코드를 CONFIG.KEY_CODES에서 찾음
+            const upperKeyName = keyName.charAt(0).toUpperCase() + keyName.slice(1);
+            return CONFIG.KEY_CODES[upperKeyName] || keyName.toUpperCase().charCodeAt(0);
+        });
+
+        const keyHintMap = { 'Space': '⎵', 'Semicolon': ';' };
+
+        for (let i = 0; i < laneCount; i++) {
+            const lane = document.createElement('div');
+            lane.className = 'lane';
+            lane.style.width = '100px';
+            lane.dataset.laneIndex = i;
+
+            const keyHint = document.createElement('div');
+            keyHint.className = 'key-hint';
+
+            const keyName = keysForCurrentLanes[i];
+            keyHint.textContent = keyHintMap[keyName] || keyName.toUpperCase();
+
+            lane.appendChild(new DOMParser().parseFromString('<div class="judgement-line"></div>', "text/html").body.firstChild);
+            lane.appendChild(keyHint);
+
+            // 이벤트 리스너 추가 (기존과 동일)
+            lane.addEventListener('mousedown', (e) => { e.preventDefault(); this.handleInputDown(i); });
+            lane.addEventListener('mouseup', (e) => { e.preventDefault(); this.handleInputUp(i); });
+            lane.addEventListener('mouseleave', (e) => { if (this.state.activeLanes[i]) this.handleInputUp(i); });
+            lane.addEventListener('touchstart', (e) => { e.preventDefault(); this.handleInputDown(i); });
+            lane.addEventListener('touchend', (e) => { e.preventDefault(); this.handleInputUp(i); });
+
+            DOM.lanesContainer.appendChild(lane);
+        }
     },
     generateRandomNotes() {
         this.state.notes = [];
