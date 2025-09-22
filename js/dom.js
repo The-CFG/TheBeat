@@ -58,6 +58,8 @@ const DOM = {
         saveBtn: document.getElementById('editor-save-btn'),
         loadBtn: document.getElementById('editor-load-btn'),
         backBtn: document.getElementById('editor-back-btn'),
+        noteTypeSelector: document.getElementById('editor-note-type-selector'),
+        statusLabel: document.getElementById('editor-status-label'),
     },
     pauseGameBtn: document.getElementById('pause-game-btn'),
     resumeGameBtn: document.getElementById('resume-game-btn'),
