@@ -412,30 +412,37 @@ const Game = {
         const shouldBeFalseNote = () => isFalseNoteEnabled && Math.random() < falseNoteProbability;
     
         while (generatedNotesCount < totalNotesToGenerate) {
-            // 사용 가능한 레인 인덱스 배열 생성 (예: [0, 1, 2, 3])
-            const allLanes = Array.from(Array(lanes).keys()); 
-            
-            if (allLanes.length >= 2 && Math.random() < dongtaProbability) {
-                // 모든 레인 중 2개를 무작위로 선택
-                const shuffledLanes = allLanes.sort(() => 0.5 - Math.random());
-                const lane1 = shuffledLanes[0];
-                const lane2 = shuffledLanes[1];
+            // FIX 1: GitHub 로직을 적용하여 서로 다른 2개의 레인을 안전하게 선택합니다.
+            if (Math.random() < dongtaProbability && lanes >= 2) {
+                // 전체 레인 목록을 복사해서 사용
+                let availableLanes = Array.from(Array(lanes).keys());
+                // 첫 번째 레인을 무작위로 뽑아내고 목록에서 제거
+                let lane1 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
+                // 남은 레인 중에서 두 번째 레인을 무작위로 뽑아냄
+                let lane2 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
 
                 this.state.notes.push({ lane: lane1, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 this.state.notes.push({ lane: lane2, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount += 2;
+
+            // FIX 2: GitHub 로직을 적용하여 비어있던 롱노트 생성 기능을 구현합니다.
             } else if (Math.random() < longNoteProbability) {
                 const lane = Math.floor(Math.random() * lanes);
-                const duration = 200; // 롱노트 길이 (예: 200ms)
+                // 0.5초, 0.75초, 1초 길이의 롱노트를 무작위로 생성
+                const duration = (Math.floor(Math.random() * 3) + 2) * 250;
                 const noteId = noteIdCounter++;
                 
+                // 롱노트의 시작(head)과 끝(tail)을 한 쌍으로 추가
                 this.state.notes.push({ time: currentTime, lane: lane, duration: duration, type: 'long_head', noteId: noteId });
                 this.state.notes.push({ time: currentTime + duration, lane: lane, type: 'long_tail', noteId: noteId });
-                generatedNotesCount++; // 롱노트는 1개의 노트로 계산
+                generatedNotesCount++; // 롱노트는 1개로 카운트
+
             } else {
                 this.state.notes.push({ lane: Math.floor(Math.random() * lanes), time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount++;
             }
+            currentTime += 500 - lanes * CONFIG.NOTE_SPACING_FACTOR;
+        }
             currentTime += 500 - lanes * CONFIG.NOTE_SPACING_FACTOR;
         }
         this.state.totalNotes = generatedNotesCount;
