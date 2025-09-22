@@ -34,6 +34,7 @@ const DOM = {
         dongtaValue: document.getElementById('dongta-prob-value'),
         longNoteSlider: document.getElementById('long-note-prob-slider'),
         longNoteValue: document.getElementById('long-note-prob-value'),
+        falseNoteToggle: document.getElementById('false-note-toggle'),
     },
     finalScoreEl: document.getElementById('final-score'),
     rankEl: document.getElementById('rank'),
