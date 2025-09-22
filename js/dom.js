@@ -68,5 +68,10 @@ const DOM = {
         musicVolumeValue: document.getElementById('volume-value-music'),
         sfxVolumeSlider: document.getElementById('volume-slider-sfx'),
         sfxVolumeValue: document.getElementById('volume-value-sfx'),
+        controls: {
+            keybindBoxes: document.querySelectorAll('.keybind-box'),
+            statusLabel: document.getElementById('keybind-status-label'),
+            saveBtn: document.getElementById('save-keybinds-btn')
+        }
     }
 };
