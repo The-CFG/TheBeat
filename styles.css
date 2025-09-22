@@ -182,3 +182,21 @@ body {
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
     transform: scale(1.05);
 }
+#editor-timeline {
+    display: flex;
+    position: relative;
+    background-color: #1a202c; /* 더 어두운 배경 */
+    cursor: pointer;
+    min-height: 200px;
+}
+
+/* 에디터의 각 레인 스타일 */
+.editor-lane {
+    flex: 1; /* 9개의 레인이 공간을 균등하게 차지 */
+    position: relative;
+    height: 100%;
+    border-right: 1px solid #4a5568;
+}
+.editor-lane:first-child {
+    border-left: 1px solid #4a5568;
+}
