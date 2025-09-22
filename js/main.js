@@ -64,18 +64,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('mode-selector').addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
+        
             Game.state.settings.mode = e.target.dataset.mode;
             document.querySelectorAll('#mode-selector button').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
+        
             const isMusicMode = Game.state.settings.mode === 'music';
+        
+            // 뮤직 모드일 경우: 노트 수, 난이도 UI 숨기기
+            // 랜덤 모드일 경우: 해당 UI 보이기
             DOM.musicModeControls.classList.toggle('hidden', !isMusicMode);
             DOM.noteCountContainer.classList.toggle('hidden', isMusicMode);
+            DOM.difficultyControls.classList.toggle('hidden', isMusicMode);
+        
+            // 랜덤 모드로 전환 시, 뮤직 모드 관련 정보 초기화
             if (!isMusicMode) {
                 DOM.chartFileNameEl.textContent = '';
                 DOM.musicFileNameEl.textContent = '';
                 DOM.requiredMusicFileNameEl.textContent = '';
                 Game.state.notes = [];
                 Game.state.settings.musicSrc = null;
+                Game.state.settings.requiredSongName = null;
             }
         });
 
