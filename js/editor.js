@@ -271,7 +271,13 @@ const Editor = {
     },
 
     saveChart() {
-        const songName = this.state.audioFileName ? this.state.audioFileName.split('.')[0] : 'chart';
+        // [수정] 음악 파일이 로드되었는지 먼저 확인합니다.
+        if (!this.state.audioFileName) {
+            UI.showMessage('editor', '음악 파일을 로딩해주세요!');
+            return;
+        }
+    
+        const songName = this.state.audioFileName; // 파일 확장자 포함 전체 이름 사용
         
         // 게임 엔진 호환성을 위해 에디터 노트를 변환
         const gameNotes = this.state.notes.map(note => {
@@ -279,21 +285,22 @@ const Editor = {
                 return { time: note.time, lane: note.lane, duration: note.duration };
             }
             return { time: note.time, lane: note.lane, type: note.type };
-        }).filter(note => note.type !== 'long_tail'); // 혹시 모를 찌꺼기 데이터 제거
+        }).filter(note => note.type !== 'long_tail');
         
         const chart = {
-            songName: songName,
+            songName: songName, // [수정] 음악 파일 이름을 JSON에 포함
             bpm: this.state.bpm,
             lanes: this.state.lanes,
             notes: gameNotes.sort((a, b) => a.time - b.time),
         };
-
+    
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", songName + ".json");
+        // [수정] 저장되는 파일 이름을 (음악파일이름).json 으로 설정
+        downloadAnchorNode.setAttribute("download", songName.split('.').slice(0, -1).join('.') + ".json");
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
-    }
+    },
 };
