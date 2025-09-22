@@ -13,6 +13,7 @@ const Game = {
             musicVolume: 100,
             sfxVolume: 100,
             bpm: 120, 
+            startTimeOffset: 0,
             userKeyMappings: null,
             requiredSongName: null,
         },
@@ -44,6 +45,7 @@ const Game = {
         this.state.unprocessedNoteIndex = 0;
         this.state.settings.requiredSongName = null;
         this.state.settings.bpm = 120;
+        this.state.settings.startTimeOffset = 0;
     },
 
     runCountdown(onComplete) {
@@ -99,7 +101,7 @@ const Game = {
         this.runCountdown(() => {
             this.state.gameState = 'playing';
             if (this.state.settings.mode === 'music') {
-                DOM.musicPlayer.currentTime = 0;
+                DOM.musicPlayer.currentTime = this.state.settings.startTimeOffset;
                 DOM.musicPlayer.play();
             }
             this.state.gameStartTime = performance.now();
@@ -431,43 +433,52 @@ const Game = {
     },
 
     loadChartNotes(chartData) {
-        if (!chartData.lanes || !CONFIG.VALID_LANES.includes(chartData.lanes)) {
-            UI.showMessage('menu', `오류: 차트의 레인 수(${chartData.lanes || '없음'})가 잘못되었습니다.`);
+        // 1. 차트 기본 정보 로드
+        this.state.settings.requiredSongName = chartData.songName || null;
+        this.state.settings.startTimeOffset = chartData.startTimeOffset || 0;
+        const chartBPM = chartData.bpm || 120;
+        this.state.settings.bpm = chartBPM;
+        const calculatedSpeed = Math.round(chartBPM / 20);
+        this.state.settings.noteSpeed = Math.max(1, Math.min(20, calculatedSpeed));
+        
+        // 2. 플레이어가 선택한 레인 수에 맞는 레인 ID 가져오기
+        const playerLaneCount = this.state.settings.lanes;
+        const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[playerLaneCount];
+        if (!requiredLaneIds) {
+            UI.showMessage('menu', `오류: ${playerLaneCount}레인에 대한 키 매핑 정보가 없습니다.`);
             return false;
         }
 
-        this.state.settings.requiredSongName = chartData.songName || null;
-        
-        // [핵심 수정] 차트의 BPM을 읽어와서 게임 상태 및 노트 속도를 설정합니다.
-        const chartBPM = chartData.bpm || 120;
-        this.state.settings.bpm = chartBPM;
-        
-        // BPM을 기반으로 노트 속도를 자동으로 계산 (값은 필요에 따라 조절 가능)
-        // 예: 120 BPM -> 속도 6, 180 BPM -> 속도 9
-        const calculatedSpeed = Math.round(chartBPM / 20);
-        // 속도는 1~20 사이의 값으로 보정
-        this.state.settings.noteSpeed = Math.max(1, Math.min(20, calculatedSpeed));
-
-        this.state.notes = [];
-        this.state.settings.lanes = chartData.lanes;
-        document.getElementById('lanes-selector').value = chartData.lanes;
-        
-        let noteIdCounter = 0;
+        // 3. 노트 필터링 및 매핑
         const processedNotes = [];
+        let noteIdCounter = 0;
         chartData.notes.forEach(note => {
-            // 가짜 노트 타입을 인식하도록 수정
-            const type = note.type || 'tap'; // type이 없으면 tap으로 간주
-            if (note.duration) {
-                const noteId = noteIdCounter++;
-                processedNotes.push({ ...note, type: 'long_head', noteId, processed: false, element: null });
-                processedNotes.push({ time: note.time + note.duration, lane: note.lane, type: 'long_tail', noteId, processed: false, element: null });
-            } else {
-                processedNotes.push({ ...note, type: type, processed: false, element: null });
+            const laneId = note.lane; // e.g., "L2"
+            const gameLaneIndex = requiredLaneIds.indexOf(laneId); // e.g., 0
+
+            // 플레이어가 선택한 레인에 해당하는 노트만 필터링
+            if (gameLaneIndex !== -1) {
+                const newNoteBase = {
+                    time: note.time,
+                    lane: gameLaneIndex, // 숫자 인덱스로 변환
+                    processed: false,
+                    element: null,
+                };
+
+                const type = note.type || 'tap';
+                if (note.duration) {
+                    const noteId = noteIdCounter++;
+                    processedNotes.push({ ...newNoteBase, type: 'long_head', duration: note.duration, noteId });
+                    processedNotes.push({ ...newNoteBase, time: note.time + note.duration, type: 'long_tail', noteId });
+                } else {
+                    processedNotes.push({ ...newNoteBase, type: type });
+                }
             }
         });
         
-        this.state.notes = processedNotes.sort((a,b) => a.time - b.time);
-        this.state.totalNotes = chartData.notes.length;
+        this.state.notes = processedNotes.sort((a, b) => a.time - b.time);
+        this.state.totalNotes = this.state.notes.filter(n => n.type !== 'long_tail').length;
+        
         return true;
     }
 };
