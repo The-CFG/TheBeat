@@ -19,7 +19,7 @@ const Editor = {
         
         UI.showScreen('editor');
         this.setupEventListeners();
-        this.resetEditorState(); // 에디터 상태 초기화 함수 호출
+        this.resetEditorState();
     },
 
     resetEditorState() {
@@ -48,20 +48,15 @@ const Editor = {
     setupEventListeners() {
         if (this.listenersInitialized) return;
 
-        // 상단 컨트롤
         DOM.editor.audioFileInput.addEventListener('change', (e) => this.handleAudioLoad(e));
         DOM.editor.startTimeInput.addEventListener('input', (e) => { this.state.startTimeOffset = parseFloat(e.target.value) || 0; });
         DOM.editor.bpmInput.addEventListener('input', (e) => { this.state.bpm = parseInt(e.target.value) || 120; this.drawTimeline(); this.renderNotes(); });
         DOM.editor.noteTypeSelector.addEventListener('click', (e) => this.handleNoteTypeSelect(e));
-        
-        // 관리 버튼
         DOM.editor.playPauseBtn.addEventListener('click', () => this.togglePlay());
         DOM.editor.saveBtn.addEventListener('click', () => this.saveChart());
         DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
         DOM.editor.loadInput.addEventListener('change', (e) => this.handleChartLoad(e));
         DOM.editor.resetBtn.addEventListener('click', () => this.handleReset());
-
-        // 타임라인
         DOM.editor.timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
 
         this.listenersInitialized = true;
@@ -69,21 +64,17 @@ const Editor = {
     
     drawTimeline() {
         const timeline = DOM.editor.timeline;
-        // 플레이헤드를 제외한 모든 자식 요소(레인, 비트라인)를 제거
         while (timeline.firstChild && timeline.firstChild !== DOM.editor.playhead) {
             timeline.removeChild(timeline.firstChild);
         }
         
-        // 9개 레인 생성
         CONFIG.EDITOR_LANE_IDS.forEach(() => {
             const laneEl = document.createElement('div');
             laneEl.className = 'editor-lane';
             timeline.appendChild(laneEl);
         });
 
-        // 플레이헤드를 맨 마지막으로 다시 추가 (다른 요소들 위에 오도록)
         timeline.appendChild(DOM.editor.playhead);
-
         this.drawGrid();
     },
 
@@ -114,14 +105,14 @@ const Editor = {
         if (!this.state.isConfirmingReset) {
             this.state.isConfirmingReset = true;
             DOM.editor.resetBtn.textContent = '확인?';
-            DOM.editor.resetBtn.classList.remove('bg-red-700', 'hover:bg-red-600');
-            DOM.editor.resetBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-400');
+            DOM.editor.resetBtn.classList.replace('bg-red-700', 'bg-yellow-500');
+            DOM.editor.resetBtn.classList.replace('hover:bg-red-600', 'hover:bg-yellow-400');
             setTimeout(() => {
                 if(this.state.isConfirmingReset) {
                     this.state.isConfirmingReset = false;
                     DOM.editor.resetBtn.textContent = '재설정';
-                    DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
-                    DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
+                    DOM.editor.resetBtn.classList.replace('bg-yellow-500', 'bg-red-700');
+                    DOM.editor.resetBtn.classList.replace('hover:bg-yellow-400', 'hover:bg-red-600');
                 }
             }, 3000);
         } else {
@@ -130,6 +121,20 @@ const Editor = {
     },
 
     handleTimelineClick(e) {
+        // 클릭된 요소가 레인 또는 노트가 아니면 무시
+        if (!e.target.classList.contains('editor-lane') && !e.target.classList.contains('editor-note')) {
+            return;
+        }
+
+        // 노트 삭제 로직
+        if (e.target.classList.contains('editor-note')) {
+            const time = parseFloat(e.target.dataset.time);
+            this.state.notes = this.state.notes.filter(n => n.time !== time);
+            this.renderNotes();
+            return;
+        }
+
+        // 노트 추가 로직
         const rect = DOM.editor.timeline.getBoundingClientRect();
         const laneWidth = rect.width / CONFIG.EDITOR_LANE_IDS.length;
         const x = e.clientX - rect.left;
@@ -140,13 +145,6 @@ const Editor = {
         const beatsPerSecond = this.state.bpm / 60;
         const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
         const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
-
-        if (e.target.classList.contains('editor-note')) {
-            const time = parseFloat(e.target.dataset.time);
-            this.state.notes = this.state.notes.filter(n => n.time !== time);
-            this.renderNotes();
-            return;
-        }
 
         switch (this.state.selectedNoteType) {
             case 'long':
@@ -188,25 +186,34 @@ const Editor = {
         }
     },
 
+    // [핵심 수정된 함수]
     renderNotes() {
+        // 기존에 그려진 모든 노트를 삭제
         document.querySelectorAll('.editor-note').forEach(n => n.remove());
-        const timelineRect = DOM.editor.timeline.getBoundingClientRect();
-        if (timelineRect.width === 0) return; // 타임라인이 보이지 않으면 렌더링 중지
+        
+        // 타임라인에 있는 모든 레인 div를 가져옴
+        const lanes = DOM.editor.timeline.querySelectorAll('.editor-lane');
+        if (lanes.length === 0) return;
 
-        const laneWidth = timelineRect.width / CONFIG.EDITOR_LANE_IDS.length;
         const beatsPerSecond = this.state.bpm / 60;
 
         this.state.notes.forEach(note => {
+            // 노트가 속한 레인의 인덱스를 찾음 (e.g., 'L4' -> 0)
+            const laneIndex = CONFIG.EDITOR_LANE_IDS.indexOf(note.lane);
+            if (laneIndex === -1) return;
+
+            // 해당 인덱스의 레인 div를 부모로 지정
+            const parentLane = lanes[laneIndex];
+            if (!parentLane) return;
+
             const noteEl = document.createElement('div');
             noteEl.className = 'editor-note';
             if (note.duration) noteEl.classList.add('long');
             if (note.type === 'false') noteEl.classList.add('false');
 
-            const laneIndex = CONFIG.EDITOR_LANE_IDS.indexOf(note.lane);
-            if(laneIndex === -1) return;
-
-            noteEl.style.width = `${laneWidth}px`;
-            noteEl.style.left = `${laneIndex * laneWidth}px`;
+            // 부모(레인)를 기준으로 위치를 잡으므로 left는 0, width는 100%가 됨
+            noteEl.style.width = '100%';
+            noteEl.style.left = '0';
             
             const beats = (note.time / 1000) * beatsPerSecond;
             noteEl.style.top = `${beats * CONFIG.EDITOR_BEAT_HEIGHT - 4}px`;
@@ -217,7 +224,9 @@ const Editor = {
             }
             noteEl.dataset.time = note.time;
             noteEl.dataset.lane = note.lane;
-            DOM.editor.timeline.appendChild(noteEl);
+            
+            // 올바른 레인 div 안에 노트를 추가
+            parentLane.appendChild(noteEl);
         });
     },
 
@@ -230,7 +239,6 @@ const Editor = {
             if (note.type === 'long_head') {
                 return { time: note.time, lane: note.lane, duration: note.duration };
             }
-            // type이 tap일 경우, 용량을 줄이기 위해 type 속성 생략
             if (note.type === 'tap') {
                  return { time: note.time, lane: note.lane };
             }
@@ -259,7 +267,6 @@ const Editor = {
             if (note.duration) {
                 return { ...note, type: 'long_head' };
             }
-             // type 속성이 없는 노트는 tap으로 간주
             if (!note.type) {
                 return { ...note, type: 'tap' };
             }
