@@ -162,3 +162,7 @@ body {
     border-color: #f6e05e;
     background-color: #2d3748;
 }
+.note.false {
+    background-color: #fca5a5; /* Tailwind CSS red-300 */
+    box-shadow: 0 0 8px #ef4444;
+}
