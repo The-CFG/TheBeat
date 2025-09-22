@@ -38,28 +38,40 @@ const Game = {
     },
     
     runCountdown(onComplete) {
-        this.cancelCountdown();
-
+        this.cancelCountdown(); // 이전 카운트다운이 있다면 취소
+    
         let count = 3;
         const countdownEl = DOM.countdownTextEl;
-
+    
+        // 1. 즉시 '3'을 표시하고 애니메이션 실행
+        countdownEl.textContent = count;
+        countdownEl.classList.remove('show');
+        void countdownEl.offsetWidth;
+        countdownEl.classList.add('show');
+        Audio.playCountdownTick();
+    
         const tick = () => {
+            count--; // 2. 타이머가 호출되면 카운트부터 감소
+    
+            countdownEl.classList.remove('show'); // 애니메이션 리셋
+            void countdownEl.offsetWidth;         // 리플로우 강제
+    
             if (count > 0) {
                 countdownEl.textContent = count;
-                countdownEl.classList.add('show');
                 Audio.playCountdownTick();
-                count--;
             } else if (count === 0) {
                 countdownEl.textContent = 'START!';
                 Audio.playCountdownStart();
-                count--;
             } else {
-                this.cancelCountdown();
-                onComplete();
+                this.cancelCountdown(); // setInterval 중지
+                onComplete();           // 게임 시작 콜백 실행
+                return;                 // 인터벌 콜백 종료
             }
+    
+            countdownEl.classList.add('show'); // 변경된 내용으로 애니메이션 실행
         };
-
-        tick();
+    
+        // 3. 1초 후에 tick 함수를 반복적으로 실행
         this.state.countdownIntervalId = setInterval(tick, 1000);
     },
 
