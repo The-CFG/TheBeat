@@ -11,7 +11,8 @@ const Game = {
             musicSrc: null,
             musicVolume: 100,
             sfxVolume: 100,
-            userKeyMappings: null, 
+            userKeyMappings: null,
+            // --- 가짜 노트 기능 추가 ---
             isFalseNoteEnabled: false,
             falseNoteProbability: 0,
         },
@@ -32,7 +33,7 @@ const Game = {
         countdownIntervalId: null,
         unprocessedNoteIndex: 0,
     },
-    
+
     resetState() {
         this.state.score = 0;
         this.state.combo = 0;
@@ -40,7 +41,7 @@ const Game = {
         this.state.processedNotes = 0;
         this.state.isPaused = false;
         this.state.totalPausedTime = 0;
-        this.state.unprocessedNoteIndex = 0; 
+        this.state.unprocessedNoteIndex = 0;
     },
 
     runCountdown(onComplete) {
@@ -121,7 +122,7 @@ const Game = {
     },
 
     loop(timestamp) {
-        if (Game.state.isPaused) return; // 일시정지 상태에서는 루프를 돌지 않음
+        if (Game.state.isPaused) return;
         const self = Game;
         const elapsedTime = self.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
@@ -152,7 +153,7 @@ const Game = {
             const isLongNote = note.type === 'long_head';
             const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
             const noteTopPosition = noteBottomPosition - noteHeight;
-            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote)) {
+            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                 if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
                     const laneEl = DOM.lanesContainer.children[note.lane];
                     if (laneEl) {
@@ -162,6 +163,9 @@ const Game = {
                             note.element.classList.add('long');
                             note.element.style.height = `${noteHeight}px`;
                         }
+                        if (note.type === 'false') {
+                            note.element.classList.add('false');
+                        }
                         laneEl.appendChild(note.element);
                     }
                 }
@@ -170,10 +174,11 @@ const Game = {
                 note.element.style.transform = `translateY(${noteTopPosition}px)`;
             }
             if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
+                // --- 가짜 노트 기능 추가 ---
                 if (note.type === 'false') {
-                    this.handleJudgement('perfect', note); // 가짜 노트는 누르지 않으면 PERFECT
+                    this.handleJudgement('perfect', note); // 가짜 노트를 놓치면 PERFECT
                 } else {
-                    this.handleJudgement('miss', note); // 다른 노트는 MISS
+                    this.handleJudgement('miss', note); // 일반 노트를 놓치면 MISS
                 }
             }
         }
@@ -181,8 +186,7 @@ const Game = {
 
     _processSingleJudgement(judgement, note) {
         note.processed = true;
-    
-        // 1. 노트 요소 제거
+
         if (note.type === 'long_tail') {
             const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
             if (headNote && headNote.element) {
@@ -193,14 +197,21 @@ const Game = {
             note.element.remove();
             note.element = null;
         }
-    
-        // 2. 점수 및 콤보 계산
+        
+        // 가짜 노트를 놓쳐서 받은 PERFECT는 점수/콤보를 올리지 않음
+        if (note.type === 'false' && judgement === 'perfect') {
+            this.state.processedNotes++;
+            UI.showJudgementFeedback('PERFECT', this.state.combo);
+            UI.updateScoreboard();
+            return; // 여기서 함수 종료
+        }
+
         this.state.judgements[judgement]++;
         if (note.type !== 'long_head') {
             this.state.processedNotes++;
         }
         this.state.score += CONFIG.POINTS[judgement];
-    
+
         if (judgement === 'miss' || judgement === 'bad') {
             this.state.combo = 0;
         } else {
@@ -211,39 +222,37 @@ const Game = {
             }
         }
     },
-    
+
     handleJudgement(judgement, note) {
         if (note.processed) return;
-    
-        // [핵심 수정] 시간 기반 MISS의 경우, 동일 시간의 모든 노트를 그룹으로 처리
+
         if (judgement === 'miss' && note.time > 0) {
             const notesAtSameTime = this.state.notes.filter(n =>
                 !n.processed && n.time === note.time
             );
-    
+
             notesAtSameTime.forEach(n => this._processSingleJudgement('miss', n));
-    
-            // 사운드와 UI 피드백은 그룹 전체에 대해 한 번만 실행
+
             Audio.playMissSound();
             UI.showJudgementFeedback('MISS', this.state.combo);
             UI.updateScoreboard();
-    
-        } else { // 키 입력으로 인한 판정 (Perfect, Good, Bad)은 개별 처리
+
+        } else {
             this._processSingleJudgement(judgement, note);
-    
+
             if (judgement === 'perfect' || judgement === 'good') {
                 Audio.playHitSound();
-            } else { // 'bad' 판정
+            } else {
                 Audio.playMissSound();
             }
-            
+
             UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
             UI.updateScoreboard();
         }
     },
 
     handleKeyDown(e) {
-        if (e.keyCode === 27) { // ESC 키
+        if (e.keyCode === 27) {
             this.togglePause();
             return;
         }
@@ -264,18 +273,18 @@ const Game = {
         this.state.activeLanes[laneIndex] = true;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.add('active-feedback');
-    
+
         const elapsedTime = this.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-    
+
         let bestMatch = null;
         let smallestDiff = Infinity;
-    
+
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
             if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
-    
+
             if (!note.processed && note.lane === laneIndex) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
@@ -284,11 +293,11 @@ const Game = {
                 }
             }
         }
-    
+
         if (bestMatch) {
-            // [수정] 가짜 노트를 눌렀는지 먼저 확인
+            // --- 가짜 노트 기능 추가 ---
             if (bestMatch.type === 'false') {
-                this.handleJudgement('miss', bestMatch); // 가짜 노트는 누르면 MISS
+                this.handleJudgement('miss', bestMatch); // 가짜 노트를 치면 MISS
             } else if (bestMatch.type === 'tap' || bestMatch.type === 'long_head') {
                 if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
                 else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
@@ -296,37 +305,35 @@ const Game = {
             }
         }
     },
-    
+
     handleInputUp(laneIndex) {
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
-    
+
         const elapsedTime = this.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-    
+
         let bestMatch = null;
         let smallestDiff = Infinity;
-    
-        // [수정된 핵심 로직] 롱노트의 꼬리 부분도 효율적으로 탐색합니다.
+
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
-            
-            // 최적화: 노트가 너무 미래에 있으면 탐색 중단
+
             if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
                 break;
             }
-    
+
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
-                 const timeDiff = Math.abs(note.time - elapsedTime);
-                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                const timeDiff = Math.abs(note.time - elapsedTime);
+                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
                     smallestDiff = timeDiff;
                     bestMatch = note;
                 }
             }
         }
-        
+
         if (bestMatch) {
             if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
             else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
@@ -359,7 +366,7 @@ const Game = {
             });
         }
     },
-    
+
     setupLanes() {
         DOM.lanesContainer.innerHTML = '';
         DOM.lanesContainer.style.width = `${this.state.settings.lanes * 100}px`;
@@ -397,55 +404,46 @@ const Game = {
             DOM.lanesContainer.appendChild(lane);
         }
     },
-    
+
     generateRandomNotes() {
         this.state.notes = [];
         let totalNotesToGenerate = parseInt(DOM.noteCountInput.value) || CONFIG.DEFAULT_NOTE_COUNT;
-        // ... (min/max 검사) ...
         const { isFalseNoteEnabled, falseNoteProbability, dongtaProbability, longNoteProbability, lanes } = this.state.settings;
-        
+
         let generatedNotesCount = 0;
         let currentTime = 1000;
         let noteIdCounter = 0;
-    
-        // 가짜 노트를 생성할지 결정하는 헬퍼 함수
-        const shouldBeFalseNote = () => isFalseNoteEnabled && Math.random() < falseNoteProbability;
-    
-        while (generatedNotesCount < totalNotesToGenerate) {
-            // FIX 1: GitHub 로직을 적용하여 서로 다른 2개의 레인을 안전하게 선택합니다.
-            if (Math.random() < dongtaProbability && lanes >= 2) {
-                // 전체 레인 목록을 복사해서 사용
-                let availableLanes = Array.from(Array(lanes).keys());
-                // 첫 번째 레인을 무작위로 뽑아내고 목록에서 제거
-                let lane1 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
-                // 남은 레인 중에서 두 번째 레인을 무작위로 뽑아냄
-                let lane2 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
+        const bpm = 120;
+        const beatInterval = 60000 / bpm / 2;
 
+        // --- 가짜 노트 기능 추가 ---
+        const shouldBeFalseNote = () => isFalseNoteEnabled && Math.random() < falseNoteProbability;
+
+        while (generatedNotesCount < totalNotesToGenerate) {
+            if (Math.random() < dongtaProbability && lanes >= 2) {
+                let availableLanes = Array.from(Array(lanes).keys());
+                let lane1 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
+                let lane2 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
                 this.state.notes.push({ lane: lane1, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 this.state.notes.push({ lane: lane2, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount += 2;
-
-            // FIX 2: GitHub 로직을 적용하여 비어있던 롱노트 생성 기능을 구현합니다.
             } else if (Math.random() < longNoteProbability) {
                 const lane = Math.floor(Math.random() * lanes);
-                // 0.5초, 0.75초, 1초 길이의 롱노트를 무작위로 생성
                 const duration = (Math.floor(Math.random() * 3) + 2) * 250;
                 const noteId = noteIdCounter++;
-                
-                // 롱노트의 시작(head)과 끝(tail)을 한 쌍으로 추가
-                this.state.notes.push({ time: currentTime, lane: lane, duration: duration, type: 'long_head', noteId: noteId });
-                this.state.notes.push({ time: currentTime + duration, lane: lane, type: 'long_tail', noteId: noteId });
-                generatedNotesCount++; // 롱노트는 1개로 카운트
-
+                this.state.notes.push({ time: currentTime, lane, duration, type: 'long_head', noteId });
+                this.state.notes.push({ time: currentTime + duration, lane, type: 'long_tail', noteId });
+                generatedNotesCount += 2;
             } else {
-                this.state.notes.push({ lane: Math.floor(Math.random() * lanes), time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
+                const lane = Math.floor(Math.random() * lanes);
+                this.state.notes.push({ lane, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
                 generatedNotesCount++;
             }
-            currentTime += 500 - lanes * CONFIG.NOTE_SPACING_FACTOR;
+            currentTime += beatInterval;
         }
         this.state.totalNotes = generatedNotesCount;
     },
-    
+
     loadChartNotes(chartData) {
         if (!chartData.lanes || !CONFIG.VALID_LANES.includes(chartData.lanes)) {
             UI.showMessage('menu', `오류: 차트의 레인 수(${chartData.lanes || '없음'})가 잘못되었습니다.`);
@@ -454,21 +452,25 @@ const Game = {
         this.state.notes = [];
         this.state.settings.lanes = chartData.lanes;
         document.getElementById('lanes-selector').value = chartData.lanes;
-        
+
         let noteIdCounter = 0;
         const processedNotes = [];
+        let calculatedTotalNotes = 0;
+        
         chartData.notes.forEach(note => {
-            if (note.duration) { // 롱노트인 경우
+            if (note.duration) {
                 const noteId = noteIdCounter++;
                 processedNotes.push({ ...note, type: 'long_head', noteId, processed: false, element: null });
                 processedNotes.push({ time: note.time + note.duration, lane: note.lane, type: 'long_tail', noteId, processed: false, element: null });
-            } else { // 일반노트인 경우
+                calculatedTotalNotes += 2;
+            } else {
                 processedNotes.push({ ...note, type: 'tap', processed: false, element: null });
+                calculatedTotalNotes++;
             }
         });
-        
+
         this.state.notes = processedNotes;
-        this.state.totalNotes = chartData.notes.length;
+        this.state.totalNotes = calculatedTotalNotes;
         return true;
     }
 };
