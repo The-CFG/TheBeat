@@ -81,7 +81,9 @@ const Game = {
         DOM.countdownTextEl.classList.remove('show');
     },
 
-    start() {
+    async start() {
+        await Audio.start();
+        
         this.resetState();
         resetPlayingScreenUI(); // [추가] 게임 시작 시 플레이 화면 UI를 초기 상태로 리셋
 
