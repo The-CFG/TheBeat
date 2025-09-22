@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const probValue = parseInt(e.target.value);
             // 슬라이더 값(0~50)을 확률(0~0.05) 및 퍼센트(0~5%)로 변환
             Game.state.settings.falseNoteProbability = probValue / 1000;
-            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10).toFixed(1)}%`;
+            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10)}%`; 
             setCustomDifficulty();
         });
 
