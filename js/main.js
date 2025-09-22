@@ -91,10 +91,24 @@ document.addEventListener('DOMContentLoaded', () => {
             Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
             Game.state.settings.longNoteProbability = CONFIG.LONG_NOTE_PROBABILITY[preset];
 
+            if (preset === 'hard') {
+                Game.state.settings.isFalseNoteEnabled = true;
+                Game.state.settings.falseNoteProbability = 0.03;
+            } else {
+                Game.state.settings.isFalseNoteEnabled = false;
+                Game.state.settings.falseNoteProbability = 0;
+            }
             updateDetailedSettingsUI();
 
             document.querySelectorAll('#difficulty-selector button').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
+        });
+
+        DOM.difficulty.falseNoteToggle.addEventListener('change', (e) => {
+            Game.state.settings.isFalseNoteEnabled = e.target.checked;
+            // 활성화 시 기본 확률, 비활성화 시 0으로 설정 (사용자가 직접 조절하게 하려면 슬라이더 추가 필요)
+            Game.state.settings.falseNoteProbability = e.target.checked ? 0.03 : 0;
+            setCustomDifficulty();
         });
 
         DOM.difficulty.toggleBtn.addEventListener('click', () => {
@@ -305,6 +319,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.longNoteSlider.value = longNoteProb;
         DOM.difficulty.longNoteValue.textContent = `${longNoteProb}%`;
+
+        DOM.difficulty.falseNoteToggle.checked = Game.state.settings.isFalseNoteEnabled;
     }
 
     function setCustomDifficulty() {
