@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     function setupEventListeners() {
-        document.body.addEventListener('click', Audio.start);
-        document.body.addEventListener('touchstart', Audio.start);
         window.addEventListener('keydown', Game.handleKeyDown);
         window.addEventListener('keyup', Game.handleKeyUp);
         
@@ -111,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        document.getElementById('start-game-btn').addEventListener('click', () => Game.start());
+        document.getElementById('start-game-btn').addEventListener('click', async () => await Game.start());
         document.getElementById('give-up-btn').addEventListener('click', () => Game.end());
         document.getElementById('back-to-menu-btn').addEventListener('click', () => {
             DOM.lanesContainer.innerHTML = '';
