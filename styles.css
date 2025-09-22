@@ -166,3 +166,19 @@ body {
     background-color: #fca5a5; /* Tailwind CSS red-300 */
     box-shadow: 0 0 8px #ef4444;
 }
+.editor-note.long {
+    background: linear-gradient(to top, #818cf8, #a78bfa);
+    opacity: 0.9;
+    border-color: #4c1d95;
+}
+
+.editor-note.false {
+    background-color: #fca5a5;
+    border-color: #b91c1c;
+}
+
+/* 노트 선택 버튼의 활성 상태 스타일 */
+#editor-note-type-selector button.active {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
