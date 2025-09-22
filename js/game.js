@@ -443,8 +443,6 @@ const Game = {
             }
             currentTime += 500 - lanes * CONFIG.NOTE_SPACING_FACTOR;
         }
-            currentTime += 500 - lanes * CONFIG.NOTE_SPACING_FACTOR;
-        }
         this.state.totalNotes = generatedNotesCount;
     },
     
