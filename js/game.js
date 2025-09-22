@@ -193,7 +193,8 @@ const Game = {
                 headNote.element.remove();
                 headNote.element = null;
             }
-        } else if (note.element) {
+        // [수정된 부분] note.type === 'tap' 조건을 추가하여 long_head가 제거되지 않도록 합니다.
+        } else if (note.type === 'tap' && note.element) {
             note.element.remove();
             note.element = null;
         }
