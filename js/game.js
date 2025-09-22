@@ -38,24 +38,17 @@ const Game = {
     },
     
     runCountdown(onComplete) {
-        this.cancelCountdown(); // 이전 카운트다운이 있다면 취소
-    
+        this.cancelCountdown(); // 만약의 경우를 대비해 이전 카운트다운 정리
+        
         let count = 3;
         const countdownEl = DOM.countdownTextEl;
-    
-        // 1. 즉시 '3'을 표시하고 애니메이션 실행
-        countdownEl.textContent = count;
-        countdownEl.classList.remove('show');
-        void countdownEl.offsetWidth;
-        countdownEl.classList.add('show');
-        Audio.playCountdownTick();
-    
+        
         const tick = () => {
-            count--; // 2. 타이머가 호출되면 카운트부터 감소
-    
-            countdownEl.classList.remove('show'); // 애니메이션 리셋
-            void countdownEl.offsetWidth;         // 리플로우 강제
-    
+            // 1. 애니메이션 클래스를 먼저 제거하고, 브라우저가 인지하도록 강제합니다.
+            countdownEl.classList.remove('show');
+            void countdownEl.offsetWidth; // 리플로우(reflow)를 강제하여 애니메이션을 리셋합니다.
+        
+            // 2. 카운트 값을 기반으로 텍스트를 업데이트합니다.
             if (count > 0) {
                 countdownEl.textContent = count;
                 Audio.playCountdownTick();
@@ -63,17 +56,22 @@ const Game = {
                 countdownEl.textContent = 'START!';
                 Audio.playCountdownStart();
             } else {
-                this.cancelCountdown(); // setInterval 중지
-                onComplete();           // 게임 시작 콜백 실행
-                return;                 // 인터벌 콜백 종료
+                // 3. 카운트다운이 끝나면 타이머를 완전히 정리하고 게임 시작 콜백을 실행합니다.
+                this.cancelCountdown();
+                onComplete();
+                return; // tick 함수 실행을 여기서 종료합니다.
             }
-    
-            countdownEl.classList.add('show'); // 변경된 내용으로 애니메이션 실행
+            
+            // 4. 업데이트된 텍스트에 다시 애니메이션을 적용합니다.
+            countdownEl.classList.add('show');
+            count--; // 다음 tick을 위해 카운트를 1 감소시킵니다.
         };
-    
-        // 3. 1초 후에 tick 함수를 반복적으로 실행
+        
+        // 최초의 tick을 즉시 실행하여 '3'을 먼저 보여주고,
+        // 그 다음부터 1초 간격으로 반복 실행합니다.
+        tick(); 
         this.state.countdownIntervalId = setInterval(tick, 1000);
-    },
+        },
 
     cancelCountdown() {
         if (this.state.countdownIntervalId) {
