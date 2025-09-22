@@ -12,6 +12,7 @@ const Game = {
             musicSrc: null,
             musicVolume: 100,
             sfxVolume: 100,
+            bpm: 120, 
             userKeyMappings: null,
             requiredSongName: null,
         },
@@ -42,6 +43,7 @@ const Game = {
         this.state.totalPausedTime = 0;
         this.state.unprocessedNoteIndex = 0;
         this.state.settings.requiredSongName = null;
+        this.state.settings.bpm = 120;
     },
 
     runCountdown(onComplete) {
@@ -433,22 +435,37 @@ const Game = {
             UI.showMessage('menu', `오류: 차트의 레인 수(${chartData.lanes || '없음'})가 잘못되었습니다.`);
             return false;
         }
+
         this.state.settings.requiredSongName = chartData.songName || null;
         
+        // [핵심 수정] 차트의 BPM을 읽어와서 게임 상태 및 노트 속도를 설정합니다.
+        const chartBPM = chartData.bpm || 120;
+        this.state.settings.bpm = chartBPM;
+        
+        // BPM을 기반으로 노트 속도를 자동으로 계산 (값은 필요에 따라 조절 가능)
+        // 예: 120 BPM -> 속도 6, 180 BPM -> 속도 9
+        const calculatedSpeed = Math.round(chartBPM / 20);
+        // 속도는 1~20 사이의 값으로 보정
+        this.state.settings.noteSpeed = Math.max(1, Math.min(20, calculatedSpeed));
+
         this.state.notes = [];
         this.state.settings.lanes = chartData.lanes;
         document.getElementById('lanes-selector').value = chartData.lanes;
+        
         let noteIdCounter = 0;
         const processedNotes = [];
         chartData.notes.forEach(note => {
+            // 가짜 노트 타입을 인식하도록 수정
+            const type = note.type || 'tap'; // type이 없으면 tap으로 간주
             if (note.duration) {
                 const noteId = noteIdCounter++;
                 processedNotes.push({ ...note, type: 'long_head', noteId, processed: false, element: null });
                 processedNotes.push({ time: note.time + note.duration, lane: note.lane, type: 'long_tail', noteId, processed: false, element: null });
             } else {
-                processedNotes.push({ ...note, type: 'tap', processed: false, element: null });
+                processedNotes.push({ ...note, type: type, processed: false, element: null });
             }
         });
+        
         this.state.notes = processedNotes.sort((a,b) => a.time - b.time);
         this.state.totalNotes = chartData.notes.length;
         return true;
