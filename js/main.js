@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!isMusicMode) {
                 DOM.chartFileNameEl.textContent = '';
                 DOM.musicFileNameEl.textContent = '';
+                DOM.requiredMusicFileNameEl.textContent = '';
                 Game.state.notes = [];
                 Game.state.settings.musicSrc = null;
             }
@@ -150,6 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const chartData = JSON.parse(event.target.result);
                     if (Game.loadChartNotes(chartData)) {
                         DOM.chartFileNameEl.textContent = `차트: ${file.name}`;
+
+                        if (Game.state.settings.requiredSongName) {
+                            DOM.requiredMusicFileNameEl.textContent = `요구 음악 파일: ${Game.state.settings.requiredSongName}`;
+                        } else {
+                            DOM.requiredMusicFileNameEl.textContent = ''; // 없으면 비움
+                        }
                     }
                 } catch (error) {
                     UI.showMessage('menu', '잘못된 차트 파일 형식입니다.');
