@@ -13,6 +13,7 @@ const DOM = {
     musicModeControls: document.getElementById('music-mode-controls'),
     chartFileNameEl: document.getElementById('chart-file-name'),
     musicFileNameEl: document.getElementById('music-file-name'),
+    requiredMusicFileNameEl: document.getElementById('required-music-file-name'),
     screens: {
         menu: document.getElementById('menu-screen'),
         playing: document.getElementById('playing-screen'),
