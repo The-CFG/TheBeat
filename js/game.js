@@ -12,9 +12,6 @@ const Game = {
             musicVolume: 100,
             sfxVolume: 100,
             userKeyMappings: null,
-            // --- 가짜 노트 기능 추가 ---
-            isFalseNoteEnabled: false,
-            falseNoteProbability: 0,
         },
         keyMapping: [],
         activeLanes: [],
@@ -122,38 +119,47 @@ const Game = {
     },
 
     loop(timestamp) {
-        if (Game.state.isPaused) return;
-        const self = Game;
+        if (this.state.isPaused) return;
+        const self = this;
         const elapsedTime = self.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             timestamp - self.state.gameStartTime - self.state.totalPausedTime;
         self.updateNotes(elapsedTime);
-        if (self.state.processedNotes >= self.state.totalNotes && self.state.notes.length > 0) {
+        if (self.state.processedNotes >= self.state.totalNotes && self.state.totalNotes > 0) {
             setTimeout(() => self.end(), 500);
             return;
         }
-        self.state.animationFrameId = requestAnimationFrame(self.loop);
+        self.state.animationFrameId = requestAnimationFrame(self.loop.bind(self));
     },
 
     updateNotes(elapsedTime) {
         const gameHeight = DOM.lanesContainer.clientHeight;
         if (gameHeight === 0) return;
-        for (const note of this.state.notes) {
+
+        for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
+            const note = this.state.notes[i];
+
             if (note.processed && !note.element) {
+                if (i === this.state.unprocessedNoteIndex) {
+                    this.state.unprocessedNoteIndex++;
+                }
                 continue;
             }
+
             if (note.type === 'long_head' && note.processed) {
                 const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
                 if (tailNote && !tailNote.processed && !this.state.activeLanes[note.lane]) {
                     this.handleJudgement('miss', tailNote);
                 }
             }
+
             const timeToHit = note.time - elapsedTime;
             const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
             const isLongNote = note.type === 'long_head';
             const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
             const noteTopPosition = noteBottomPosition - noteHeight;
-            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
+
+            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote)) {
                 if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
                     const laneEl = DOM.lanesContainer.children[note.lane];
                     if (laneEl) {
@@ -163,23 +169,17 @@ const Game = {
                             note.element.classList.add('long');
                             note.element.style.height = `${noteHeight}px`;
                         }
-                        if (note.type === 'false') {
-                            note.element.classList.add('false');
-                        }
                         laneEl.appendChild(note.element);
                     }
                 }
             }
+
             if (note.element && note.element.isConnected) {
                 note.element.style.transform = `translateY(${noteTopPosition}px)`;
             }
+
             if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
-                // --- 가짜 노트 기능 추가 ---
-                if (note.type === 'false') {
-                    this.handleJudgement('perfect', note); // 가짜 노트를 놓치면 PERFECT
-                } else {
-                    this.handleJudgement('miss', note); // 일반 노트를 놓치면 MISS
-                }
+                this.handleJudgement('miss', note);
             }
         }
     },
@@ -196,14 +196,6 @@ const Game = {
         } else if (note.element) {
             note.element.remove();
             note.element = null;
-        }
-        
-        // 가짜 노트를 놓쳐서 받은 PERFECT는 점수/콤보를 올리지 않음
-        if (note.type === 'false' && judgement === 'perfect') {
-            this.state.processedNotes++;
-            UI.showJudgementFeedback('PERFECT', this.state.combo);
-            UI.updateScoreboard();
-            return; // 여기서 함수 종료
         }
 
         this.state.judgements[judgement]++;
@@ -230,41 +222,33 @@ const Game = {
             const notesAtSameTime = this.state.notes.filter(n =>
                 !n.processed && n.time === note.time
             );
-
             notesAtSameTime.forEach(n => this._processSingleJudgement('miss', n));
-
             Audio.playMissSound();
-            UI.showJudgementFeedback('MISS', this.state.combo);
+            UI.showJudgementFeedback('MISS', 0);
             UI.updateScoreboard();
-
         } else {
             this._processSingleJudgement(judgement, note);
-
-            if (judgement === 'perfect' || judgement === 'good') {
-                Audio.playHitSound();
-            } else {
-                Audio.playMissSound();
-            }
-
+            if (judgement === 'perfect' || judgement === 'good') Audio.playHitSound();
+            else Audio.playMissSound();
             UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
             UI.updateScoreboard();
         }
     },
 
     handleKeyDown(e) {
-        if (e.keyCode === 27) {
+        if (e.key === 'Escape') {
             this.togglePause();
             return;
         }
         if (this.state.gameState !== 'playing' || this.state.isPaused) return;
-        const laneIndex = this.state.keyMapping.indexOf(e.keyCode);
+        const laneIndex = this.state.keyMapping.findIndex(code => code === e.keyCode || code === e.key.toUpperCase().charCodeAt(0));
         if (laneIndex === -1 || this.state.activeLanes[laneIndex]) return;
         this.handleInputDown(laneIndex);
     },
 
     handleKeyUp(e) {
         if (this.state.gameState !== 'playing' || this.state.isPaused) return;
-        const laneIndex = this.state.keyMapping.indexOf(e.keyCode);
+        const laneIndex = this.state.keyMapping.findIndex(code => code === e.keyCode || code === e.key.toUpperCase().charCodeAt(0));
         if (laneIndex === -1) return;
         this.handleInputUp(laneIndex);
     },
@@ -273,19 +257,15 @@ const Game = {
         this.state.activeLanes[laneIndex] = true;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.add('active-feedback');
-
         const elapsedTime = this.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-
         let bestMatch = null;
         let smallestDiff = Infinity;
-
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
             if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
-
-            if (!note.processed && note.lane === laneIndex) {
+            if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head')) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
                     smallestDiff = timeDiff;
@@ -293,16 +273,10 @@ const Game = {
                 }
             }
         }
-
         if (bestMatch) {
-            // --- 가짜 노트 기능 추가 ---
-            if (bestMatch.type === 'false') {
-                this.handleJudgement('miss', bestMatch); // 가짜 노트를 치면 MISS
-            } else if (bestMatch.type === 'tap' || bestMatch.type === 'long_head') {
-                if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
-            }
+            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
+            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
+            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
         }
     },
 
@@ -310,21 +284,14 @@ const Game = {
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
-
         const elapsedTime = this.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-
         let bestMatch = null;
         let smallestDiff = Infinity;
-
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
-
-            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
-                break;
-            }
-
+            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
@@ -333,7 +300,6 @@ const Game = {
                 }
             }
         }
-
         if (bestMatch) {
             if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
             else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
@@ -408,40 +374,42 @@ const Game = {
     generateRandomNotes() {
         this.state.notes = [];
         let totalNotesToGenerate = parseInt(DOM.noteCountInput.value) || CONFIG.DEFAULT_NOTE_COUNT;
-        const { isFalseNoteEnabled, falseNoteProbability, dongtaProbability, longNoteProbability, lanes } = this.state.settings;
-
+        if (totalNotesToGenerate < CONFIG.NOTE_COUNT_MIN) totalNotesToGenerate = CONFIG.NOTE_COUNT_MIN;
+        if (totalNotesToGenerate > CONFIG.NOTE_COUNT_MAX) totalNotesToGenerate = CONFIG.NOTE_COUNT_MAX;
+        const simProbability = this.state.settings.dongtaProbability;
+        const longNoteProbability = this.state.settings.longNoteProbability;
         let generatedNotesCount = 0;
         let currentTime = 1000;
         let noteIdCounter = 0;
-        const bpm = 120;
-        const beatInterval = 60000 / bpm / 2;
-
-        // --- 가짜 노트 기능 추가 ---
-        const shouldBeFalseNote = () => isFalseNoteEnabled && Math.random() < falseNoteProbability;
-
         while (generatedNotesCount < totalNotesToGenerate) {
-            if (Math.random() < dongtaProbability && lanes >= 2) {
-                let availableLanes = Array.from(Array(lanes).keys());
-                let lane1 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
-                let lane2 = availableLanes.splice(Math.floor(Math.random() * availableLanes.length), 1)[0];
-                this.state.notes.push({ lane: lane1, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
-                this.state.notes.push({ lane: lane2, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
+            const canGenerateSimultaneous = this.state.settings.lanes > 1 && (totalNotesToGenerate - generatedNotesCount >= 2);
+            const canGenerateLongNote = (totalNotesToGenerate - generatedNotesCount >= 1);
+            if (canGenerateSimultaneous && Math.random() < simProbability) {
+                const availableLanes = Array.from({ length: this.state.settings.lanes }, (_, i) => i);
+                for (let i = availableLanes.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [availableLanes[i], availableLanes[j]] = [availableLanes[j], availableLanes[i]];
+                }
+                this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: 'tap' });
+                this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: 'tap' });
                 generatedNotesCount += 2;
-            } else if (Math.random() < longNoteProbability) {
-                const lane = Math.floor(Math.random() * lanes);
-                const duration = (Math.floor(Math.random() * 3) + 2) * 250;
+            } else if (canGenerateLongNote && Math.random() < longNoteProbability) {
+                const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                const duration = 500 + Math.random() * 1000;
                 const noteId = noteIdCounter++;
-                this.state.notes.push({ time: currentTime, lane, duration, type: 'long_head', noteId });
-                this.state.notes.push({ time: currentTime + duration, lane, type: 'long_tail', noteId });
-                generatedNotesCount += 2;
+                this.state.notes.push({ lane, time: currentTime, duration, type: 'long_head', noteId });
+                this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
+                currentTime += duration;
+                generatedNotesCount += 1;
             } else {
-                const lane = Math.floor(Math.random() * lanes);
-                this.state.notes.push({ lane, time: currentTime, type: shouldBeFalseNote() ? 'false' : 'tap' });
+                const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                this.state.notes.push({ lane: lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
             }
-            currentTime += beatInterval;
+            currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
         }
         this.state.totalNotes = generatedNotesCount;
+        this.state.notes.sort((a,b) => a.time - b.time);
     },
 
     loadChartNotes(chartData) {
@@ -452,25 +420,19 @@ const Game = {
         this.state.notes = [];
         this.state.settings.lanes = chartData.lanes;
         document.getElementById('lanes-selector').value = chartData.lanes;
-
         let noteIdCounter = 0;
         const processedNotes = [];
-        let calculatedTotalNotes = 0;
-        
         chartData.notes.forEach(note => {
             if (note.duration) {
                 const noteId = noteIdCounter++;
                 processedNotes.push({ ...note, type: 'long_head', noteId, processed: false, element: null });
                 processedNotes.push({ time: note.time + note.duration, lane: note.lane, type: 'long_tail', noteId, processed: false, element: null });
-                calculatedTotalNotes += 2;
             } else {
                 processedNotes.push({ ...note, type: 'tap', processed: false, element: null });
-                calculatedTotalNotes++;
             }
         });
-
-        this.state.notes = processedNotes;
-        this.state.totalNotes = calculatedTotalNotes;
+        this.state.notes = processedNotes.sort((a,b) => a.time - b.time);
+        this.state.totalNotes = chartData.notes.length;
         return true;
     }
 };
