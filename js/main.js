@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
-            DOM.difficulty.dongValue.textContent = `${e.target.value}%`;
+            DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
         DOM.difficulty.longNoteSlider.addEventListener('input', (e) => {
