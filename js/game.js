@@ -112,7 +112,7 @@ const Game = {
                 DOM.musicPlayer.play();
             }
             this.state.gameStartTime = performance.now();
-            this.loop();
+            this.loop(performance.now());
         });
     },
     end() {
