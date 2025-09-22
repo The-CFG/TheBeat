@@ -279,46 +279,64 @@
         </div>
 
         <!-- Editor Screen -->
-        <div id="editor-screen" class="hidden flex flex-col h-full">
-            <h2 class="text-3xl font-bold mb-4 text-white">차트 에디터</h2>
-            <div id="editor-message" class="hidden p-3 mb-4 text-center text-white bg-red-500 rounded-lg"></div>
-            <div class="flex-grow flex flex-col space-y-4 overflow-hidden">
-                <div class="flex items-center space-x-4">
-                    <input type="file" id="audio-file-input-editor" accept="audio/*" class="hidden">
-                    <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition">음악 파일 선택</label>
-                    <span id="audio-file-name-editor" class="text-sm text-gray-400 flex-1 truncate">선택된 파일 없음</span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <label for="bpm-input" class="text-lg">BPM:</label>
-                    <input type="number" id="bpm-input" value="120" class="w-24 p-2 bg-gray-700 rounded">
-                    <div id="editor-lanes-selector" class="flex space-x-2 btn-group">
-                        <button data-lanes="4" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">4L</button>
-                        <button data-lanes="5" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">5L</button>
-                        <button data-lanes="7" class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded-lg transition">7L</button>
+        <div id="editor-screen" class="hidden flex flex-col h-full text-white">
+            <div class="flex-shrink-0">
+                <h2 class="text-3xl font-bold mb-4">차트 에디터</h2>
+                <div id="editor-message" class="hidden p-3 mb-4 text-center bg-red-500 rounded-lg"></div>
+        
+                <!-- 상단 컨트롤 영역 -->
+                <div class="grid grid-cols-3 gap-4 p-4 bg-gray-800 rounded-lg">
+                    <!-- 1. 음악 설정 -->
+                    <div class="flex flex-col space-y-2">
+                        <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">음악 설정</h3>
+                        <div class="flex items-center space-x-2">
+                            <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-3 bg-teal-600 hover:bg-teal-500 rounded transition text-sm">음악 불러오기</label>
+                            <input type="file" id="audio-file-input-editor" accept="audio/*" class="hidden">
+                            <span id="audio-file-name-editor" class="text-xs text-gray-400 flex-1 truncate">선택된 파일 없음</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label for="editor-start-time" class="text-sm">시작(초):</label>
+                            <input type="number" id="editor-start-time" value="0" min="0" class="w-20 p-1 bg-gray-700 rounded text-sm">
+                        </div>
+                    </div>
+        
+                    <!-- 2. 차트 설정 -->
+                    <div class="flex flex-col space-y-2">
+                        <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">차트 설정</h3>
+                        <div class="flex items-center space-x-2">
+                            <label for="bpm-input" class="text-sm">BPM:</label>
+                            <input type="number" id="bpm-input" value="120" class="w-20 p-1 bg-gray-700 rounded text-sm">
+                        </div>
+                        <div id="editor-note-type-selector" class="flex space-x-2 btn-group pt-1">
+                            <button data-type="tap" class="px-3 py-1 bg-blue-500 hover:bg-blue-400 rounded transition text-sm active">일반</button>
+                            <button data-type="long" class="px-3 py-1 bg-purple-500 hover:bg-purple-400 rounded transition text-sm">롱노트</button>
+                            <button data-type="false" class="px-3 py-1 bg-red-400 hover:bg-red-300 rounded transition text-sm">가짜</button>
+                        </div>
+                    </div>
+        
+                    <!-- 3. 관리 -->
+                    <div class="flex flex-col space-y-2">
+                         <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">관리</h3>
+                         <div class="grid grid-cols-3 gap-2">
+                            <button id="editor-play-pause-btn" class="py-1 px-2 bg-green-600 hover:bg-green-500 rounded text-sm">재생</button>
+                            <button id="editor-save-btn" class="py-1 px-2 bg-blue-600 hover:bg-blue-500 rounded text-sm">저장</button>
+                            <button id="editor-load-btn" class="py-1 px-2 bg-purple-600 hover:bg-purple-500 rounded text-sm">열기</button>
+                            <button id="editor-reset-btn" class="py-1 px-2 bg-red-700 hover:bg-red-600 rounded text-sm">재설정</button>
+                            <button id="editor-back-btn" class="col-span-2 py-1 px-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">메인 메뉴로</button>
+                         </div>
                     </div>
                 </div>
-                <div class="flex justify-between items-center">
-                    <div id="editor-note-type-selector" class="flex space-x-2 btn-group">
-                        <button data-type="tap" class="px-3 py-1 bg-blue-500 hover:bg-blue-400 rounded-lg transition active">일반</button>
-                        <button data-type="long" class="px-3 py-1 bg-purple-500 hover:bg-purple-400 rounded-lg transition">롱노트</button>
-                        <button data-type="false" class="px-3 py-1 bg-red-400 hover:bg-red-300 rounded-lg transition">가짜</button>
-                    </div>
-                    <!-- [추가] 롱노트 상태 안내 레이블 -->
-                    <p id="editor-status-label" class="text-yellow-400 text-sm h-5"></p>
-                </div>
-                <div class="flex-grow relative bg-black min-h-0" id="editor-container">
-                    <div id="editor-timeline" class="h-full">
-                        <div id="editor-playhead"></div>
-                    </div>
-                </div>
-                <input type="file" id="editor-load-input" class="hidden" accept=".json">
-                <div class="flex space-x-4 mt-2">
-                    <button id="editor-play-pause-btn" class="w-full py-2 bg-green-600 hover:bg-green-500 rounded">재생</button>
-                    <button id="editor-load-btn" class="w-full py-2 bg-purple-600 hover:bg-purple-500 rounded">불러오기</button>
-                    <button id="editor-save-btn" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded">저장</button>
-                    <button id="editor-back-btn" class="w-full py-2 bg-gray-600 hover:bg-gray-500 rounded">메인 메뉴로</button>
+                <p id="editor-status-label" class="text-yellow-400 text-center h-5 mt-2"></p>
+            </div>
+        
+            <!-- 악보 편집 영역 -->
+            <div class="flex-grow relative bg-black min-h-0 mt-4" id="editor-container">
+                <div id="editor-timeline" class="h-full flex">
+                    <!-- 9개의 레인이 JS에 의해 여기에 생성됩니다. -->
+                    <div id="editor-playhead"></div>
                 </div>
             </div>
+            <input type="file" id="editor-load-input" class="hidden" accept=".json">
         </div>
     </div>
 </div>
