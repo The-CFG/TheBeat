@@ -174,22 +174,31 @@ const Game = {
     handleJudgement(judgement, note) {
         if (note.processed) return;
         note.processed = true;
-
+    
+        // 1. 노트 요소 제거 로직 (더 명확하게 재구성)
         if (note.type === 'long_tail') {
+            // 꼬리 노트가 판정되면, 머리 노트의 요소를 찾아서 제거
             const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
             if (headNote && headNote.element) {
                 headNote.element.remove();
                 headNote.element = null;
             }
-        // [수정된 부분] 'tap' 노트뿐만 아니라 'long_head' 노트도 제거하도록 조건을 확장합니다.
-        } else if ((note.type === 'tap' || note.type === 'long_head') && note.element) {
+        } else if (note.element) {
+            // 탭 노트와 롱노트 머리는 자신의 요소를 직접 제거
             note.element.remove();
             note.element = null;
         }
-
+    
+        // 2. 점수 및 콤보 계산 로직 (기존과 거의 동일)
         this.state.judgements[judgement]++;
-        if (note.type !== 'long_head') { this.state.processedNotes++; }
+        
+        // 롱노트의 '머리' 부분은 전체 노트 수에서 카운트하지 않음 (꼬리가 대신 카운트)
+        if (note.type !== 'long_head') {
+            this.state.processedNotes++;
+        }
+    
         this.state.score += CONFIG.POINTS[judgement];
+    
         if (judgement === 'miss' || judgement === 'bad') {
             this.state.combo = 0;
         } else {
@@ -199,8 +208,11 @@ const Game = {
                 if (tailNote) tailNote.headProcessed = true;
             }
         }
+    
+        // 3. 효과음 및 UI 피드백
         if (judgement === 'perfect' || judgement === 'good') Audio.playHitSound();
         else Audio.playMissSound();
+        
         UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
         UI.updateScoreboard();
     },
