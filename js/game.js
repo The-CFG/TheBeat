@@ -28,6 +28,7 @@ const Game = {
         totalPausedTime: 0,
         previousScreen: 'menu',
         countdownIntervalId: null,
+        unprocessedNoteIndex: 0,
     },
     
     resetState() {
@@ -37,6 +38,7 @@ const Game = {
         this.state.processedNotes = 0;
         this.state.isPaused = false;
         this.state.totalPausedTime = 0;
+        this.state.unprocessedNoteIndex = 0; 
     },
 
     runCountdown(onComplete) {
@@ -239,37 +241,74 @@ const Game = {
         this.state.activeLanes[laneIndex] = true;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.add('active-feedback');
+    
         const elapsedTime = this.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-        const hittableNotes = this.state.notes.filter(n =>
-            !n.processed && n.lane === laneIndex && (n.type === 'tap' || n.type === 'long_head') && Math.abs(n.time - elapsedTime) <= CONFIG.JUDGEMENT_WINDOWS_MS.miss
-        );
-        if (hittableNotes.length > 0) {
-            const noteToHit = hittableNotes.sort((a, b) => Math.abs(a.time - elapsedTime) - Math.abs(b.time - elapsedTime))[0];
-            const timeDiff = Math.abs(noteToHit.time - elapsedTime);
-            if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', noteToHit);
-            else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', noteToHit);
-            else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', noteToHit);
+    
+        let bestMatch = null;
+        let smallestDiff = Infinity;
+    
+        // [수정된 핵심 로직]
+        // 이미 처리된 노드는 건너뛰고, 앞으로 나올 노트들만 효율적으로 탐색합니다.
+        for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
+            const note = this.state.notes[i];
+    
+            // 최적화: 노트가 너무 미래에 있으면 탐색 중단
+            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
+                break;
+            }
+    
+            if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head')) {
+                const timeDiff = Math.abs(note.time - elapsedTime);
+                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                    smallestDiff = timeDiff;
+                    bestMatch = note;
+                }
+            }
+        }
+    
+        if (bestMatch) {
+            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
+            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
+            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
         }
     },
-
+    
     handleInputUp(laneIndex) {
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
+    
         const elapsedTime = this.state.settings.mode === 'music' ?
             DOM.musicPlayer.currentTime * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-        const hittableNotes = this.state.notes.filter(n =>
-            !n.processed && n.lane === laneIndex && n.type === 'long_tail' && n.headProcessed && Math.abs(n.time - elapsedTime) <= CONFIG.JUDGEMENT_WINDOWS_MS.miss
-        );
-        if (hittableNotes.length > 0) {
-            const noteToHit = hittableNotes.sort((a, b) => Math.abs(a.time - elapsedTime) - Math.abs(b.time - elapsedTime))[0];
-            const timeDiff = Math.abs(noteToHit.time - elapsedTime);
-            if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', noteToHit);
-            else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', noteToHit);
-            else if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', noteToHit);
+    
+        let bestMatch = null;
+        let smallestDiff = Infinity;
+    
+        // [수정된 핵심 로직] 롱노트의 꼬리 부분도 효율적으로 탐색합니다.
+        for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
+            const note = this.state.notes[i];
+            
+            // 최적화: 노트가 너무 미래에 있으면 탐색 중단
+            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
+                break;
+            }
+    
+            if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
+                 const timeDiff = Math.abs(note.time - elapsedTime);
+                 if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                    smallestDiff = timeDiff;
+                    bestMatch = note;
+                }
+            }
+        }
+        
+        if (bestMatch) {
+            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
+            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
+            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
         }
     },
 
