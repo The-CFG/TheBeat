@@ -47,7 +47,7 @@ const Editor = {
 
     setupEventListeners() {
         if (this.listenersInitialized) return;
-
+    
         // 상단 컨트롤
         DOM.editor.audioFileInput.addEventListener('change', (e) => this.handleAudioLoad(e));
         DOM.editor.startTimeInput.addEventListener('input', (e) => { this.state.startTimeOffset = parseFloat(e.target.value) || 0; });
@@ -60,10 +60,10 @@ const Editor = {
         DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
         DOM.editor.loadInput.addEventListener('change', (e) => this.handleChartLoad(e));
         DOM.editor.resetBtn.addEventListener('click', () => this.handleReset());
-
-        // 타임라인
-        DOM.editor.timeline.addEventListener('click', (e) => this.handleTimelineClick(e));
-
+    
+        // [핵심 수정] 타임라인 전체가 아닌, 노트가 올라가는 '레이어'에 직접 이벤트 리스너를 답니다.
+        DOM.editor.notesContainer.addEventListener('click', (e) => this.handleTimelineClick(e));
+    
         this.listenersInitialized = true;
     },
     
