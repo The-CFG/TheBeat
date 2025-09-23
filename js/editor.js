@@ -55,7 +55,9 @@ const Editor = {
         DOM.editor.noteTypeSelector.addEventListener('click', (e) => this.handleNoteTypeSelect(e));
         
         // 관리 버튼
-        DOM.editor.playPauseBtn.addEventListener('click', () => this.togglePlay());
+        DOM.editor.playBtn.addEventListener('click', () => this.handlePlayPause());
+    DOM.editor.stopBtn.addEventListener('click', () => this.stopPlayback()); // 새로 추가
+    DOM.editor.saveBtn.addEventListener('click', () => this.saveChart());
         DOM.editor.saveBtn.addEventListener('click', () => this.saveChart());
         DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
         DOM.editor.loadInput.addEventListener('change', (e) => this.handleChartLoad(e));
@@ -124,6 +126,7 @@ const Editor = {
     },
 
     handleTimelineClick(e) {
+        if (this.state.isPlaying) return;
         // 모든 계산의 기준을 스크롤이 발생하는 'container'로 잡습니다.
         const containerRect = DOM.editor.container.getBoundingClientRect();
         const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
@@ -310,22 +313,38 @@ const Editor = {
         }
     },
 
-    togglePlay() {
-        if (this.state.isPlaying) {
-            DOM.musicPlayer.pause();
-            DOM.editor.playPauseBtn.textContent = "재생";
-            cancelAnimationFrame(this.state.animationFrameId);
-        } else {
-            if (!DOM.musicPlayer.src) {
-                UI.showMessage('editor', '먼저 음악 파일을 선택해주세요.');
-                return;
-            }
-            DOM.musicPlayer.currentTime = this.state.startTimeOffset;
-            DOM.musicPlayer.play();
-            DOM.editor.playPauseBtn.textContent = "일시정지";
-            this.loop();
+    handlePlayPause() {
+        if (!DOM.musicPlayer.src) {
+            UI.showMessage('editor', '먼저 음악 파일을 선택해주세요.');
+            return;
         }
-        this.state.isPlaying = !this.state.isPlaying;
+    
+        if (DOM.musicPlayer.paused) { // 정지 또는 일시정지 상태일 때 -> 재생
+            DOM.musicPlayer.play();
+            DOM.editor.playBtn.textContent = "일시정지";
+            this.state.isPlaying = true;
+            this.loop();
+        } else { // 재생 중일 때 -> 일시정지
+            DOM.musicPlayer.pause();
+            DOM.editor.playBtn.textContent = "재생";
+            this.state.isPlaying = false;
+            cancelAnimationFrame(this.state.animationFrameId);
+        }
+    },
+
+    stopPlayback() {
+        this.state.isPlaying = false;
+        cancelAnimationFrame(this.state.animationFrameId);
+        
+        DOM.musicPlayer.pause();
+        DOM.musicPlayer.currentTime = this.state.startTimeOffset;
+        
+        DOM.editor.playBtn.textContent = "재생";
+        
+        // 플레이헤드 위치와 스크롤을 시작 지점으로 리셋
+        const playheadPosition = 0;
+        DOM.editor.playhead.style.top = `${playheadPosition}px`;
+        DOM.editor.container.scrollTop = playheadPosition;
     },
 
     resetLongNotePlacement(clearMessage = true) {
