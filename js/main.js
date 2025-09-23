@@ -53,6 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('editor-btn').addEventListener('click', () => {
+            DOM.gameArea.classList.remove('md:w-2/3');
+            DOM.gameArea.classList.add('md:w-1/2');
+            DOM.uiArea.classList.remove('md:w-1/3');
+            DOM.uiArea.classList.add('md:w-1/2');
             Game.state.gameState = 'editor';
             Editor.init();
         });
