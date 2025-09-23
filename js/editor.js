@@ -290,26 +290,36 @@ const Editor = {
     },
 
     drawGrid() {
+        // 기존에 그려진 비트라인들을 모두 제거합니다.
         DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
     
-        const duration = DOM.musicPlayer.duration || 300;
-        const beatsPerSecond = this.state.bpm / 60;
-        const totalBeats = duration * beatsPerSecond;
-        const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+        const duration = DOM.musicPlayer.duration || 300; // 음악의 전체 길이 (초)
+        const beatsPerSecond = this.state.bpm / 60; // 초당 4분음표 비트 수
+        const totalBeats = duration * beatsPerSecond; // 음악 전체에 포함된 총 4분음표 비트 수
         
-        // 전체 타임라인과 노트/그리드 컨테이너 모두에 높이를 설정하여 일관성을 유지합니다.
+        // 타임라인의 전체 높이를 총 비트 수에 맞춰 설정합니다.
+        const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
         DOM.editor.timeline.style.height = `${timelineHeight}px`;
         DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
         DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
     
-        for (let i = 0; i < totalBeats; i++) {
+        // [핵심 수정] 1/4박자(쿼터비트) 단위로 선을 그립니다.
+        // 대부분의 음악은 4/4박자이므로, 4개의 쿼터비트마다 마디선을 그립니다.
+        for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
             const line = document.createElement('div');
             line.className = 'beat-line';
-            if (i % 4 === 0) line.classList.add('measure');
-            line.style.top = `${i * CONFIG.EDITOR_BEAT_HEIGHT}px`;
+            
+            // beatIndex가 0, 4, 8, 12... 일 때, 즉 4개의 비트마다 마디선으로 지정
+            if (beatIndex % 4 === 0) {
+                line.classList.add('measure'); // 'measure' 클래스는 더 두꺼운 선 스타일
+            }
+            
+            // 각 비트라인의 수직 위치를 계산하여 배치
+            line.style.top = `${beatIndex * CONFIG.EDITOR_BEAT_HEIGHT}px`;
             line.style.width = '100%';
             
-            DOM.editor.notesContainer.appendChild(line);
+            // 비트라인을 노트 컨테이너의 플레이헤드 앞에 추가하여, 플레이헤드가 항상 위에 오도록 함
+            DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
         }
     },
 
