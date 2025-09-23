@@ -124,16 +124,17 @@ const Editor = {
     },
 
     handleTimelineClick(e) {
-        // [핵심 수정] 클릭된 'notesContainer'를 기준으로 좌표를 계산합니다.
-        const rect = DOM.editor.notesContainer.getBoundingClientRect();
-        const laneWidth = rect.width / CONFIG.EDITOR_LANE_IDS.length;
+        // 모든 계산의 기준을 스크롤이 발생하는 'container'로 잡습니다.
+        const containerRect = DOM.editor.container.getBoundingClientRect();
+        const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
         
-        const x = e.clientX - rect.left;
+        // X 좌표는 container의 왼쪽 경계를 기준으로 계산합니다.
+        const x = e.clientX - containerRect.left;
         const laneIndex = Math.floor(x / laneWidth);
         const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
     
-        // 스크롤 위치는 editor-container(스크롤이 있는 부모)를 기준으로 계산하는 것이 맞습니다.
-        const y = e.clientY - rect.top + DOM.editor.container.scrollTop;
+        // Y 좌표는 container의 위쪽 경계와 현재 스크롤 위치를 함께 고려하여 계산합니다.
+        const y = e.clientY - containerRect.top + DOM.editor.container.scrollTop;
         const beatsPerSecond = this.state.bpm / 60;
         const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
         const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
@@ -186,14 +187,13 @@ const Editor = {
     },
 
     renderNotes() {
-        // 기존 노트를 '노트 컨테이너'에서 제거합니다.
         DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
         
-        // [핵심 수정] 모든 계산의 기준을 'notesContainer'로 통일합니다.
-        const notesContainerRect = DOM.editor.notesContainer.getBoundingClientRect();
-        if (notesContainerRect.width === 0) return;
+        // 노트 너비 계산의 기준도 'container'로 통일합니다.
+        const containerRect = DOM.editor.container.getBoundingClientRect();
+        if (containerRect.width === 0) return;
     
-        const laneWidth = notesContainerRect.width / CONFIG.EDITOR_LANE_IDS.length;
+        const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
         const beatsPerSecond = this.state.bpm / 60;
     
         this.state.notes.forEach(note => {
@@ -218,7 +218,6 @@ const Editor = {
             noteEl.dataset.time = note.time;
             noteEl.dataset.lane = note.lane;
             
-            // 노트를 '노트 컨테이너'에 추가합니다.
             DOM.editor.notesContainer.appendChild(noteEl);
         });
     },
@@ -288,7 +287,6 @@ const Editor = {
     },
 
     drawGrid() {
-        // 기존 비트라인을 '노트 컨테이너'에서 제거합니다.
         DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
     
         const duration = DOM.musicPlayer.duration || 300;
@@ -296,16 +294,18 @@ const Editor = {
         const totalBeats = duration * beatsPerSecond;
         const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
         
+        // 전체 타임라인과 노트/그리드 컨테이너 모두에 높이를 설정하여 일관성을 유지합니다.
         DOM.editor.timeline.style.height = `${timelineHeight}px`;
+        DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
+        DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
     
         for (let i = 0; i < totalBeats; i++) {
             const line = document.createElement('div');
             line.className = 'beat-line';
             if (i % 4 === 0) line.classList.add('measure');
             line.style.top = `${i * CONFIG.EDITOR_BEAT_HEIGHT}px`;
-            line.style.width = '100%'; // 너비를 100%로 설정
+            line.style.width = '100%';
             
-            // 비트라인을 '노트 컨테이너'에 추가합니다.
             DOM.editor.notesContainer.appendChild(line);
         }
     },
