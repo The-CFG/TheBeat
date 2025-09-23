@@ -124,24 +124,27 @@ const Editor = {
     },
 
     handleTimelineClick(e) {
-        const rect = DOM.editor.timeline.getBoundingClientRect();
+        // [핵심 수정] 클릭된 'notesContainer'를 기준으로 좌표를 계산합니다.
+        const rect = DOM.editor.notesContainer.getBoundingClientRect();
         const laneWidth = rect.width / CONFIG.EDITOR_LANE_IDS.length;
+        
         const x = e.clientX - rect.left;
         const laneIndex = Math.floor(x / laneWidth);
         const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
-
+    
+        // 스크롤 위치는 editor-container(스크롤이 있는 부모)를 기준으로 계산하는 것이 맞습니다.
         const y = e.clientY - rect.top + DOM.editor.container.scrollTop;
         const beatsPerSecond = this.state.bpm / 60;
         const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
         const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
-
+    
         if (e.target.classList.contains('editor-note')) {
             const time = parseFloat(e.target.dataset.time);
             this.state.notes = this.state.notes.filter(n => n.time !== time);
             this.renderNotes();
             return;
         }
-
+    
         switch (this.state.selectedNoteType) {
             case 'long':
                 this.placeLongNote(timeInMs, laneId);
@@ -186,10 +189,11 @@ const Editor = {
         // 기존 노트를 '노트 컨테이너'에서 제거합니다.
         DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
         
-        const timelineRect = DOM.editor.timeline.getBoundingClientRect();
-        if (timelineRect.width === 0) return;
+        // [핵심 수정] 모든 계산의 기준을 'notesContainer'로 통일합니다.
+        const notesContainerRect = DOM.editor.notesContainer.getBoundingClientRect();
+        if (notesContainerRect.width === 0) return;
     
-        const laneWidth = timelineRect.width / CONFIG.EDITOR_LANE_IDS.length;
+        const laneWidth = notesContainerRect.width / CONFIG.EDITOR_LANE_IDS.length;
         const beatsPerSecond = this.state.bpm / 60;
     
         this.state.notes.forEach(note => {
