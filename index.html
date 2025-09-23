@@ -332,8 +332,10 @@
             <!-- 악보 편집 영역 -->
             <div class="flex-grow relative bg-black min-h-0 mt-4" id="editor-container">
                 <div id="editor-timeline" class="h-full flex">
-                    <!-- 9개의 레인이 JS에 의해 여기에 생성됩니다. -->
-                    <div id="editor-playhead"></div>
+                    <div id="editor-grid-container"></div>
+                    <div id="editor-notes-container">
+                        <div id="editor-playhead"></div>
+                    </div>
                 </div>
             </div>
             <input type="file" id="editor-load-input" class="hidden" accept=".json">
