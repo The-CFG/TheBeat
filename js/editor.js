@@ -126,6 +126,13 @@ const Editor = {
         reader.readAsText(file);
     },
 
+    clearNotes() {
+        this.state.notes = [];
+        this.renderNotes();
+        UI.showMessage('editor', '모든 노트를 삭제했습니다.');
+    },
+    
+    // [수정] handleReset 함수가 clearNotes를 호출하도록 변경
     handleReset() {
         if (!this.state.isConfirmingReset) {
             this.state.isConfirmingReset = true;
@@ -141,7 +148,12 @@ const Editor = {
                 }
             }, 3000);
         } else {
-            this.resetEditorState();
+            // resetEditorState() 대신 clearNotes()를 호출합니다.
+            this.clearNotes();
+            this.state.isConfirmingReset = false;
+            DOM.editor.resetBtn.textContent = '재설정';
+            DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
+            DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
         }
     },
 
