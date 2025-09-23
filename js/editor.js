@@ -12,6 +12,7 @@ const Editor = {
         isConfirmingReset: false,
         playbackStartTime: 0, // 재생 시작 시점의 타임스탬프
         timeWhenPaused: 0,
+        totalMeasures: 100,
     },
 
     init() {
@@ -30,6 +31,7 @@ const Editor = {
         this.state.startTimeOffset = 0;
         this.state.audioFileName = '';
         this.state.selectedNoteType = 'tap';
+        this.state.totalMeasures = 100;
         
         DOM.musicPlayer.pause();
         DOM.musicPlayer.src = '';
@@ -47,6 +49,20 @@ const Editor = {
         this.renderNotes();
     },
 
+    addMeasure() {
+        this.state.totalMeasures++;
+        this.drawGrid();
+        this.renderNotes();
+    },
+    
+    removeMeasure() {
+        if (this.state.totalMeasures > 1) { // 최소 1마디는 유지
+            this.state.totalMeasures--;
+            this.drawGrid();
+            this.renderNotes();
+        }
+    },
+
     setupEventListeners() {
         if (this.listenersInitialized) return;
     
@@ -54,6 +70,8 @@ const Editor = {
         DOM.editor.audioFileInput.addEventListener('change', (e) => this.handleAudioLoad(e));
         DOM.editor.startTimeInput.addEventListener('input', (e) => { this.state.startTimeOffset = parseFloat(e.target.value) || 0; });
         DOM.editor.bpmInput.addEventListener('input', (e) => { this.state.bpm = parseInt(e.target.value) || 120; this.drawTimeline(); this.renderNotes(); });
+        DOM.editor.addMeasureBtn.addEventListener('click', () => this.addMeasure());
+        DOM.editor.removeMeasureBtn.addEventListener('click', () => this.removeMeasure());
         DOM.editor.noteTypeSelector.addEventListener('click', (e) => this.handleNoteTypeSelect(e));
         
         // 관리 버튼
@@ -310,35 +328,29 @@ const Editor = {
     },
 
     drawGrid() {
-        // 기존에 그려진 비트라인들을 모두 제거합니다.
         DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
     
-        const duration = DOM.musicPlayer.duration || 300; // 음악의 전체 길이 (초)
-        const beatsPerSecond = this.state.bpm / 60; // 초당 4분음표 비트 수
-        const totalBeats = duration * beatsPerSecond; // 음악 전체에 포함된 총 4분음표 비트 수
+        // [핵심 수정] 음악 길이 대신, 수동으로 설정된 마디 수를 기준으로 길이를 계산
+        const beatsPerMeasure = 4; // 4/4박자 기준
+        const totalBeats = this.state.totalMeasures * beatsPerMeasure;
         
-        // 타임라인의 전체 높이를 총 비트 수에 맞춰 설정합니다.
         const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+        
         DOM.editor.timeline.style.height = `${timelineHeight}px`;
         DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
         DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
     
-        // [핵심 수정] 1/4박자(쿼터비트) 단위로 선을 그립니다.
-        // 대부분의 음악은 4/4박자이므로, 4개의 쿼터비트마다 마디선을 그립니다.
         for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
             const line = document.createElement('div');
             line.className = 'beat-line';
             
-            // beatIndex가 0, 4, 8, 12... 일 때, 즉 4개의 비트마다 마디선으로 지정
-            if (beatIndex % 4 === 0) {
-                line.classList.add('measure'); // 'measure' 클래스는 더 두꺼운 선 스타일
+            if (beatIndex % beatsPerMeasure === 0) {
+                line.classList.add('measure');
             }
             
-            // 각 비트라인의 수직 위치를 계산하여 배치
             line.style.top = `${beatIndex * CONFIG.EDITOR_BEAT_HEIGHT}px`;
             line.style.width = '100%';
             
-            // 비트라인을 노트 컨테이너의 플레이헤드 앞에 추가하여, 플레이헤드가 항상 위에 오도록 함
             DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
         }
     },
