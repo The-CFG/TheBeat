@@ -50,6 +50,9 @@ const DOM = {
     editor: {
         container: document.getElementById('editor-container'),
         timeline: document.getElementById('editor-timeline'),
+        gridContainer: document.getElementById('editor-grid-container'),
+        notesContainer: document.getElementById('editor-notes-container'),
+        playhead: document.getElementById('editor-playhead'),
         playhead: document.getElementById('editor-playhead'),
         
         // 상단 컨트롤
