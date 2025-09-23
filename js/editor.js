@@ -68,23 +68,17 @@ const Editor = {
     },
     
     drawTimeline() {
-        const timeline = DOM.editor.timeline;
-        // 플레이헤드를 제외한 모든 자식 요소를 제거합니다.
-        while (timeline.firstChild && timeline.firstChild !== DOM.editor.playhead) {
-            timeline.removeChild(timeline.firstChild);
-        }
+        const gridContainer = DOM.editor.gridContainer;
+        gridContainer.innerHTML = ''; // 그리드 컨테이너만 비웁니다.
         
-        // 9개의 시각적 레인 div를 생성하여 배경 역할을 하도록 합니다.
+        // 9개의 시각적 레인을 '그리드 컨테이너'에 생성합니다.
         CONFIG.EDITOR_LANE_IDS.forEach(() => {
             const laneEl = document.createElement('div');
             laneEl.className = 'editor-lane';
-            timeline.appendChild(laneEl);
+            gridContainer.appendChild(laneEl);
         });
     
-        // 플레이헤드를 다른 요소들 위로 오도록 마지막에 추가합니다.
-        timeline.appendChild(DOM.editor.playhead);
-    
-        this.drawGrid(); // 가로 비트라인을 그립니다.
+        this.drawGrid();
     },
 
     handleAudioLoad(e) {
@@ -189,27 +183,24 @@ const Editor = {
     },
 
     renderNotes() {
-        // 기존에 그려진 모든 '노트'만 제거합니다. (레인 div는 남겨둠)
-        document.querySelectorAll('.editor-note').forEach(n => n.remove());
+        // 기존 노트를 '노트 컨테이너'에서 제거합니다.
+        DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
         
         const timelineRect = DOM.editor.timeline.getBoundingClientRect();
         if (timelineRect.width === 0) return;
-        
-        // 전체 타임라인 너비를 기준으로 레인 하나의 너비를 계산합니다.
+    
         const laneWidth = timelineRect.width / CONFIG.EDITOR_LANE_IDS.length;
         const beatsPerSecond = this.state.bpm / 60;
-        
+    
         this.state.notes.forEach(note => {
             const noteEl = document.createElement('div');
             noteEl.className = 'editor-note';
             if (note.duration) noteEl.classList.add('long');
             if (note.type === 'false') noteEl.classList.add('false');
-        
-            // 노트의 레인 ID로부터 숫자 인덱스(0~8)를 찾습니다.
+    
             const laneIndex = CONFIG.EDITOR_LANE_IDS.indexOf(note.lane);
-            if (laneIndex === -1) return; // 유효하지 않은 레인 ID는 건너뜀
-        
-            // [핵심] 전체 타임라인을 기준으로 left와 width를 설정합니다.
+            if (laneIndex === -1) return;
+    
             noteEl.style.width = `${laneWidth}px`;
             noteEl.style.left = `${laneIndex * laneWidth}px`;
             
@@ -223,11 +214,10 @@ const Editor = {
             noteEl.dataset.time = note.time;
             noteEl.dataset.lane = note.lane;
             
-            // [핵심] 노트를 타임라인의 직접적인 자식으로 추가합니다.
-            DOM.editor.timeline.appendChild(noteEl);
+            // 노트를 '노트 컨테이너'에 추가합니다.
+            DOM.editor.notesContainer.appendChild(noteEl);
         });
     },
-
     saveChart() {
         if (!this.state.audioFileName) {
             UI.showMessage('editor', '음악 파일을 로딩해주세요!');
@@ -294,20 +284,25 @@ const Editor = {
     },
 
     drawGrid() {
-        document.querySelectorAll('.beat-line').forEach(l => l.remove());
+        // 기존 비트라인을 '노트 컨테이너'에서 제거합니다.
+        DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
+    
         const duration = DOM.musicPlayer.duration || 300;
         const beatsPerSecond = this.state.bpm / 60;
         const totalBeats = duration * beatsPerSecond;
         const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
         
         DOM.editor.timeline.style.height = `${timelineHeight}px`;
-
+    
         for (let i = 0; i < totalBeats; i++) {
             const line = document.createElement('div');
             line.className = 'beat-line';
             if (i % 4 === 0) line.classList.add('measure');
             line.style.top = `${i * CONFIG.EDITOR_BEAT_HEIGHT}px`;
-            DOM.editor.timeline.insertBefore(line, DOM.editor.playhead);
+            line.style.width = '100%'; // 너비를 100%로 설정
+            
+            // 비트라인을 '노트 컨테이너'에 추가합니다.
+            DOM.editor.notesContainer.appendChild(line);
         }
     },
 
