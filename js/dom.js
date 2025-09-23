@@ -63,7 +63,8 @@ const DOM = {
         noteTypeSelector: document.getElementById('editor-note-type-selector'),
         
         // 관리 버튼
-        playPauseBtn: document.getElementById('editor-play-pause-btn'),
+        playBtn: document.getElementById('editor-play-btn'),
+        stopBtn: document.getElementById('editor-stop-btn'),
         saveBtn: document.getElementById('editor-save-btn'),
         loadBtn: document.getElementById('editor-load-btn'),
         resetBtn: document.getElementById('editor-reset-btn'),
