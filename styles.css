@@ -184,9 +184,9 @@ body {
     transform: scale(1.05);
 }
 #editor-timeline {
-    display: flex;
-    position: relative;
-    background-color: #1a202c; /* 더 어두운 배경 */
+    display: flex; /* 자식인 .editor-lane들이 가로로 정렬되도록 함 */
+    position: relative; /* 자식인 .editor-note와 #editor-playhead의 위치 기준이 됨 */
+    background-color: #1a202c;
     cursor: pointer;
     min-height: 200px;
 }
