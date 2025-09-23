@@ -10,6 +10,8 @@ const Editor = {
         isPlacingLongNote: false,
         longNoteStart: null,
         isConfirmingReset: false,
+        playbackStartTime: 0, // 재생 시작 시점의 타임스탬프
+        timeWhenPaused: 0,
     },
 
     init() {
@@ -281,11 +283,29 @@ const Editor = {
 
     loop() {
         if (!this.state.isPlaying) return;
+    
+        let elapsedSeconds;
+        const isMusicLoaded = !!DOM.musicPlayer.src;
+    
+        // [핵심 수정] 음악 유무에 따라 시간 소스를 결정합니다.
+        if (isMusicLoaded && !DOM.musicPlayer.paused) {
+            // 소스 1: 음악 플레이어의 현재 시간 (가장 정확함)
+            elapsedSeconds = DOM.musicPlayer.currentTime;
+        } else {
+            // 소스 2: performance.now() 기반의 내부 타이머
+            const elapsedTimeMs = performance.now() - this.state.playbackStartTime;
+            elapsedSeconds = elapsedTimeMs / 1000;
+        }
+    
         const beatsPerSecond = this.state.bpm / 60;
-        const beats = (DOM.musicPlayer.currentTime - this.state.startTimeOffset) * beatsPerSecond;
+        const beats = elapsedSeconds * beatsPerSecond;
         const playheadPosition = beats * CONFIG.EDITOR_BEAT_HEIGHT;
+        
         DOM.editor.playhead.style.top = `${playheadPosition}px`;
+        
+        // 플레이헤드가 화면 중앙에 오도록 자동 스크롤
         DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
+        
         this.state.animationFrameId = requestAnimationFrame(this.loop.bind(this));
     },
 
@@ -324,18 +344,30 @@ const Editor = {
     },
 
     handlePlayPause() {
-        if (!DOM.musicPlayer.src) {
-            UI.showMessage('editor', '먼저 음악 파일을 선택해주세요.');
-            return;
+        // 음악이 없으면 isMusicLoaded는 false가 됩니다.
+        const isMusicLoaded = !!DOM.musicPlayer.src;
+    
+        if (!isMusicLoaded && this.state.notes.length === 0) {
+             UI.showMessage('editor', '음악을 불러오거나 노트를 추가해주세요.');
+             return;
         }
     
-        if (DOM.musicPlayer.paused) { // 정지 또는 일시정지 상태일 때 -> 재생
-            DOM.musicPlayer.play();
+        if (!this.state.isPlaying) { // 정지 또는 일시정지 상태일 때 -> 재생
+            // 타이머 시작/재개
+            this.state.playbackStartTime = performance.now() - this.state.timeWhenPaused;
+            
+            if (isMusicLoaded) DOM.musicPlayer.play();
+            
             DOM.editor.playBtn.textContent = "일시정지";
             this.state.isPlaying = true;
             this.loop();
+    
         } else { // 재생 중일 때 -> 일시정지
-            DOM.musicPlayer.pause();
+            // 타이머 상태 기록
+            this.state.timeWhenPaused = performance.now() - this.state.playbackStartTime;
+    
+            if (isMusicLoaded) DOM.musicPlayer.pause();
+    
             DOM.editor.playBtn.textContent = "재생";
             this.state.isPlaying = false;
             cancelAnimationFrame(this.state.animationFrameId);
@@ -346,15 +378,23 @@ const Editor = {
         this.state.isPlaying = false;
         cancelAnimationFrame(this.state.animationFrameId);
         
-        DOM.musicPlayer.pause();
-        DOM.musicPlayer.currentTime = this.state.startTimeOffset;
+        // 타이머 상태 초기화
+        this.state.playbackStartTime = 0;
+        this.state.timeWhenPaused = 0;
+    
+        if (DOM.musicPlayer.src) {
+            DOM.musicPlayer.pause();
+            DOM.musicPlayer.currentTime = this.state.startTimeOffset;
+        }
         
         DOM.editor.playBtn.textContent = "재생";
         
         // 플레이헤드 위치와 스크롤을 시작 지점으로 리셋
-        const playheadPosition = 0;
+        const beatsPerSecond = this.state.bpm / 60;
+        const offsetBeats = this.state.startTimeOffset * beatsPerSecond;
+        const playheadPosition = offsetBeats * CONFIG.EDITOR_BEAT_HEIGHT;
         DOM.editor.playhead.style.top = `${playheadPosition}px`;
-        DOM.editor.container.scrollTop = playheadPosition;
+        DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
     },
 
     resetLongNotePlacement(clearMessage = true) {
