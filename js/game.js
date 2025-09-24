@@ -127,7 +127,7 @@ const Game = {
             if (this.state.isPaused) return;
             const self = this;
             const elapsedTime = self.state.settings.mode === 'music' ?
-                (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000 :
+                Math.max(0, (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000) :
                 timestamp - self.state.gameStartTime - self.state.totalPausedTime;
             self.updateNotes(elapsedTime);
             if (self.state.processedNotes >= self.state.totalNotes && self.state.totalNotes > 0) {
@@ -205,7 +205,7 @@ const Game = {
                 headNote.element.remove();
                 headNote.element = null;
             }
-        } else if (note.type === 'tap' && note.element) {
+        } else if ((note.type === 'tap' || note.type === 'false') && note.element) {
             note.element.remove();
             note.element = null;
         }
@@ -273,7 +273,7 @@ const Game = {
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
             const elapsedTime = this.state.settings.mode === 'music' ?
-                (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000 :
+                Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000) :
                 performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
             let bestMatch = null;
             let smallestDiff = Infinity;
@@ -303,7 +303,7 @@ const Game = {
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
         const elapsedTime = this.state.settings.mode === 'music' ?
-            (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000 :
+            Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000) :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
         let bestMatch = null;
         let smallestDiff = Infinity;
