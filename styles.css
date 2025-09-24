@@ -216,35 +216,6 @@ body {
     position: absolute; /* 이 부분이 중요 */
 }
 
-#debug-overlay .title {
-    padding: 8px;
-    background-color: #2d3748;
-    border-bottom: 1px solid #4a5568;
-    font-weight: bold;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-}
-
-#debug-log-container {
-    padding: 8px;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-
-#debug-log-container p {
-    margin-bottom: 4px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid #2d3748;
-    word-break: break-all;
-}
-
-#debug-log-container .error-context {
-    color: #f6e05e; /* 노란색 */
-}
-#debug-log-container .error-message {
-    color: #fca5a5; /* 붉은색 */
-}
-
 #debug-overlay {
     position: fixed;
     top: 10px;
