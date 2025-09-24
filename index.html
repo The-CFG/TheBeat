@@ -296,8 +296,13 @@
                     </div>
                     
                     <div id="tab-content-etc" class="tab-content hidden">
-                        <h3 class="text-xl font-semibold mb-2 text-white">개발자 모드</h3>
-                        <p class="text-gray-400">추후 업데이트 예정입니다.</p>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2 text-white">디버그 모드</h3>
+                            <div class="flex items-center justify-between text-sm">
+                                <label for="debug-mode-toggle">디버그 오버레이 활성화</label>
+                                <input id="debug-mode-toggle" type="checkbox" class="h-5 w-5 bg-gray-700 rounded border-gray-600 text-blue-500 focus:ring-blue-500">
+                            </div>
+                        </div>
                         <div class="border-t border-gray-700 pt-4 mt-4">
                             <h3 class="text-xl font-semibold mb-2 text-white">정보</h3>
                             <div class="text-gray-400 text-sm space-y-1">
@@ -410,6 +415,13 @@
     </div>
 </div>
 
+<div id="debug-overlay" class="hidden">
+    <h3 class="title">디버그 로그</h3>
+    <div id="debug-log-container">
+        <!-- 에러 로그가 여기에 동적으로 추가됩니다. -->
+    </div>
+</div>
+    
 <audio id="music-player"></audio>
 
 <!-- JavaScript Files -->
