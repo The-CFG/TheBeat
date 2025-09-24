@@ -111,6 +111,7 @@ const Editor = {
             DOM.editor.audioFileNameEl.textContent = file.name;
             DOM.musicPlayer.onloadedmetadata = () => this.drawGrid();
         }
+        e.target.value = null;
     },
 
     handleChartLoad(e) {
@@ -124,6 +125,7 @@ const Editor = {
             } catch (error) { UI.showMessage('editor', '잘못된 차트 파일 형식입니다.'); }
         };
         reader.readAsText(file);
+        e.target.value = null;
     },
 
     clearNotes() {
