@@ -59,6 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.uiArea.classList.add('md:w-1/2');
             Game.state.gameState = 'editor';
             Editor.init();
+
+            setTimeout(() => {
+                Editor.drawTimeline();
+                Editor.renderNotes();
+            }, 0);
         });
 
         DOM.editor.backBtn.addEventListener('click', () => {
@@ -222,6 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.settings.controls.saveBtn.addEventListener('click', () => {
             saveKeyBindings();
+        });
+
+        window.addEventListener('resize', () => {
+            if (Game.state.gameState === 'editor') {
+                Editor.drawTimeline();
+                Editor.renderNotes();
+            }
         });
 
         DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
