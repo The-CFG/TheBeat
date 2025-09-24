@@ -176,6 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
             reader.readAsText(file);
+            e.target.value = null;
         });
 
         document.getElementById('music-file-input').addEventListener('change', (e) => {
@@ -184,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 Game.state.settings.musicSrc = URL.createObjectURL(file);
                 DOM.musicFileNameEl.textContent = `음악: ${file.name}`;
             }
+            e.target.value = null;
         });
 
         DOM.settings.tabsContainer.addEventListener('click', (e) => {
