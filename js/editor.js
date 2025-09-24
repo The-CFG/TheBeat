@@ -200,15 +200,21 @@ const Editor = {
                 this.renderNotes();
                 return;
             }
-            const rect = DOM.editor.notesContainer.getBoundingClientRect();
-            const laneWidth = rect.width / CONFIG.EDITOR_LANE_IDS.length;
+    
+            // [핵심 수정] 모든 계산의 기준을 'container'와 'clientWidth'로 통일합니다.
+            const container = DOM.editor.container;
+            const rect = container.getBoundingClientRect(); // 화면상 위치를 얻기 위해 필요
+            const laneWidth = container.clientWidth / CONFIG.EDITOR_LANE_IDS.length; // 스크롤바를 제외한 실제 너비 사용
+            
             const x = e.clientX - rect.left;
             const laneIndex = Math.floor(x / laneWidth);
             const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
-            const y = e.clientY - rect.top + DOM.editor.container.scrollTop;
+    
+            const y = e.clientY - rect.top + container.scrollTop;
             const beatsPerSecond = this.state.bpm / 60;
             const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
             const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
+            
             switch (this.state.selectedNoteType) {
                 case 'long': this.placeLongNote(timeInMs, laneId); break;
                 case 'tap': case 'false': this.placeSimpleNote(timeInMs, laneId); break;
@@ -253,12 +259,11 @@ const Editor = {
         try {
             DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
             
-            // [핵심 수정] 기준점을 'notesContainer'로 통일합니다.
-            // handleTimelineClick 함수가 사용하는 기준점과 동일하게 맞춥니다.
-            const notesContainerRect = DOM.editor.notesContainer.getBoundingClientRect();
-            if (notesContainerRect.width === 0) return;
+            // [핵심 수정] 노트 너비 계산의 기준도 'container.clientWidth'로 통일합니다.
+            const container = DOM.editor.container;
+            if (container.clientWidth === 0) return;
     
-            const laneWidth = notesContainerRect.width / CONFIG.EDITOR_LANE_IDS.length;
+            const laneWidth = container.clientWidth / CONFIG.EDITOR_LANE_IDS.length; // 스크롤바를 제외한 실제 너비 사용
             const beatsPerSecond = this.state.bpm / 60;
     
             this.state.notes.forEach(note => {
