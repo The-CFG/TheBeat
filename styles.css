@@ -259,10 +259,15 @@ body {
 .debug-section:last-child {
     border-bottom: none;
 }
-/* 각 섹션이 공간을 유연하게 차지하도록 설정 */
-.debug-section:nth-child(1) { flex: 0 0 80px; } /* 성능 섹션은 고정 높이 */
-.debug-section:nth-child(2) { flex: 1; }       /* 상태 뷰어는 남은 공간 차지 */
-.debug-section:nth-child(3) { flex: 1; }       /* 에러 로그도 남은 공간 차지 */
+.debug-section:nth-child(1) { 
+    flex: 0 0 80px; /* 성능 섹션: 80px 고정 높이 (기존과 동일) */
+}
+.debug-section:nth-child(2) { 
+    flex: 0 0 150px; /* 게임 상태 섹션: 150px 고정 높이로 변경 */
+}
+.debug-section:nth-child(3) { 
+    flex: 1; /* 에러 로그 섹션: 나머지 모든 공간을 차지하도록 변경 */
+}
 
 
 .debug-section-title {
