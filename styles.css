@@ -254,6 +254,7 @@ body {
     flex-direction: column;
     overflow: hidden;
     border-bottom: 1px dashed #4a5568;
+    min-height: 0;
 }
 .debug-section:last-child {
     border-bottom: none;
