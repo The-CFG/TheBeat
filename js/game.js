@@ -48,6 +48,8 @@ const Game = {
         this.state.settings.requiredSongName = null;
         this.state.settings.startTimeOffset = 0;
         this.state.settings.bpm = 120;
+        this.state.animationFrameId = null;
+        this.state.countdownIntervalId = null;
     },
 
     runCountdown(onComplete) {
