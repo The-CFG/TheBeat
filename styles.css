@@ -216,23 +216,6 @@ body {
     position: absolute; /* 이 부분이 중요 */
 }
 
-#debug-overlay {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    width: 400px;
-    max-height: 50vh;
-    background-color: rgba(0, 0, 0, 0.8);
-    border: 1px solid #4a5568;
-    border-radius: 8px;
-    z-index: 1000;
-    color: white;
-    font-family: monospace;
-    font-size: 12px;
-    display: flex;
-    flex-direction: column;
-}
-
 #debug-overlay .title {
     padding: 8px;
     background-color: #2d3748;
@@ -260,4 +243,86 @@ body {
 }
 #debug-log-container .error-message {
     color: #fca5a5; /* 붉은색 */
+}
+
+#debug-overlay {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 450px;
+    height: 60vh;
+    background-color: rgba(0, 0, 0, 0.85);
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    z-index: 1000;
+    color: white;
+    font-family: monospace;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(2px);
+}
+
+#debug-overlay .title {
+    padding: 8px;
+    background-color: #2d3748;
+    border-bottom: 1px solid #4a5568;
+    font-weight: bold;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    flex-shrink: 0;
+}
+
+.debug-content-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.debug-section {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-bottom: 1px dashed #4a5568;
+}
+.debug-section:last-child {
+    border-bottom: none;
+}
+/* 각 섹션이 공간을 유연하게 차지하도록 설정 */
+.debug-section:nth-child(1) { flex: 0 0 80px; } /* 성능 섹션은 고정 높이 */
+.debug-section:nth-child(2) { flex: 1; }       /* 상태 뷰어는 남은 공간 차지 */
+.debug-section:nth-child(3) { flex: 1; }       /* 에러 로그도 남은 공간 차지 */
+
+
+.debug-section-title {
+    padding: 4px 8px;
+    background-color: rgba(74, 85, 104, 0.5);
+    font-weight: bold;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.debug-container {
+    padding: 8px;
+    overflow: auto;
+    flex-grow: 1;
+}
+.debug-container pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+#debug-log-container p {
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #2d3748;
+    word-break: break-all;
+}
+#debug-log-container .error-context { color: #f6e05e; }
+#debug-log-container .error-message { color: #fca5a5; }
+
+#debug-perf-container p {
+    margin: 0;
+    padding: 1px 0;
 }
