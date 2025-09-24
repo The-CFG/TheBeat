@@ -356,28 +356,39 @@ const Editor = {
         }
     },
 
-    handlePlayPause() {
+    async handlePlayPause() { // [수정] async 키워드 추가
         try {
             const isMusicLoaded = !!DOM.musicPlayer.src;
             if (!isMusicLoaded && this.state.notes.length === 0) {
                 UI.showMessage('editor', '음악을 불러오거나 노트를 추가해주세요.');
                 return;
             }
-            if (!this.state.isPlaying) {
+    
+            if (!this.state.isPlaying) { // 정지 또는 일시정지 상태일 때 -> 재생
                 this.state.playbackStartTime = performance.now() - this.state.timeWhenPaused;
-                if (isMusicLoaded) DOM.musicPlayer.play();
+                
+                if (isMusicLoaded) {
+                    // [수정] 음악 플레이어가 재생을 시작할 때까지 기다립니다.
+                    await DOM.musicPlayer.play();
+                }
+                
                 DOM.editor.playBtn.textContent = "일시정지";
                 this.state.isPlaying = true;
                 this.loop();
-            } else {
+    
+            } else { // 재생 중일 때 -> 일시정지
                 this.state.timeWhenPaused = performance.now() - this.state.playbackStartTime;
-                if (isMusicLoaded) DOM.musicPlayer.pause();
+                if (isMusicLoaded) {
+                    DOM.musicPlayer.pause();
+                }
                 DOM.editor.playBtn.textContent = "재생";
                 this.state.isPlaying = false;
                 cancelAnimationFrame(this.state.animationFrameId);
             }
         } catch (err) {
             Debugger.logError(err, 'Editor.handlePlayPause');
+            // 사용자가 페이지와 상호작용하기 전에 재생을 시도하는 등 예외 상황 처리
+            UI.showMessage('editor', '음악을 재생할 수 없습니다.');
         }
     },
 
