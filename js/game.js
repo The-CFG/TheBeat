@@ -126,6 +126,7 @@ const Game = {
         if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) return;
         this.cancelCountdown();
         cancelAnimationFrame(this.state.animationFrameId);
+        this.state.animationFrameId = null; 
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
         this.state.gameState = 'result';
         resetPlayingScreenUI();
