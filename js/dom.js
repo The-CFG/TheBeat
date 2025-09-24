@@ -67,6 +67,7 @@ const DOM = {
         // 관리 버튼
         playBtn: document.getElementById('editor-play-btn'),
         stopBtn: document.getElementById('editor-stop-btn'),
+        chartFilenameInput: document.getElementById('editor-chart-filename'),
         saveBtn: document.getElementById('editor-save-btn'),
         loadBtn: document.getElementById('editor-load-btn'),
         resetBtn: document.getElementById('editor-reset-btn'),
