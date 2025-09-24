@@ -33,6 +33,8 @@ const Game = {
         previousScreen: 'menu',
         countdownIntervalId: null,
         unprocessedNoteIndex: 0,
+        chartData: null, 
+        notes: [],
     },
 
     resetState() {
@@ -89,10 +91,11 @@ const Game = {
         if (this.state.settings.mode === 'random') {
             this.generateRandomNotes();
         } else {
-            if (!this.state.notes || this.state.notes.length === 0) {
+            if (!this.state.chartData) { 
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 차트 파일을 먼저 불러와주세요.');
                 return;
             }
+            this.prepareNotesFromChartData();
         }
         this.setupLanes();
         UI.showScreen('playing');
@@ -119,6 +122,33 @@ const Game = {
         resetPlayingScreenUI();
         UI.updateResultScreen();
         UI.showScreen('result');
+    },
+
+    prepareNotesFromChartData() {
+        const chartData = this.state.chartData;
+        const playerLaneCount = this.state.settings.lanes;
+        const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[playerLaneCount];
+
+        const processedNotes = [];
+        let noteIdCounter = 0;
+        chartData.notes.forEach(note => {
+            const laneId = note.lane;
+            const gameLaneIndex = requiredLaneIds.indexOf(laneId);
+            if (gameLaneIndex !== -1) {
+                const newNoteBase = { time: note.time, lane: gameLaneIndex, processed: false, element: null };
+                const type = note.type || 'tap';
+                if (note.duration) {
+                    const noteId = noteIdCounter++;
+                    processedNotes.push({ ...newNoteBase, type: 'long_head', duration: note.duration, noteId, headProcessed: false });
+                    processedNotes.push({ ...newNoteBase, time: note.time + note.duration, type: 'long_tail', noteId });
+                } else {
+                    processedNotes.push({ ...newNoteBase, type: type });
+                }
+            }
+        });
+        
+        this.state.notes = processedNotes.sort((a, b) => a.time - b.time);
+        this.state.totalNotes = this.state.notes.filter(n => n.type !== 'long_tail').length;
     },
 
     loop(timestamp) {
@@ -437,6 +467,7 @@ const Game = {
 
     loadChartNotes(chartData) {
         try {
+            this.state.chartData = chartData;
             this.state.settings.requiredSongName = chartData.songName || null;
             this.state.settings.startTimeOffset = chartData.startTimeOffset || 0;
             const chartBPM = chartData.bpm || 120;
