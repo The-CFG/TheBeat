@@ -343,9 +343,14 @@
                             <label for="editor-start-time" class="text-sm">시작(초):</label>
                             <input type="number" id="editor-start-time" value="0" min="0" class="w-20 p-1 bg-gray-700 rounded text-sm">
                         </div>
+                        <!-- [수정] 재생/정지 버튼을 이곳으로 이동 -->
+                        <div class="flex items-center space-x-2 pt-1">
+                            <button id="editor-play-btn" class="flex-1 py-1 px-2 bg-green-600 hover:bg-green-500 rounded text-sm">재생</button>
+                            <button id="editor-stop-btn" class="flex-1 py-1 px-2 bg-gray-500 hover:bg-gray-400 rounded text-sm">정지</button>
+                        </div>
                     </div>
-        
-                    <!-- 2. 차트 설정 -->
+                
+                    <!-- 2. 차트 설정 (변경 없음) -->
                     <div class="flex flex-col space-y-2">
                         <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">차트 설정</h3>
                         <div class="flex items-center space-x-2">
@@ -363,17 +368,19 @@
                             <button data-type="false" class="px-3 py-1 bg-red-400 hover:bg-red-300 rounded transition text-sm">가짜</button>
                         </div>
                     </div>
-        
+                
                     <!-- 3. 관리 -->
                     <div class="flex flex-col space-y-2">
                          <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">관리</h3>
-                         <div class="grid grid-cols-3 gap-2">
-                            <button id="editor-play-btn" class="py-1 px-2 bg-green-600 hover:bg-green-500 rounded text-sm">재생</button>
-                            <button id="editor-stop-btn" class="py-1 px-2 bg-gray-500 hover:bg-gray-400 rounded text-sm">정지</button>
+                         <!-- [수정] 저장 버튼과 파일명 입력 칸 추가 -->
+                         <div class="flex items-center space-x-2">
+                            <input type="text" id="editor-chart-filename" placeholder="파일명" class="flex-grow p-1 bg-gray-700 rounded text-sm">
                             <button id="editor-save-btn" class="py-1 px-2 bg-blue-600 hover:bg-blue-500 rounded text-sm">저장</button>
+                         </div>
+                         <div class="grid grid-cols-2 gap-2 pt-1">
                             <button id="editor-load-btn" class="py-1 px-2 bg-purple-600 hover:bg-purple-500 rounded text-sm">열기</button>
                             <button id="editor-reset-btn" class="py-1 px-2 bg-red-700 hover:bg-red-600 rounded text-sm">재설정</button>
-                            <button id="editor-back-btn" class="py-1 px-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">메인으로</button>
+                            <button id="editor-back-btn" class="col-span-2 py-1 px-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">메인 메뉴</button>
                          </div>
                     </div>
                 </div>
