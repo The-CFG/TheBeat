@@ -1,5 +1,12 @@
 const Debugger = {
     isActive: false,
+    perf: {
+        lastFrameTime: 0,
+        frames: 0,
+        fps: 0,
+        timings: new Map(),
+        lastPerfUpdate: 0,
+    },
 
     init() {
         DOM.settings.debugModeToggle.addEventListener('change', (e) => {
@@ -13,20 +20,60 @@ const Debugger = {
     },
 
     logError(error, context = 'Unknown') {
-        console.error(`[${context}]`, error); // 개발자 도구에도 에러를 남깁니다.
+        console.error(`[${context}]`, error);
+        if (!this.isActive) return;
+        // ... (기존 logError 로직은 동일) ...
+    },
+
+    // [신규] 실시간 상태 뷰어 업데이트 함수
+    updateState(stateObject) {
+        if (!this.isActive) return;
+        
+        // 거대한 notes 배열이 UI를 멈추게 하는 것을 방지하기 위해 데이터를 정제
+        const replacer = (key, value) => {
+            if (key === "notes" && Array.isArray(value)) {
+                return `[...Array(${value.length})]`;
+            }
+            return value;
+        };
+
+        const sanitizedState = JSON.stringify(stateObject, replacer, 2);
+        DOM.debugStateContainer.querySelector('pre').textContent = sanitizedState;
+    },
+
+    // [신규] 성능 프로파일링 시작/종료 함수
+    profileStart(name) {
+        if (!this.isActive) return;
+        this.perf.timings.set(name, { start: performance.now() });
+    },
+    
+    profileEnd(name) {
+        if (!this.isActive || !this.perf.timings.has(name)) return;
+        const timing = this.perf.timings.get(name);
+        timing.duration = performance.now() - timing.start;
+    },
+    
+    // [신규] 성능 정보 UI 업데이트 함수 (매 프레임 호출)
+    updatePerf(timestamp) {
         if (!this.isActive) return;
 
-        const logEntry = document.createElement('p');
-        const timestamp = new Date().toLocaleTimeString();
+        // FPS 계산
+        this.perf.frames++;
+        if (timestamp > this.perf.lastPerfUpdate + 1000) {
+            this.perf.fps = Math.round((this.perf.frames * 1000) / (timestamp - this.perf.lastPerfUpdate));
+            this.perf.lastPerfUpdate = timestamp;
+            this.perf.frames = 0;
+        }
+
+        // UI 업데이트
+        let perfHTML = `<p>FPS: ${this.perf.fps}</p>`;
+        this.perf.timings.forEach((timing, name) => {
+            if (timing.duration !== undefined) {
+                perfHTML += `<p>${name}: ${timing.duration.toFixed(2)}ms</p>`;
+            }
+        });
         
-        logEntry.innerHTML = `
-            <span>${timestamp}</span><br>
-            <span class="error-context">[${context}]</span><br>
-            <span class="error-message">${error.message}</span>
-        `;
-        
-        // 새로운 로그를 맨 위에 추가
-        DOM.debugLogContainer.prepend(logEntry);
+        DOM.debugPerfContainer.innerHTML = perfHTML;
     }
 };
 
