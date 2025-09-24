@@ -229,8 +229,6 @@ body {
     color: white;
     font-family: monospace;
     font-size: 12px;
-    display: flex;
-    flex-direction: column;
     backdrop-filter: blur(2px);
 }
 
