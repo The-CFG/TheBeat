@@ -7,12 +7,12 @@ const Game = {
             noteSpeed: CONFIG.DIFFICULTY_SPEED.normal,
             dongtaProbability: CONFIG.SIMULTANEOUS_NOTE_PROBABILITY.normal,
             longNoteProbability: CONFIG.LONG_NOTE_PROBABILITY.normal,
-            falseNoteProbability: CONFIG.FALSE_NOTE_PROBABILITY.normal,
+            falseNoteProbability: 0,
             lanes: 4,
             musicSrc: null,
             musicVolume: 100,
             sfxVolume: 100,
-            bpm: 120, 
+            bpm: 120,
             startTimeOffset: 0,
             userKeyMappings: null,
             requiredSongName: null,
@@ -44,8 +44,8 @@ const Game = {
         this.state.totalPausedTime = 0;
         this.state.unprocessedNoteIndex = 0;
         this.state.settings.requiredSongName = null;
-        this.state.settings.bpm = 120;
         this.state.settings.startTimeOffset = 0;
+        this.state.settings.bpm = 120;
     },
 
     runCountdown(onComplete) {
@@ -100,7 +100,7 @@ const Game = {
         this.state.gameState = 'countdown';
         this.runCountdown(() => {
             this.state.gameState = 'playing';
-            if (this.state.settings.mode === 'music') {
+            if (this.state.settings.mode === 'music' && DOM.musicPlayer.src) {
                 DOM.musicPlayer.currentTime = this.state.settings.startTimeOffset;
                 DOM.musicPlayer.play();
             }
@@ -122,95 +122,98 @@ const Game = {
     },
 
     loop(timestamp) {
-        if (this.state.isPaused) return;
-        const self = this;
-        const elapsedTime = self.state.settings.mode === 'music' ?
-            DOM.musicPlayer.currentTime * 1000 :
-            timestamp - self.state.gameStartTime - self.state.totalPausedTime;
-        self.updateNotes(elapsedTime);
-        if (self.state.processedNotes >= self.state.totalNotes && self.state.totalNotes > 0) {
-            setTimeout(() => self.end(), 500);
-            return;
+        try {
+            Debugger.profileStart('Game.loop');
+            if (this.state.isPaused) return;
+            const self = this;
+            const elapsedTime = self.state.settings.mode === 'music' ?
+                (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000 :
+                timestamp - self.state.gameStartTime - self.state.totalPausedTime;
+            self.updateNotes(elapsedTime);
+            if (self.state.processedNotes >= self.state.totalNotes && self.state.totalNotes > 0) {
+                setTimeout(() => self.end(), 500);
+                return;
+            }
+            self.state.animationFrameId = requestAnimationFrame(self.loop.bind(self));
+        } catch (err) {
+            Debugger.logError(err, 'Game.loop');
+        } finally {
+            Debugger.profileEnd('Game.loop');
+            if (this.state.gameState === 'playing' || this.state.gameState === 'countdown') {
+                Debugger.updatePerf(timestamp);
+                Debugger.updateState(this.state);
+            }
         }
-        self.state.animationFrameId = requestAnimationFrame(self.loop.bind(self));
     },
 
     updateNotes(elapsedTime) {
-        const gameHeight = DOM.lanesContainer.clientHeight;
-        if (gameHeight === 0) return;
-
-        for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
-            const note = this.state.notes[i];
-
-            if (note.processed && !note.element) {
-                if (i === this.state.unprocessedNoteIndex) {
-                    this.state.unprocessedNoteIndex++;
+        try {
+            Debugger.profileStart('Game.updateNotes');
+            const gameHeight = DOM.lanesContainer.clientHeight;
+            if (gameHeight === 0) return;
+            for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
+                const note = this.state.notes[i];
+                if (note.processed && !note.element) {
+                    if (i === this.state.unprocessedNoteIndex) {
+                        this.state.unprocessedNoteIndex++;
+                    }
+                    continue;
                 }
-                continue;
-            }
-
-            if (note.type === 'long_head' && note.processed) {
-                const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
-                if (tailNote && !tailNote.processed && !this.state.activeLanes[note.lane]) {
-                    this.handleJudgement('miss', tailNote);
-                }
-            }
-
-            const timeToHit = note.time - elapsedTime;
-            const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
-            const isLongNote = note.type === 'long_head';
-            const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
-            const noteTopPosition = noteBottomPosition - noteHeight;
-
-            if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
-                if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
-                    const laneEl = DOM.lanesContainer.children[note.lane];
-                    if (laneEl) {
-                        note.element = document.createElement('div');
-                        note.element.className = 'note';
-                        if (isLongNote) {
-                            note.element.classList.add('long');
-                            note.element.style.height = `${noteHeight}px`;
-                        }
-                        if (note.type === 'false') {
-                            note.element.classList.add('false');
-                        }
-                        laneEl.appendChild(note.element);
+                if (note.type === 'long_head' && note.processed) {
+                    const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
+                    if (tailNote && !tailNote.processed && !this.state.activeLanes[note.lane]) {
+                        this.handleJudgement('miss', tailNote);
                     }
                 }
+                const timeToHit = note.time - elapsedTime;
+                const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
+                const isLongNote = note.type === 'long_head';
+                const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
+                const noteTopPosition = noteBottomPosition - noteHeight;
+                if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
+                    if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
+                        const laneEl = DOM.lanesContainer.children[note.lane];
+                        if (laneEl) {
+                            note.element = document.createElement('div');
+                            note.element.className = 'note';
+                            if (isLongNote) note.element.classList.add('long');
+                            if (note.type === 'false') note.element.classList.add('false');
+                            if (isLongNote) note.element.style.height = `${noteHeight}px`;
+                            laneEl.appendChild(note.element);
+                        }
+                    }
+                }
+                if (note.element && note.element.isConnected) {
+                    note.element.style.transform = `translateY(${noteTopPosition}px)`;
+                }
+                if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
+                    this.handleJudgement('miss', note);
+                }
             }
-
-            if (note.element && note.element.isConnected) {
-                note.element.style.transform = `translateY(${noteTopPosition}px)`;
-            }
-
-            if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
-                this.handleJudgement('miss', note);
-            }
+        } catch (err) {
+            Debugger.logError(err, 'Game.updateNotes');
+        } finally {
+            Debugger.profileEnd('Game.updateNotes');
         }
     },
 
     _processSingleJudgement(judgement, note) {
         note.processed = true;
-
         if (note.type === 'long_tail') {
             const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
             if (headNote && headNote.element) {
                 headNote.element.remove();
                 headNote.element = null;
             }
-        // [수정된 부분] note.type === 'tap' 조건을 추가하여 long_head가 제거되지 않도록 합니다.
         } else if (note.type === 'tap' && note.element) {
             note.element.remove();
             note.element = null;
         }
-
         this.state.judgements[judgement]++;
         if (note.type !== 'long_head') {
             this.state.processedNotes++;
         }
         this.state.score += CONFIG.POINTS[judgement];
-
         if (judgement === 'miss' || judgement === 'bad') {
             this.state.combo = 0;
         } else {
@@ -223,30 +226,26 @@ const Game = {
     },
 
     handleJudgement(judgement, note) {
-        if (note.processed) return;
-
-        if (note.type === 'false') {
-            if (judgement === 'miss') { // 가짜 노트를 성공적으로 무시한 경우
-                judgement = 'perfect'; 
-            } else { // 가짜 노트를 잘못 건드린 경우
-                judgement = 'miss';
+        try {
+            if (note.processed) return;
+            if (note.type === 'false') {
+                judgement = (judgement === 'miss') ? 'perfect' : 'miss';
             }
-        }
-
-        if (judgement === 'miss' && note.time > 0) {
-            const notesAtSameTime = this.state.notes.filter(n =>
-                !n.processed && n.time === note.time
-            );
-            notesAtSameTime.forEach(n => this._processSingleJudgement('miss', n));
-            Audio.playMissSound();
-            UI.showJudgementFeedback('MISS', 0);
-            UI.updateScoreboard();
-        } else {
-            this._processSingleJudgement(judgement, note);
-            if (judgement === 'perfect' || judgement === 'good') Audio.playHitSound();
-            else Audio.playMissSound();
-            UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
-            UI.updateScoreboard();
+            if (judgement === 'miss' && note.time > 0) {
+                const notesAtSameTime = this.state.notes.filter(n => !n.processed && n.time === note.time && n.type !== 'false');
+                notesAtSameTime.forEach(n => this._processSingleJudgement('miss', n));
+                Audio.playMissSound();
+                UI.showJudgementFeedback('MISS', 0);
+                UI.updateScoreboard();
+            } else {
+                this._processSingleJudgement(judgement, note);
+                if (judgement === 'perfect' || judgement === 'good') Audio.playHitSound();
+                else Audio.playMissSound();
+                UI.showJudgementFeedback(judgement.toUpperCase(), this.state.combo);
+                UI.updateScoreboard();
+            }
+        } catch (err) {
+            Debugger.logError(err, 'Game.handleJudgement');
         }
     },
 
@@ -269,29 +268,33 @@ const Game = {
     },
 
     handleInputDown(laneIndex) {
-        this.state.activeLanes[laneIndex] = true;
-        const laneEl = DOM.lanesContainer.children[laneIndex];
-        if (laneEl) laneEl.classList.add('active-feedback');
-        const elapsedTime = this.state.settings.mode === 'music' ?
-            DOM.musicPlayer.currentTime * 1000 :
-            performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-        let bestMatch = null;
-        let smallestDiff = Infinity;
-        for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
-            const note = this.state.notes[i];
-            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
-            if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
-                const timeDiff = Math.abs(note.time - elapsedTime);
-                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
-                    smallestDiff = timeDiff;
-                    bestMatch = note;
+        try {
+            this.state.activeLanes[laneIndex] = true;
+            const laneEl = DOM.lanesContainer.children[laneIndex];
+            if (laneEl) laneEl.classList.add('active-feedback');
+            const elapsedTime = this.state.settings.mode === 'music' ?
+                (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000 :
+                performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+            let bestMatch = null;
+            let smallestDiff = Infinity;
+            for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
+                const note = this.state.notes[i];
+                if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
+                if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
+                    const timeDiff = Math.abs(note.time - elapsedTime);
+                    if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                        smallestDiff = timeDiff;
+                        bestMatch = note;
+                    }
                 }
             }
-        }
-        if (bestMatch) {
-            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+            if (bestMatch) {
+                if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
+                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
+                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+            }
+        } catch (err) {
+            Debugger.logError(err, 'Game.handleInputDown');
         }
     },
 
@@ -300,7 +303,7 @@ const Game = {
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
         const elapsedTime = this.state.settings.mode === 'music' ?
-            DOM.musicPlayer.currentTime * 1000 :
+            (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000 :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
         let bestMatch = null;
         let smallestDiff = Infinity;
@@ -419,11 +422,11 @@ const Game = {
                 generatedNotesCount += 1;
             } else if (falseNoteProbability > 0 && Math.random() < falseNoteProbability) {
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
-                this.state.notes.push({ lane: lane, time: currentTime, type: 'false' });
+                this.state.notes.push({ lane, time: currentTime, type: 'false' });
                 generatedNotesCount++;
             } else {
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
-                this.state.notes.push({ lane: lane, time: currentTime, type: 'tap' });
+                this.state.notes.push({ lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
             }
             currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
@@ -433,52 +436,42 @@ const Game = {
     },
 
     loadChartNotes(chartData) {
-        // 1. 차트 기본 정보 로드
-        this.state.settings.requiredSongName = chartData.songName || null;
-        this.state.settings.startTimeOffset = chartData.startTimeOffset || 0;
-        const chartBPM = chartData.bpm || 120;
-        this.state.settings.bpm = chartBPM;
-        const calculatedSpeed = Math.round(chartBPM / 20);
-        this.state.settings.noteSpeed = Math.max(1, Math.min(20, calculatedSpeed));
-        
-        // 2. 플레이어가 선택한 레인 수에 맞는 레인 ID 가져오기
-        const playerLaneCount = this.state.settings.lanes;
-        const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[playerLaneCount];
-        if (!requiredLaneIds) {
-            UI.showMessage('menu', `오류: ${playerLaneCount}레인에 대한 키 매핑 정보가 없습니다.`);
+        try {
+            this.state.settings.requiredSongName = chartData.songName || null;
+            this.state.settings.startTimeOffset = chartData.startTimeOffset || 0;
+            const chartBPM = chartData.bpm || 120;
+            this.state.settings.bpm = chartBPM;
+            const calculatedSpeed = Math.round(chartBPM / 20);
+            this.state.settings.noteSpeed = Math.max(1, Math.min(20, calculatedSpeed));
+            const playerLaneCount = this.state.settings.lanes;
+            const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[playerLaneCount];
+            if (!requiredLaneIds) {
+                throw new Error(`${playerLaneCount}레인에 대한 키 매핑 정보가 없습니다.`);
+            }
+            const processedNotes = [];
+            let noteIdCounter = 0;
+            chartData.notes.forEach(note => {
+                const laneId = note.lane;
+                const gameLaneIndex = requiredLaneIds.indexOf(laneId);
+                if (gameLaneIndex !== -1) {
+                    const newNoteBase = { time: note.time, lane: gameLaneIndex, processed: false, element: null };
+                    const type = note.type || 'tap';
+                    if (note.duration) {
+                        const noteId = noteIdCounter++;
+                        processedNotes.push({ ...newNoteBase, type: 'long_head', duration: note.duration, noteId });
+                        processedNotes.push({ ...newNoteBase, time: note.time + note.duration, type: 'long_tail', noteId });
+                    } else {
+                        processedNotes.push({ ...newNoteBase, type: type });
+                    }
+                }
+            });
+            this.state.notes = processedNotes.sort((a, b) => a.time - b.time);
+            this.state.totalNotes = this.state.notes.filter(n => n.type !== 'long_tail').length;
+            return true;
+        } catch (err) {
+            Debugger.logError(err, 'Game.loadChartNotes');
+            UI.showMessage('menu', `차트 로딩 오류: ${err.message}`);
             return false;
         }
-
-        // 3. 노트 필터링 및 매핑
-        const processedNotes = [];
-        let noteIdCounter = 0;
-        chartData.notes.forEach(note => {
-            const laneId = note.lane; // e.g., "L2"
-            const gameLaneIndex = requiredLaneIds.indexOf(laneId); // e.g., 0
-
-            // 플레이어가 선택한 레인에 해당하는 노트만 필터링
-            if (gameLaneIndex !== -1) {
-                const newNoteBase = {
-                    time: note.time,
-                    lane: gameLaneIndex, // 숫자 인덱스로 변환
-                    processed: false,
-                    element: null,
-                };
-
-                const type = note.type || 'tap';
-                if (note.duration) {
-                    const noteId = noteIdCounter++;
-                    processedNotes.push({ ...newNoteBase, type: 'long_head', duration: note.duration, noteId });
-                    processedNotes.push({ ...newNoteBase, time: note.time + note.duration, type: 'long_tail', noteId });
-                } else {
-                    processedNotes.push({ ...newNoteBase, type: type });
-                }
-            }
-        });
-        
-        this.state.notes = processedNotes.sort((a, b) => a.time - b.time);
-        this.state.totalNotes = this.state.notes.filter(n => n.type !== 'long_tail').length;
-        
-        return true;
-    }
+    },
 };
