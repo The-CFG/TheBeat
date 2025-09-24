@@ -292,39 +292,52 @@ const Editor = {
         downloadAnchorNode.remove();
     },
 
-    loadChart(chartData) {
+    loadChart(chartData, loadedFileName) {
+        // 1. 에디터의 모든 상태를 깨끗하게 초기화합니다.
         this.resetEditorState();
         
-        // BPM을 먼저 설정해야 마디 계산이 정확해집니다.
+        // 2. [핵심 수정] BPM과 같은 메타데이터를 노트 처리보다 먼저 불러옵니다.
+        // 이것이 있어야 마디 번호 계산(_getMeasureFromTime)이 정상적으로 동작합니다.
         this.state.bpm = chartData.bpm || 120;
+        this.state.startTimeOffset = chartData.startTimeOffset || 0;
     
+        // 3. 차트의 모든 노트를 새로운 형식에 맞게 해석하여 에디터 상태에 저장합니다.
         this.state.notes = chartData.notes.map(note => {
-            // [수정] 불러오는 모든 노트에 마디 번호를 계산하여 추가합니다.
             const measure = this._getMeasureFromTime(note.time);
+            let newNote = { ...note, measure };
+    
             if (note.duration) {
-                return { ...note, type: 'long_head', measure };
+                // duration 속성이 있으면 롱노트입니다.
+                newNote.type = 'long_head';
+            } else if (note.type === 'false') {
+                // type이 'false'이면 가짜 노트입니다.
+                newNote.type = 'false';
+            } else {
+                // 그 외의 모든 경우는 일반(tap) 노트입니다.
+                newNote.type = 'tap';
             }
-            if (!note.type) {
-                return { ...note, type: 'tap', measure };
-            }
-            return { ...note, measure };
+            return newNote;
         });
         
-        // [수정] 불러온 차트의 길이에 맞게 전체 마디 수를 조절합니다.
+        // 4. 불러온 차트의 길이에 맞춰 전체 마디 수를 자동으로 조절합니다.
         let maxMeasure = 0;
         if (this.state.notes.length > 0) {
+            // 가장 마지막에 있는 노트의 마디 번호를 찾습니다.
             maxMeasure = Math.max(...this.state.notes.map(n => n.measure));
         }
-        this.state.totalMeasures = maxMeasure + 5; // 작업 편의를 위해 5마디 여유 공간 추가
+        // 작업 편의를 위해 마지막 노트 마디에서 5마디의 여유 공간을 줍니다.
+        this.state.totalMeasures = maxMeasure + 5; 
     
-        this.state.startTimeOffset = chartData.startTimeOffset || 0;
-        
+        // 5. UI 컨트롤에 불러온 값을 채워줍니다.
         DOM.editor.bpmInput.value = this.state.bpm;
         DOM.editor.startTimeInput.value = this.state.startTimeOffset;
         DOM.editor.audioFileNameEl.textContent = `요구 파일: ${chartData.songName || '없음'}`;
+        
         if (loadedFileName) {
             DOM.editor.chartFilenameInput.value = loadedFileName.split('.').slice(0, -1).join('.');
         }
+        
+        // 6. 마지막으로, 화면에 차트를 그립니다.
         this.drawTimeline();
         this.renderNotes();
     },
