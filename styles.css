@@ -275,7 +275,8 @@ body {
 
 .debug-container {
     padding: 8px;
-    overflow: auto;
+    /* [핵심 수정] Y축(세로)으로 내용이 넘칠 경우 자동으로 스크롤바를 생성합니다. */
+    overflow-y: auto; 
     flex-grow: 1;
 }
 .debug-container pre {
