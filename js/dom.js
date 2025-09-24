@@ -81,6 +81,7 @@ const DOM = {
     resumeGameBtn: document.getElementById('resume-game-btn'),
     playingStatusLabel: document.getElementById('playing-status-label'),
     debugOverlay: document.getElementById('debug-overlay'),
+    debugTitle: document.querySelector('#debug-overlay .title'),
     debugPerfContainer: document.getElementById('debug-perf-container'),
     debugStateContainer: document.getElementById('debug-state-container'),
     debugLogContainer: document.getElementById('debug-log-container'),
