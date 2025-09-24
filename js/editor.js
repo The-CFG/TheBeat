@@ -15,6 +15,13 @@ const Editor = {
         totalMeasures: 100,
     },
 
+    _getMeasureFromTime(timeInMs) {
+        const beatsPerMeasure = 4; // 4/4박자 기준
+        const beatsPerSecond = this.state.bpm / 60;
+        const totalBeats = (timeInMs / 1000) * beatsPerSecond;
+        return Math.floor(totalBeats / beatsPerMeasure);
+    },
+
     init() {
         this.state.isPlaying = false;
         this.state.isConfirmingReset = false;
@@ -56,10 +63,16 @@ const Editor = {
     },
     
     removeMeasure() {
-        if (this.state.totalMeasures > 1) { // 최소 1마디는 유지
+        if (this.state.totalMeasures > 1) {
+            // [수정] 삭제될 마디의 번호 (0부터 시작하므로 -1)
+            const measureToRemove = this.state.totalMeasures - 1;
+            
+            // [수정] 삭제될 마디에 속한 노트를 모두 제거합니다.
+            this.state.notes = this.state.notes.filter(note => note.measure !== measureToRemove);
+            
             this.state.totalMeasures--;
             this.drawGrid();
-            this.renderNotes();
+            this.renderNotes(); // 노트가 삭제된 상태를 화면에 즉시 반영
         }
     },
 
@@ -196,7 +209,9 @@ const Editor = {
 
     placeSimpleNote(time, laneId) {
         if (!this.state.notes.some(n => Math.abs(n.time - time) < 10 && n.lane === laneId)) {
-            this.state.notes.push({ time, lane: laneId, type: this.state.selectedNoteType });
+            // [수정] 마디 번호를 계산하여 노트 정보에 포함시킵니다.
+            const measure = this._getMeasureFromTime(time);
+            this.state.notes.push({ time, lane: laneId, type: this.state.selectedNoteType, measure });
             this.renderNotes();
         }
     },
@@ -216,7 +231,9 @@ const Editor = {
                 return;
             }
             const duration = time - this.state.longNoteStart.time;
-            this.state.notes.push({ ...this.state.longNoteStart, duration, type: 'long_head' });
+            // [수정] 마디 번호를 계산하여 노트 정보에 포함시킵니다.
+            const measure = this._getMeasureFromTime(this.state.longNoteStart.time);
+            this.state.notes.push({ ...this.state.longNoteStart, duration, type: 'long_head', measure });
             this.renderNotes();
             this.resetLongNotePlacement();
             DOM.editor.statusLabel.textContent = '롱노트의 시작 지점을 지정해주세요.';
@@ -292,17 +309,29 @@ const Editor = {
 
     loadChart(chartData) {
         this.resetEditorState();
-        this.state.notes = chartData.notes.map(note => {
-            if (note.duration) {
-                return { ...note, type: 'long_head' };
-            }
-             // type 속성이 없는 노트는 tap으로 간주
-            if (!note.type) {
-                return { ...note, type: 'tap' };
-            }
-            return note;
-        });
+        
+        // BPM을 먼저 설정해야 마디 계산이 정확해집니다.
         this.state.bpm = chartData.bpm || 120;
+    
+        this.state.notes = chartData.notes.map(note => {
+            // [수정] 불러오는 모든 노트에 마디 번호를 계산하여 추가합니다.
+            const measure = this._getMeasureFromTime(note.time);
+            if (note.duration) {
+                return { ...note, type: 'long_head', measure };
+            }
+            if (!note.type) {
+                return { ...note, type: 'tap', measure };
+            }
+            return { ...note, measure };
+        });
+        
+        // [수정] 불러온 차트의 길이에 맞게 전체 마디 수를 조절합니다.
+        let maxMeasure = 0;
+        if (this.state.notes.length > 0) {
+            maxMeasure = Math.max(...this.state.notes.map(n => n.measure));
+        }
+        this.state.totalMeasures = maxMeasure + 5; // 작업 편의를 위해 5마디 여유 공간 추가
+    
         this.state.startTimeOffset = chartData.startTimeOffset || 0;
         
         DOM.editor.bpmInput.value = this.state.bpm;
