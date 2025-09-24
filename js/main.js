@@ -223,6 +223,22 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.settings.controls.saveBtn.addEventListener('click', () => {
             saveKeyBindings();
         });
+
+        DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
+        DOM.editor.startTimeInput.addEventListener('input', (e) => { Editor.state.startTimeOffset = parseFloat(e.target.value) || 0; });
+        DOM.editor.bpmInput.addEventListener('input', (e) => { Editor.state.bpm = parseInt(e.target.value) || 120; Editor.drawTimeline(); Editor.renderNotes(); });
+        DOM.editor.noteTypeSelector.addEventListener('click', (e) => Editor.handleNoteTypeSelect(e));
+        
+        // 관리 버튼
+        DOM.editor.playBtn.addEventListener('click', () => Editor.handlePlayPause());
+        DOM.editor.stopBtn.addEventListener('click', () => Editor.stopPlayback());
+        DOM.editor.saveBtn.addEventListener('click', () => Editor.saveChart()); // 이제 여기서 한 번만 등록됩니다.
+        DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
+        DOM.editor.loadInput.addEventListener('change', (e) => Editor.handleChartLoad(e));
+        DOM.editor.resetBtn.addEventListener('click', () => Editor.handleReset());
+    
+        // 타임라인
+        DOM.editor.notesContainer.addEventListener('click', (e) => Editor.handleTimelineClick(e));
     }
 
     function populateKeybindUI() {
