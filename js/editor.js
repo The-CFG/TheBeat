@@ -92,17 +92,19 @@ const Editor = {
 
     drawTimeline() {
         try {
-            const timeline = DOM.editor.timeline;
-            while (timeline.firstChild && timeline.firstChild !== DOM.editor.playhead) {
-                timeline.removeChild(timeline.firstChild);
-            }
+            const gridContainer = DOM.editor.gridContainer;
+            // [핵심 수정] 타임라인 전체가 아닌, 그리드 컨테이너만 비웁니다.
+            gridContainer.innerHTML = '';
+            
+            // [핵심 수정] 시각적 레인을 'gridContainer'에 생성합니다.
             CONFIG.EDITOR_LANE_IDS.forEach((id) => {
                 const laneEl = document.createElement('div');
                 laneEl.className = 'editor-lane';
                 laneEl.dataset.laneId = id;
-                timeline.appendChild(laneEl);
+                gridContainer.appendChild(laneEl);
             });
-            timeline.appendChild(DOM.editor.playhead);
+    
+            // 비트라인 그리기를 호출합니다.
             this.drawGrid();
         } catch (err) {
             Debugger.logError(err, 'Editor.drawTimeline');
