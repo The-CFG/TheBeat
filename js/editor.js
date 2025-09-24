@@ -10,94 +10,142 @@ const Editor = {
         isPlacingLongNote: false,
         longNoteStart: null,
         isConfirmingReset: false,
-        playbackStartTime: 0, // 재생 시작 시점의 타임스탬프
-        timeWhenPaused: 0,
         totalMeasures: 100,
+        playbackStartTime: 0,
+        timeWhenPaused: 0,
+    },
+
+    init() {
+        try {
+            this.state.isPlaying = false;
+            this.state.isConfirmingReset = false;
+            this.resetLongNotePlacement();
+            UI.showScreen('editor');
+            this.resetEditorState();
+        } catch (err) {
+            Debugger.logError(err, 'Editor.init');
+        }
+    },
+
+    resetEditorState() {
+        try {
+            this.state.notes = [];
+            this.state.bpm = 120;
+            this.state.startTimeOffset = 0;
+            this.state.audioFileName = '';
+            this.state.selectedNoteType = 'tap';
+            this.state.totalMeasures = 100;
+            DOM.musicPlayer.pause();
+            DOM.musicPlayer.src = '';
+            DOM.editor.bpmInput.value = this.state.bpm;
+            DOM.editor.startTimeInput.value = this.state.startTimeOffset;
+            DOM.editor.audioFileNameEl.textContent = '선택된 파일 없음';
+            DOM.editor.chartFilenameInput.value = '';
+            DOM.editor.resetBtn.textContent = '재설정';
+            DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
+            DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
+            this.state.isConfirmingReset = false;
+            this.updateNoteTypeUI();
+            this.drawTimeline();
+            this.renderNotes();
+        } catch (err) {
+            Debugger.logError(err, 'Editor.resetEditorState');
+        }
+    },
+
+    clearNotes() {
+        this.state.notes = [];
+        this.renderNotes();
+        UI.showMessage('editor', '모든 노트를 삭제했습니다.');
+    },
+
+    addMeasure() {
+        try {
+            this.state.totalMeasures++;
+            this.drawGrid();
+            this.renderNotes();
+        } catch (err) {
+            Debugger.logError(err, 'Editor.addMeasure');
+        }
+    },
+
+    removeMeasure() {
+        try {
+            if (this.state.totalMeasures > 1) {
+                const measureToRemove = this.state.totalMeasures - 1;
+                this.state.notes = this.state.notes.filter(note => note.measure !== measureToRemove);
+                this.state.totalMeasures--;
+                this.drawGrid();
+                this.renderNotes();
+            }
+        } catch (err) {
+            Debugger.logError(err, 'Editor.removeMeasure');
+        }
     },
 
     _getMeasureFromTime(timeInMs) {
-        const beatsPerMeasure = 4; // 4/4박자 기준
+        const beatsPerMeasure = 4;
         const beatsPerSecond = this.state.bpm / 60;
         const totalBeats = (timeInMs / 1000) * beatsPerSecond;
         return Math.floor(totalBeats / beatsPerMeasure);
     },
 
-    init() {
-        this.state.isPlaying = false;
-        this.state.isConfirmingReset = false;
-        this.resetLongNotePlacement();
-        
-        UI.showScreen('editor');
-    },
-
-    resetEditorState() {
-        this.state.notes = [];
-        this.state.bpm = 120;
-        this.state.startTimeOffset = 0;
-        this.state.audioFileName = '';
-        this.state.selectedNoteType = 'tap';
-        this.state.totalMeasures = 100;
-        
-        DOM.musicPlayer.pause();
-        DOM.musicPlayer.src = '';
-
-        DOM.editor.bpmInput.value = this.state.bpm;
-        DOM.editor.startTimeInput.value = this.state.startTimeOffset;
-        DOM.editor.audioFileNameEl.textContent = '선택된 파일 없음';
-        DOM.editor.chartFilenameInput.value = '';
-        DOM.editor.resetBtn.textContent = '재설정';
-        DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
-        DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
-        this.state.isConfirmingReset = false;
-
-        this.updateNoteTypeUI();
-        this.drawTimeline();
-        this.renderNotes();
-    },
-
-    addMeasure() {
-        this.state.totalMeasures++;
-        this.drawGrid();
-        this.renderNotes();
-    },
-    
-    removeMeasure() {
-        if (this.state.totalMeasures > 1) {
-            // [수정] 삭제될 마디의 번호 (0부터 시작하므로 -1)
-            const measureToRemove = this.state.totalMeasures - 1;
-            
-            // [수정] 삭제될 마디에 속한 노트를 모두 제거합니다.
-            this.state.notes = this.state.notes.filter(note => note.measure !== measureToRemove);
-            
-            this.state.totalMeasures--;
+    drawTimeline() {
+        try {
+            const timeline = DOM.editor.timeline;
+            while (timeline.firstChild && timeline.firstChild !== DOM.editor.playhead) {
+                timeline.removeChild(timeline.firstChild);
+            }
+            CONFIG.EDITOR_LANE_IDS.forEach((id) => {
+                const laneEl = document.createElement('div');
+                laneEl.className = 'editor-lane';
+                laneEl.dataset.laneId = id;
+                timeline.appendChild(laneEl);
+            });
+            timeline.appendChild(DOM.editor.playhead);
             this.drawGrid();
-            this.renderNotes(); // 노트가 삭제된 상태를 화면에 즉시 반영
+        } catch (err) {
+            Debugger.logError(err, 'Editor.drawTimeline');
         }
     },
-    
-    drawTimeline() {
-        const gridContainer = DOM.editor.gridContainer;
-        gridContainer.innerHTML = ''; // 그리드 컨테이너만 비웁니다.
-        
-        // 9개의 시각적 레인을 '그리드 컨테이너'에 생성합니다.
-        CONFIG.EDITOR_LANE_IDS.forEach(() => {
-            const laneEl = document.createElement('div');
-            laneEl.className = 'editor-lane';
-            gridContainer.appendChild(laneEl);
-        });
-    
-        this.drawGrid();
+
+    drawGrid() {
+        try {
+            DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
+            const beatsPerMeasure = 4;
+            const totalBeats = this.state.totalMeasures * beatsPerMeasure;
+            const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+            DOM.editor.timeline.style.height = `${timelineHeight}px`;
+            DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
+            DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
+            for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
+                const line = document.createElement('div');
+                line.className = 'beat-line';
+                if (beatIndex % beatsPerMeasure === 0) {
+                    line.classList.add('measure');
+                }
+                line.style.top = `${beatIndex * CONFIG.EDITOR_BEAT_HEIGHT}px`;
+                line.style.width = '100%';
+                DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
+            }
+        } catch (err) {
+            Debugger.logError(err, 'Editor.drawGrid');
+        }
     },
 
     handleAudioLoad(e) {
-        const file = e.target.files[0];
-        if (file) {
-            DOM.musicPlayer.src = URL.createObjectURL(file);
-            this.state.audioFileName = file.name;
-            DOM.editor.audioFileNameEl.textContent = file.name;
-            DOM.musicPlayer.onloadedmetadata = () => this.drawGrid();
+        try {
+            const file = e.target.files[0];
+            if (file) {
+                DOM.musicPlayer.src = URL.createObjectURL(file);
+                this.state.audioFileName = file.name;
+                DOM.editor.audioFileNameEl.textContent = file.name;
+                DOM.musicPlayer.onloadedmetadata = () => this.drawGrid();
+            }
+            e.target.value = null;
+        } catch (err) {
+            Debugger.logError(err, 'Editor.handleAudioLoad');
         }
-        e.target.value = null;
     },
 
     handleChartLoad(e) {
@@ -108,19 +156,15 @@ const Editor = {
             try {
                 const chartData = JSON.parse(event.target.result);
                 this.loadChart(chartData, file.name);
-            } catch (error) { UI.showMessage('editor', '잘못된 차트 파일 형식입니다.'); }
+            } catch (err) {
+                Debugger.logError(err, 'Editor.handleChartLoad');
+                UI.showMessage('editor', `잘못된 차트 파일 형식입니다: ${err.message}`);
+            }
         };
         reader.readAsText(file);
         e.target.value = null;
     },
 
-    clearNotes() {
-        this.state.notes = [];
-        this.renderNotes();
-        UI.showMessage('editor', '모든 노트를 삭제했습니다.');
-    },
-    
-    // [수정] handleReset 함수가 clearNotes를 호출하도록 변경
     handleReset() {
         if (!this.state.isConfirmingReset) {
             this.state.isConfirmingReset = true;
@@ -136,7 +180,6 @@ const Editor = {
                 }
             }, 3000);
         } else {
-            // resetEditorState() 대신 clearNotes()를 호출합니다.
             this.clearNotes();
             this.state.isConfirmingReset = false;
             DOM.editor.resetBtn.textContent = '재설정';
@@ -146,50 +189,35 @@ const Editor = {
     },
 
     handleTimelineClick(e) {
-        if (this.state.isPlaying) return;
-        // 모든 계산의 기준을 스크롤이 발생하는 'container'로 잡습니다.
-        const containerRect = DOM.editor.container.getBoundingClientRect();
-        const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
-        
-        // X 좌표는 container의 왼쪽 경계를 기준으로 계산합니다.
-        const x = e.clientX - containerRect.left;
-        const laneIndex = Math.floor(x / laneWidth);
-        const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
-    
-        // Y 좌표는 container의 위쪽 경계와 현재 스크롤 위치를 함께 고려하여 계산합니다.
-        const y = e.clientY - containerRect.top + DOM.editor.container.scrollTop;
-        const beatsPerSecond = this.state.bpm / 60;
-        const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
-        const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
-    
-        if (e.target.classList.contains('editor-note')) {
-            // 클릭된 노트의 'time'과 'lane'을 모두 가져옵니다.
-            const time = parseFloat(e.target.dataset.time);
-            const lane = e.target.dataset.lane; // e.g., "L4"
-    
-            // time과 lane이 모두 일치하는 노트만 제외하고 나머지는 유지합니다.
-            this.state.notes = this.state.notes.filter(note => 
-                note.time !== time || note.lane !== lane
-            );
-            
-            this.renderNotes();
-            return;
-        }
-    
-        switch (this.state.selectedNoteType) {
-            case 'long':
-                this.placeLongNote(timeInMs, laneId);
-                break;
-            case 'tap':
-            case 'false':
-                this.placeSimpleNote(timeInMs, laneId);
-                break;
+        try {
+            if (this.state.isPlaying) return;
+            if (e.target.classList.contains('editor-note')) {
+                const time = parseFloat(e.target.dataset.time);
+                const lane = e.target.dataset.lane;
+                this.state.notes = this.state.notes.filter(note => note.time !== time || note.lane !== lane);
+                this.renderNotes();
+                return;
+            }
+            const rect = DOM.editor.notesContainer.getBoundingClientRect();
+            const laneWidth = rect.width / CONFIG.EDITOR_LANE_IDS.length;
+            const x = e.clientX - rect.left;
+            const laneIndex = Math.floor(x / laneWidth);
+            const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
+            const y = e.clientY - rect.top + DOM.editor.container.scrollTop;
+            const beatsPerSecond = this.state.bpm / 60;
+            const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
+            const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
+            switch (this.state.selectedNoteType) {
+                case 'long': this.placeLongNote(timeInMs, laneId); break;
+                case 'tap': case 'false': this.placeSimpleNote(timeInMs, laneId); break;
+            }
+        } catch (err) {
+            Debugger.logError(err, 'Editor.handleTimelineClick');
         }
     },
 
     placeSimpleNote(time, laneId) {
         if (!this.state.notes.some(n => Math.abs(n.time - time) < 10 && n.lane === laneId)) {
-            // [수정] 마디 번호를 계산하여 노트 정보에 포함시킵니다.
             const measure = this._getMeasureFromTime(time);
             this.state.notes.push({ time, lane: laneId, type: this.state.selectedNoteType, measure });
             this.renderNotes();
@@ -211,7 +239,6 @@ const Editor = {
                 return;
             }
             const duration = time - this.state.longNoteStart.time;
-            // [수정] 마디 번호를 계산하여 노트 정보에 포함시킵니다.
             const measure = this._getMeasureFromTime(this.state.longNoteStart.time);
             this.state.notes.push({ ...this.state.longNoteStart, duration, type: 'long_head', measure });
             this.renderNotes();
@@ -221,235 +248,170 @@ const Editor = {
     },
 
     renderNotes() {
-        DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
-        
-        // 노트 너비 계산의 기준도 'container'로 통일합니다.
-        const containerRect = DOM.editor.container.getBoundingClientRect();
-        if (containerRect.width === 0) return;
-    
-        const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
-        const beatsPerSecond = this.state.bpm / 60;
-    
-        this.state.notes.forEach(note => {
-            const noteEl = document.createElement('div');
-            noteEl.className = 'editor-note';
-            if (note.duration) noteEl.classList.add('long');
-            if (note.type === 'false') noteEl.classList.add('false');
-    
-            const laneIndex = CONFIG.EDITOR_LANE_IDS.indexOf(note.lane);
-            if (laneIndex === -1) return;
-    
-            noteEl.style.width = `${laneWidth}px`;
-            noteEl.style.left = `${laneIndex * laneWidth}px`;
-            
-            const beats = (note.time / 1000) * beatsPerSecond;
-            noteEl.style.top = `${beats * CONFIG.EDITOR_BEAT_HEIGHT - 4}px`;
-            
-            if (note.duration) {
-                const durationInBeats = (note.duration / 1000) * beatsPerSecond;
-                noteEl.style.height = `${durationInBeats * CONFIG.EDITOR_BEAT_HEIGHT}px`;
-            }
-            noteEl.dataset.time = note.time;
-            noteEl.dataset.lane = note.lane;
-            
-            DOM.editor.notesContainer.appendChild(noteEl);
-        });
-    },
-    saveChart() {
-        if (!this.state.audioFileName) {
-            UI.showMessage('editor', '음악 파일을 로딩해주세요!');
-            return;
+        try {
+            DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
+            const containerRect = DOM.editor.container.getBoundingClientRect();
+            if (containerRect.width === 0) return;
+            const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
+            const beatsPerSecond = this.state.bpm / 60;
+            this.state.notes.forEach(note => {
+                const noteEl = document.createElement('div');
+                noteEl.className = 'editor-note';
+                if (note.duration) noteEl.classList.add('long');
+                if (note.type === 'false') noteEl.classList.add('false');
+                const laneIndex = CONFIG.EDITOR_LANE_IDS.indexOf(note.lane);
+                if (laneIndex === -1) return;
+                noteEl.style.width = `${laneWidth}px`;
+                noteEl.style.left = `${laneIndex * laneWidth}px`;
+                const beats = (note.time / 1000) * beatsPerSecond;
+                noteEl.style.top = `${beats * CONFIG.EDITOR_BEAT_HEIGHT - 4}px`;
+                if (note.duration) {
+                    const durationInBeats = (note.duration / 1000) * beatsPerSecond;
+                    noteEl.style.height = `${durationInBeats * CONFIG.EDITOR_BEAT_HEIGHT}px`;
+                }
+                noteEl.dataset.time = note.time;
+                noteEl.dataset.lane = note.lane;
+                DOM.editor.notesContainer.appendChild(noteEl);
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.renderNotes');
         }
-        let chartFilename = DOM.editor.chartFilenameInput.value.trim();
+    },
+
+    saveChart() {
+        try {
+            if (!this.state.audioFileName) {
+                UI.showMessage('editor', '음악 파일을 로딩해주세요!');
+                return;
+            }
+            let chartFilename = DOM.editor.chartFilenameInput.value.trim();
             if (!chartFilename) {
-                // 입력값이 없으면 음악 파일 이름에서 확장자를 제거하여 사용합니다.
                 chartFilename = this.state.audioFileName.split('.').slice(0, -1).join('.');
             }
-        const gameNotes = this.state.notes.map(note => {
-            if (note.type === 'long_head') {
-                return { time: note.time, lane: note.lane, duration: note.duration };
-            }
-            // type이 tap일 경우, 용량을 줄이기 위해 type 속성 생략
-            if (note.type === 'tap') {
-                 return { time: note.time, lane: note.lane };
-            }
-            return { time: note.time, lane: note.lane, type: note.type };
-        }).filter(note => note.type !== 'long_tail');
-        
-        const chart = {
-            songName: this.state.audioFileName,
-            bpm: this.state.bpm,
-            startTimeOffset: this.state.startTimeOffset,
-            notes: gameNotes.sort((a, b) => a.time - b.time),
-        };
-
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", chartFilename + ".json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+            const gameNotes = this.state.notes.map(note => {
+                if (note.type === 'long_head') return { time: note.time, lane: note.lane, duration: note.duration };
+                if (note.type === 'tap') return { time: note.time, lane: note.lane };
+                return { time: note.time, lane: note.lane, type: note.type };
+            }).filter(note => note.type !== 'long_tail');
+            const chart = {
+                songName: this.state.audioFileName,
+                bpm: this.state.bpm,
+                startTimeOffset: this.state.startTimeOffset,
+                notes: gameNotes.sort((a, b) => a.time - b.time),
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", chartFilename + ".json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        } catch (err) {
+            Debugger.logError(err, 'Editor.saveChart');
+            UI.showMessage('editor', `저장 실패: ${err.message}`);
+        }
     },
 
     loadChart(chartData, loadedFileName) {
-        // 1. 에디터의 모든 상태를 깨끗하게 초기화합니다.
-        this.resetEditorState();
-        
-        // 2. [핵심 수정] BPM과 같은 메타데이터를 노트 처리보다 먼저 불러옵니다.
-        // 이것이 있어야 마디 번호 계산(_getMeasureFromTime)이 정상적으로 동작합니다.
-        this.state.bpm = chartData.bpm || 120;
-        this.state.startTimeOffset = chartData.startTimeOffset || 0;
-    
-        // 3. 차트의 모든 노트를 새로운 형식에 맞게 해석하여 에디터 상태에 저장합니다.
-        this.state.notes = chartData.notes.map(note => {
-            const measure = this._getMeasureFromTime(note.time);
-            let newNote = { ...note, measure };
-    
-            if (note.duration) {
-                // duration 속성이 있으면 롱노트입니다.
-                newNote.type = 'long_head';
-            } else if (note.type === 'false') {
-                // type이 'false'이면 가짜 노트입니다.
-                newNote.type = 'false';
-            } else {
-                // 그 외의 모든 경우는 일반(tap) 노트입니다.
-                newNote.type = 'tap';
+        try {
+            this.resetEditorState();
+            this.state.bpm = chartData.bpm || 120;
+            this.state.notes = chartData.notes.map(note => {
+                const measure = this._getMeasureFromTime(note.time);
+                let newNote = { ...note, measure };
+                if (note.duration) newNote.type = 'long_head';
+                else if (note.type === 'false') newNote.type = 'false';
+                else newNote.type = 'tap';
+                return newNote;
+            });
+            let maxMeasure = 0;
+            if (this.state.notes.length > 0) {
+                maxMeasure = Math.max(...this.state.notes.map(n => n.measure));
             }
-            return newNote;
-        });
-        
-        // 4. 불러온 차트의 길이에 맞춰 전체 마디 수를 자동으로 조절합니다.
-        let maxMeasure = 0;
-        if (this.state.notes.length > 0) {
-            // 가장 마지막에 있는 노트의 마디 번호를 찾습니다.
-            maxMeasure = Math.max(...this.state.notes.map(n => n.measure));
-        }
-        // 작업 편의를 위해 마지막 노트 마디에서 5마디의 여유 공간을 줍니다.
-        this.state.totalMeasures = maxMeasure + 5; 
-    
-        // 5. UI 컨트롤에 불러온 값을 채워줍니다.
-        DOM.editor.bpmInput.value = this.state.bpm;
-        DOM.editor.startTimeInput.value = this.state.startTimeOffset;
-        DOM.editor.audioFileNameEl.textContent = `요구 파일: ${chartData.songName || '없음'}`;
-        
-        if (loadedFileName) {
-            DOM.editor.chartFilenameInput.value = loadedFileName.split('.').slice(0, -1).join('.');
-        }
-        
-        // 6. 마지막으로, 화면에 차트를 그립니다.
-        this.drawTimeline();
-        this.renderNotes();
-    },
-
-    loop() {
-        if (!this.state.isPlaying) return;
-    
-        let elapsedSeconds;
-        const isMusicLoaded = !!DOM.musicPlayer.src;
-    
-        // [핵심 수정] 음악 유무에 따라 시간 소스를 결정합니다.
-        if (isMusicLoaded && !DOM.musicPlayer.paused) {
-            // 소스 1: 음악 플레이어의 현재 시간 (가장 정확함)
-            elapsedSeconds = DOM.musicPlayer.currentTime;
-        } else {
-            // 소스 2: performance.now() 기반의 내부 타이머
-            const elapsedTimeMs = performance.now() - this.state.playbackStartTime;
-            elapsedSeconds = elapsedTimeMs / 1000;
-        }
-    
-        const beatsPerSecond = this.state.bpm / 60;
-        const beats = elapsedSeconds * beatsPerSecond;
-        const playheadPosition = beats * CONFIG.EDITOR_BEAT_HEIGHT;
-        
-        DOM.editor.playhead.style.top = `${playheadPosition}px`;
-        
-        // 플레이헤드가 화면 중앙에 오도록 자동 스크롤
-        DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
-        
-        this.state.animationFrameId = requestAnimationFrame(this.loop.bind(this));
-    },
-
-    drawGrid() {
-        DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
-    
-        // [핵심 수정] 음악 길이 대신, 수동으로 설정된 마디 수를 기준으로 길이를 계산
-        const beatsPerMeasure = 4; // 4/4박자 기준
-        const totalBeats = this.state.totalMeasures * beatsPerMeasure;
-        
-        const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
-        
-        DOM.editor.timeline.style.height = `${timelineHeight}px`;
-        DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
-        DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
-    
-        for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
-            const line = document.createElement('div');
-            line.className = 'beat-line';
-            
-            if (beatIndex % beatsPerMeasure === 0) {
-                line.classList.add('measure');
+            this.state.totalMeasures = maxMeasure + 5;
+            this.state.startTimeOffset = chartData.startTimeOffset || 0;
+            DOM.editor.bpmInput.value = this.state.bpm;
+            DOM.editor.startTimeInput.value = this.state.startTimeOffset;
+            DOM.editor.audioFileNameEl.textContent = `요구 파일: ${chartData.songName || '없음'}`;
+            if (loadedFileName) {
+                DOM.editor.chartFilenameInput.value = loadedFileName.split('.').slice(0, -1).join('.');
             }
-            
-            line.style.top = `${beatIndex * CONFIG.EDITOR_BEAT_HEIGHT}px`;
-            line.style.width = '100%';
-            
-            DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
+            this.drawTimeline();
+            this.renderNotes();
+        } catch (err) {
+            Debugger.logError(err, 'Editor.loadChart');
+            UI.showMessage('editor', `차트 해석 오류: ${err.message}`);
         }
     },
 
     handlePlayPause() {
-        // 음악이 없으면 isMusicLoaded는 false가 됩니다.
-        const isMusicLoaded = !!DOM.musicPlayer.src;
-    
-        if (!isMusicLoaded && this.state.notes.length === 0) {
-             UI.showMessage('editor', '음악을 불러오거나 노트를 추가해주세요.');
-             return;
-        }
-    
-        if (!this.state.isPlaying) { // 정지 또는 일시정지 상태일 때 -> 재생
-            // 타이머 시작/재개
-            this.state.playbackStartTime = performance.now() - this.state.timeWhenPaused;
-            
-            if (isMusicLoaded) DOM.musicPlayer.play();
-            
-            DOM.editor.playBtn.textContent = "일시정지";
-            this.state.isPlaying = true;
-            this.loop();
-    
-        } else { // 재생 중일 때 -> 일시정지
-            // 타이머 상태 기록
-            this.state.timeWhenPaused = performance.now() - this.state.playbackStartTime;
-    
-            if (isMusicLoaded) DOM.musicPlayer.pause();
-    
-            DOM.editor.playBtn.textContent = "재생";
-            this.state.isPlaying = false;
-            cancelAnimationFrame(this.state.animationFrameId);
+        try {
+            const isMusicLoaded = !!DOM.musicPlayer.src;
+            if (!isMusicLoaded && this.state.notes.length === 0) {
+                UI.showMessage('editor', '음악을 불러오거나 노트를 추가해주세요.');
+                return;
+            }
+            if (!this.state.isPlaying) {
+                this.state.playbackStartTime = performance.now() - this.state.timeWhenPaused;
+                if (isMusicLoaded) DOM.musicPlayer.play();
+                DOM.editor.playBtn.textContent = "일시정지";
+                this.state.isPlaying = true;
+                this.loop();
+            } else {
+                this.state.timeWhenPaused = performance.now() - this.state.playbackStartTime;
+                if (isMusicLoaded) DOM.musicPlayer.pause();
+                DOM.editor.playBtn.textContent = "재생";
+                this.state.isPlaying = false;
+                cancelAnimationFrame(this.state.animationFrameId);
+            }
+        } catch (err) {
+            Debugger.logError(err, 'Editor.handlePlayPause');
         }
     },
 
     stopPlayback() {
-        this.state.isPlaying = false;
-        cancelAnimationFrame(this.state.animationFrameId);
-        
-        // 타이머 상태 초기화
-        this.state.playbackStartTime = 0;
-        this.state.timeWhenPaused = 0;
-    
-        if (DOM.musicPlayer.src) {
-            DOM.musicPlayer.pause();
-            DOM.musicPlayer.currentTime = this.state.startTimeOffset;
+        try {
+            this.state.isPlaying = false;
+            cancelAnimationFrame(this.state.animationFrameId);
+            this.state.playbackStartTime = 0;
+            this.state.timeWhenPaused = 0;
+            if (DOM.musicPlayer.src) {
+                DOM.musicPlayer.pause();
+                DOM.musicPlayer.currentTime = this.state.startTimeOffset;
+            }
+            DOM.editor.playBtn.textContent = "재생";
+            const beatsPerSecond = this.state.bpm / 60;
+            const offsetBeats = this.state.startTimeOffset * beatsPerSecond;
+            const playheadPosition = offsetBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+            DOM.editor.playhead.style.top = `${playheadPosition}px`;
+            DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
+        } catch (err) {
+            Debugger.logError(err, 'Editor.stopPlayback');
         }
-        
-        DOM.editor.playBtn.textContent = "재생";
-        
-        // 플레이헤드 위치와 스크롤을 시작 지점으로 리셋
-        const beatsPerSecond = this.state.bpm / 60;
-        const offsetBeats = this.state.startTimeOffset * beatsPerSecond;
-        const playheadPosition = offsetBeats * CONFIG.EDITOR_BEAT_HEIGHT;
-        DOM.editor.playhead.style.top = `${playheadPosition}px`;
-        DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
+    },
+
+    loop() {
+        try {
+            if (!this.state.isPlaying) return;
+            let elapsedSeconds;
+            const isMusicLoaded = !!DOM.musicPlayer.src;
+            if (isMusicLoaded && !DOM.musicPlayer.paused) {
+                elapsedSeconds = DOM.musicPlayer.currentTime;
+            } else {
+                const elapsedTimeMs = performance.now() - this.state.playbackStartTime;
+                elapsedSeconds = elapsedTimeMs / 1000;
+            }
+            const beatsPerSecond = this.state.bpm / 60;
+            // startTimeOffset을 빼는 것이 아니라, 오디오가 없을 때의 타이머에 오프셋을 더해주는 방식으로 변경
+            const beats = ((isMusicLoaded ? elapsedSeconds : this.state.startTimeOffset + elapsedSeconds)) * beatsPerSecond;
+            const playheadPosition = beats * CONFIG.EDITOR_BEAT_HEIGHT;
+            DOM.editor.playhead.style.top = `${playheadPosition}px`;
+            DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
+            this.state.animationFrameId = requestAnimationFrame(this.loop.bind(this));
+        } catch (err) {
+            Debugger.logError(err, 'Editor.loop');
+            this.stopPlayback(); // 루프에서 에러 발생 시 재생 중지
+        }
     },
 
     resetLongNotePlacement(clearMessage = true) {
