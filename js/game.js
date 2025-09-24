@@ -155,11 +155,23 @@ const Game = {
         try {
             Debugger.profileStart('Game.loop');
             if (this.state.isPaused) return;
+            
             const self = this;
-            const elapsedTime = self.state.settings.mode === 'music' ?
-                Math.max(0, (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000) :
-                timestamp - self.state.gameStartTime - self.state.totalPausedTime;
+            let elapsedTime;
+    
+            // [핵심 수정] 음악이 실제로 재생되고 있을 때만 오디오 시계를 사용합니다.
+            const useMusicClock = self.state.settings.mode === 'music' && DOM.musicPlayer.src && !DOM.musicPlayer.paused;
+    
+            if (useMusicClock) {
+                // 소스 1: 음악 플레이어의 현재 시간 (가장 정확함)
+                elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000);
+            } else {
+                // 소스 2: 프레임 기반 타이머 (음악이 없거나, 랜덤 모드일 때의 폴백)
+                elapsedTime = timestamp - self.state.gameStartTime - self.state.totalPausedTime;
+            }
+    
             self.updateNotes(elapsedTime);
+            
             if (self.state.processedNotes >= self.state.totalNotes && self.state.totalNotes > 0) {
                 setTimeout(() => self.end(), 500);
                 return;
@@ -302,9 +314,12 @@ const Game = {
             this.state.activeLanes[laneIndex] = true;
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
-            const elapsedTime = this.state.settings.mode === 'music' ?
+    
+            const useMusicClock = this.state.settings.mode === 'music' && DOM.musicPlayer.src && !DOM.musicPlayer.paused;
+            const elapsedTime = useMusicClock ?
                 Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000) :
                 performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+    
             let bestMatch = null;
             let smallestDiff = Infinity;
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
@@ -332,9 +347,12 @@ const Game = {
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
-        const elapsedTime = this.state.settings.mode === 'music' ?
+    
+        const useMusicClock = this.state.settings.mode === 'music' && DOM.musicPlayer.src && !DOM.musicPlayer.paused;
+        const elapsedTime = useMusicClock ?
             Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000) :
             performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+        
         let bestMatch = null;
         let smallestDiff = Infinity;
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
