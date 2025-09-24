@@ -37,8 +37,9 @@ const Audio = {
             this.initializeSynths();
             Audio.isReady = true;
             console.log("Audio context started and synths initialized");
-        } catch (e) {
-            console.error("Could not start audio context", e);
+        } catch (err) {
+            Debugger.logError(err, 'Audio.start');
+            console.error("Could not start audio context", err);
         }
     },
 
