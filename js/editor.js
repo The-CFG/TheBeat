@@ -28,8 +28,6 @@ const Editor = {
         this.resetLongNotePlacement();
         
         UI.showScreen('editor');
-        this.setupEventListeners();
-        this.resetEditorState(); // 에디터 상태 초기화 함수 호출
     },
 
     resetEditorState() {
@@ -75,32 +73,6 @@ const Editor = {
             this.drawGrid();
             this.renderNotes(); // 노트가 삭제된 상태를 화면에 즉시 반영
         }
-    },
-
-    setupEventListeners() {
-        if (this.listenersInitialized) return;
-    
-        // 상단 컨트롤
-        DOM.editor.audioFileInput.addEventListener('change', (e) => this.handleAudioLoad(e));
-        DOM.editor.startTimeInput.addEventListener('input', (e) => { this.state.startTimeOffset = parseFloat(e.target.value) || 0; });
-        DOM.editor.bpmInput.addEventListener('input', (e) => { this.state.bpm = parseInt(e.target.value) || 120; this.drawTimeline(); this.renderNotes(); });
-        DOM.editor.addMeasureBtn.addEventListener('click', () => this.addMeasure());
-        DOM.editor.removeMeasureBtn.addEventListener('click', () => this.removeMeasure());
-        DOM.editor.noteTypeSelector.addEventListener('click', (e) => this.handleNoteTypeSelect(e));
-        
-        // 관리 버튼
-        DOM.editor.playBtn.addEventListener('click', () => this.handlePlayPause());
-    DOM.editor.stopBtn.addEventListener('click', () => this.stopPlayback()); // 새로 추가
-    DOM.editor.saveBtn.addEventListener('click', () => this.saveChart());
-        DOM.editor.saveBtn.addEventListener('click', () => this.saveChart());
-        DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
-        DOM.editor.loadInput.addEventListener('change', (e) => this.handleChartLoad(e));
-        DOM.editor.resetBtn.addEventListener('click', () => this.handleReset());
-    
-        // [핵심 수정] 타임라인 전체가 아닌, 노트가 올라가는 '레이어'에 직접 이벤트 리스너를 답니다.
-        DOM.editor.notesContainer.addEventListener('click', (e) => this.handleTimelineClick(e));
-    
-        this.listenersInitialized = true;
     },
     
     drawTimeline() {
