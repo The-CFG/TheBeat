@@ -81,6 +81,8 @@ const DOM = {
     resumeGameBtn: document.getElementById('resume-game-btn'),
     playingStatusLabel: document.getElementById('playing-status-label'),
     debugOverlay: document.getElementById('debug-overlay'),
+    debugPerfContainer: document.getElementById('debug-perf-container'),
+    debugStateContainer: document.getElementById('debug-state-container'),
     debugLogContainer: document.getElementById('debug-log-container'),
     settings: {
         iconMenu: document.getElementById('settings-icon-menu'),
@@ -92,11 +94,11 @@ const DOM = {
         musicVolumeValue: document.getElementById('volume-value-music'),
         sfxVolumeSlider: document.getElementById('volume-slider-sfx'),
         sfxVolumeValue: document.getElementById('volume-value-sfx'),
+        debugModeToggle: document.getElementById('debug-mode-toggle'),
         controls: {
             keybindBoxes: document.querySelectorAll('.keybind-box'),
             statusLabel: document.getElementById('keybind-status-label'),
             saveBtn: document.getElementById('save-keybinds-btn')
         }
-        debugModeToggle: document.getElementById('debug-mode-toggle'),
     }
 };
