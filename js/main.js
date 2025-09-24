@@ -8,15 +8,91 @@ const Debugger = {
         lastPerfUpdate: 0,
     },
 
+    dragState: {
+        isDragging: false,
+        offsetX: 0,
+        offsetY: 0,
+    },
+
     init() {
         DOM.settings.debugModeToggle.addEventListener('change', (e) => {
             this.toggle(e.target.checked);
         });
+
+        const titleEl = DOM.debugTitle;
+        if (titleEl) {
+            // 마우스 이벤트
+            titleEl.addEventListener('mousedown', (e) => this.dragStart(e));
+            
+            // 터치 이벤트
+            titleEl.addEventListener('touchstart', (e) => this.dragStart(e));
+        }
     },
 
     toggle(isEnabled) {
         this.isActive = isEnabled;
         DOM.debugOverlay.classList.toggle('hidden', !isEnabled);
+    },
+
+    _getEventCoords(e) {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    },
+
+    dragStart(e) {
+        this.dragState.isDragging = true;
+        
+        const overlay = DOM.debugOverlay;
+        const coords = this._getEventCoords(e);
+        
+        // 클릭 지점과 오버레이의 왼쪽 상단 모서리 사이의 오프셋을 계산
+        this.dragState.offsetX = coords.x - overlay.offsetLeft;
+        this.dragState.offsetY = coords.y - overlay.offsetTop;
+        
+        // CSS의 'right' 속성과의 충돌을 막기 위해 'left'로 전환
+        overlay.style.right = 'auto';
+
+        // window에 이벤트 리스너를 등록해야 오버레이 밖으로 마우스가 나가도 계속 드래그됨
+        this.boundDragMove = (ev) => this.dragMove(ev);
+        this.boundDragEnd = () => this.dragEnd();
+
+        window.addEventListener('mousemove', this.boundDragMove);
+        window.addEventListener('mouseup', this.boundDragEnd);
+        window.addEventListener('touchmove', this.boundDragMove);
+        window.addEventListener('touchend', this.boundDragEnd);
+        
+        // 텍스트가 선택되는 기본 동작 방지
+        e.preventDefault();
+    },
+
+    dragMove(e) {
+        if (!this.dragState.isDragging) return;
+
+        const coords = this._getEventCoords(e);
+        const overlay = DOM.debugOverlay;
+        
+        // 마우스/터치 위치에서 오프셋을 뺀 값으로 오버레이의 새 위치를 계산
+        let newX = coords.x - this.dragState.offsetX;
+        let newY = coords.y - this.dragState.offsetY;
+        
+        // 화면 밖으로 나가지 않도록 최소/최대 위치를 제한
+        newX = Math.max(0, Math.min(newX, window.innerWidth - overlay.offsetWidth));
+        newY = Math.max(0, Math.min(newY, window.innerHeight - overlay.offsetHeight));
+
+        overlay.style.left = `${newX}px`;
+        overlay.style.top = `${newY}px`;
+    },
+
+    dragEnd() {
+        this.dragState.isDragging = false;
+        
+        // 메모리 누수를 방지하기 위해 window에서 이벤트 리스너를 반드시 제거
+        window.removeEventListener('mousemove', this.boundDragMove);
+        window.removeEventListener('mouseup', this.boundDragEnd);
+        window.removeEventListener('touchmove', this.boundDragMove);
+        window.removeEventListener('touchend', this.boundDragEnd);
     },
 
     logError(error, context = 'Unknown') {
