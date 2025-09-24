@@ -191,8 +191,15 @@ const Editor = {
         const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
     
         if (e.target.classList.contains('editor-note')) {
+            // 클릭된 노트의 'time'과 'lane'을 모두 가져옵니다.
             const time = parseFloat(e.target.dataset.time);
-            this.state.notes = this.state.notes.filter(n => n.time !== time);
+            const lane = e.target.dataset.lane; // e.g., "L4"
+    
+            // time과 lane이 모두 일치하는 노트만 제외하고 나머지는 유지합니다.
+            this.state.notes = this.state.notes.filter(note => 
+                note.time !== time || note.lane !== lane
+            );
+            
             this.renderNotes();
             return;
         }
