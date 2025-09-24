@@ -88,15 +88,22 @@ const Game = {
         await Audio.start();
         this.resetState();
         resetPlayingScreenUI();
+    
         if (this.state.settings.mode === 'random') {
             this.generateRandomNotes();
-        } else {
-            if (!this.state.chartData) { 
+        } else { // Music Mode
+            if (!this.state.chartData) {
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 차트 파일을 먼저 불러와주세요.');
+                return;
+            }
+            // [핵심 수정] 음악 파일이 없으면 게임 시작을 막는 검사를 다시 추가합니다.
+            if (!this.state.settings.musicSrc) {
+                UI.showMessage('menu', '뮤직 모드를 시작하려면 음악 파일을 먼저 불러와주세요.');
                 return;
             }
             this.prepareNotesFromChartData();
         }
+        
         this.setupLanes();
         UI.showScreen('playing');
         UI.updateScoreboard();
@@ -159,7 +166,7 @@ const Game = {
             const self = this;
             let elapsedTime;
     
-            // [핵심 수정] 복잡한 조건 대신, 모드에 따라 시간 소스를 명확하게 분리합니다.
+            // [수정] 모드에 따라 시간 소스를 명확하게 분리하는 단순한 로직으로 변경
             if (self.state.settings.mode === 'music') {
                 elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000);
             } else { // 'random'
@@ -345,7 +352,7 @@ const Game = {
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
-    
+
         let elapsedTime;
         if (this.state.settings.mode === 'music') {
             elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000);
