@@ -46,6 +46,7 @@ const Editor = {
         DOM.editor.bpmInput.value = this.state.bpm;
         DOM.editor.startTimeInput.value = this.state.startTimeOffset;
         DOM.editor.audioFileNameEl.textContent = '선택된 파일 없음';
+        DOM.editor.chartFilenameInput.value = '';
         DOM.editor.resetBtn.textContent = '재설정';
         DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
         DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
@@ -134,7 +135,7 @@ const Editor = {
         reader.onload = (event) => {
             try {
                 const chartData = JSON.parse(event.target.result);
-                this.loadChart(chartData);
+                this.loadChart(chartData, file.name);
             } catch (error) { UI.showMessage('editor', '잘못된 차트 파일 형식입니다.'); }
         };
         reader.readAsText(file);
@@ -280,6 +281,11 @@ const Editor = {
             UI.showMessage('editor', '음악 파일을 로딩해주세요!');
             return;
         }
+        let chartFilename = DOM.editor.chartFilenameInput.value.trim();
+            if (!chartFilename) {
+                // 입력값이 없으면 음악 파일 이름에서 확장자를 제거하여 사용합니다.
+                chartFilename = this.state.audioFileName.split('.').slice(0, -1).join('.');
+            }
         const gameNotes = this.state.notes.map(note => {
             if (note.type === 'long_head') {
                 return { time: note.time, lane: note.lane, duration: note.duration };
@@ -301,7 +307,7 @@ const Editor = {
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", this.state.audioFileName.split('.').slice(0, -1).join('.') + ".json");
+        downloadAnchorNode.setAttribute("download", chartFilename + ".json");
         document.body.appendChild(downloadAnchorNode);
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
@@ -337,7 +343,9 @@ const Editor = {
         DOM.editor.bpmInput.value = this.state.bpm;
         DOM.editor.startTimeInput.value = this.state.startTimeOffset;
         DOM.editor.audioFileNameEl.textContent = `요구 파일: ${chartData.songName || '없음'}`;
-        
+        if (loadedFileName) {
+            DOM.editor.chartFilenameInput.value = loadedFileName.split('.').slice(0, -1).join('.');
+        }
         this.drawTimeline();
         this.renderNotes();
     },
