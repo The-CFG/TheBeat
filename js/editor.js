@@ -252,10 +252,15 @@ const Editor = {
     renderNotes() {
         try {
             DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
-            const containerRect = DOM.editor.container.getBoundingClientRect();
-            if (containerRect.width === 0) return;
-            const laneWidth = containerRect.width / CONFIG.EDITOR_LANE_IDS.length;
+            
+            // [핵심 수정] 기준점을 'notesContainer'로 통일합니다.
+            // handleTimelineClick 함수가 사용하는 기준점과 동일하게 맞춥니다.
+            const notesContainerRect = DOM.editor.notesContainer.getBoundingClientRect();
+            if (notesContainerRect.width === 0) return;
+    
+            const laneWidth = notesContainerRect.width / CONFIG.EDITOR_LANE_IDS.length;
             const beatsPerSecond = this.state.bpm / 60;
+    
             this.state.notes.forEach(note => {
                 const noteEl = document.createElement('div');
                 noteEl.className = 'editor-note';
