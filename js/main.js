@@ -1,3 +1,35 @@
+const Debugger = {
+    isActive: false,
+
+    init() {
+        DOM.settings.debugModeToggle.addEventListener('change', (e) => {
+            this.toggle(e.target.checked);
+        });
+    },
+
+    toggle(isEnabled) {
+        this.isActive = isEnabled;
+        DOM.debugOverlay.classList.toggle('hidden', !isEnabled);
+    },
+
+    logError(error, context = 'Unknown') {
+        console.error(`[${context}]`, error); // 개발자 도구에도 에러를 남깁니다.
+        if (!this.isActive) return;
+
+        const logEntry = document.createElement('p');
+        const timestamp = new Date().toLocaleTimeString();
+        
+        logEntry.innerHTML = `
+            <span>${timestamp}</span><br>
+            <span class="error-context">[${context}]</span><br>
+            <span class="error-message">${error.message}</span>
+        `;
+        
+        // 새로운 로그를 맨 위에 추가
+        DOM.debugLogContainer.prepend(logEntry);
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     let isListeningForKey = false;
     let currentBindingElement = null;
@@ -373,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#mode-selector button[data-mode="random"]').classList.add('active');
         document.querySelector('#difficulty-selector button[data-difficulty="normal"]').classList.add('active');
         updateDetailedSettingsUI();
+        Debugger.init();
     }
 
     initialize();
