@@ -159,14 +159,10 @@ const Game = {
             const self = this;
             let elapsedTime;
     
-            // [핵심 수정] 음악이 실제로 재생되고 있을 때만 오디오 시계를 사용합니다.
-            const useMusicClock = self.state.settings.mode === 'music' && DOM.musicPlayer.src && !DOM.musicPlayer.paused;
-    
-            if (useMusicClock) {
-                // 소스 1: 음악 플레이어의 현재 시간 (가장 정확함)
+            // [핵심 수정] 복잡한 조건 대신, 모드에 따라 시간 소스를 명확하게 분리합니다.
+            if (self.state.settings.mode === 'music') {
                 elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000);
-            } else {
-                // 소스 2: 프레임 기반 타이머 (음악이 없거나, 랜덤 모드일 때의 폴백)
+            } else { // 'random'
                 elapsedTime = timestamp - self.state.gameStartTime - self.state.totalPausedTime;
             }
     
@@ -315,10 +311,12 @@ const Game = {
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
     
-            const useMusicClock = this.state.settings.mode === 'music' && DOM.musicPlayer.src && !DOM.musicPlayer.paused;
-            const elapsedTime = useMusicClock ?
-                Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000) :
-                performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+            let elapsedTime;
+            if (this.state.settings.mode === 'music') {
+                elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000);
+            } else {
+                elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+            }
     
             let bestMatch = null;
             let smallestDiff = Infinity;
@@ -348,11 +346,13 @@ const Game = {
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
     
-        const useMusicClock = this.state.settings.mode === 'music' && DOM.musicPlayer.src && !DOM.musicPlayer.paused;
-        const elapsedTime = useMusicClock ?
-            Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000) :
-            performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
-        
+        let elapsedTime;
+        if (this.state.settings.mode === 'music') {
+            elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000);
+        } else {
+            elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+        }
+            
         let bestMatch = null;
         let smallestDiff = Infinity;
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
