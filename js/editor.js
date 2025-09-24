@@ -356,7 +356,7 @@ const Editor = {
         }
     },
 
-    async handlePlayPause() { // [수정] async 키워드 추가
+    async handlePlayPause() {
         try {
             const isMusicLoaded = !!DOM.musicPlayer.src;
             if (!isMusicLoaded && this.state.notes.length === 0) {
@@ -368,13 +368,19 @@ const Editor = {
                 this.state.playbackStartTime = performance.now() - this.state.timeWhenPaused;
                 
                 if (isMusicLoaded) {
-                    // [수정] 음악 플레이어가 재생을 시작할 때까지 기다립니다.
                     await DOM.musicPlayer.play();
                 }
                 
                 DOM.editor.playBtn.textContent = "일시정지";
                 this.state.isPlaying = true;
-                this.loop();
+    
+                // [핵심 수정] 시각적 루프를 다음 이벤트 틱에서 시작하여 오디오 엔진이 준비될 시간을 줍니다.
+                setTimeout(() => {
+                    // 사용자가 그 짧은 순간에 다시 일시정지를 눌렀을 경우를 대비한 안전장치
+                    if (this.state.isPlaying) {
+                        this.loop();
+                    }
+                }, 0);
     
             } else { // 재생 중일 때 -> 일시정지
                 this.state.timeWhenPaused = performance.now() - this.state.playbackStartTime;
@@ -387,7 +393,6 @@ const Editor = {
             }
         } catch (err) {
             Debugger.logError(err, 'Editor.handlePlayPause');
-            // 사용자가 페이지와 상호작용하기 전에 재생을 시도하는 등 예외 상황 처리
             UI.showMessage('editor', '음악을 재생할 수 없습니다.');
         }
     },
