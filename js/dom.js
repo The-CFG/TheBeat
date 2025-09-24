@@ -80,6 +80,8 @@ const DOM = {
     pauseGameBtn: document.getElementById('pause-game-btn'),
     resumeGameBtn: document.getElementById('resume-game-btn'),
     playingStatusLabel: document.getElementById('playing-status-label'),
+    debugOverlay: document.getElementById('debug-overlay'),
+    debugLogContainer: document.getElementById('debug-log-container'),
     settings: {
         iconMenu: document.getElementById('settings-icon-menu'),
         iconPlaying: document.getElementById('settings-icon-playing'),
@@ -95,5 +97,6 @@ const DOM = {
             statusLabel: document.getElementById('keybind-status-label'),
             saveBtn: document.getElementById('save-keybinds-btn')
         }
+        debugModeToggle: document.getElementById('debug-mode-toggle'),
     }
 };
