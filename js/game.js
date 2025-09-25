@@ -135,12 +135,17 @@ const Game = {
     },
 
     prepareNotesFromChartData() {
-        const chartData = this.state.chartData;
+        // [핵심 수정] JSON.parse(JSON.stringify(...))를 사용하여
+        // 원본 chartData와 완전히 분리된 '깊은 복사본'을 만듭니다.
+        const chartData = JSON.parse(JSON.stringify(this.state.chartData));
+        
         const playerLaneCount = this.state.settings.lanes;
         const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[playerLaneCount];
-
+    
         const processedNotes = [];
         let noteIdCounter = 0;
+    
+        // 이제부터 사용하는 'note' 객체는 원본과 완전히 분리된 안전한 복사본입니다.
         chartData.notes.forEach(note => {
             const laneId = note.lane;
             const gameLaneIndex = requiredLaneIds.indexOf(laneId);
