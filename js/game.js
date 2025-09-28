@@ -110,6 +110,7 @@ const Game = {
     end() {
         const activeStates = ['playing', 'countdown'];
         if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) return;
+        Audio.playGameEndSound();
         this.cancelCountdown();
         cancelAnimationFrame(this.state.animationFrameId);
         if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
