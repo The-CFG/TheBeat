@@ -24,20 +24,42 @@ const UI = {
         let displayText = judgement.toUpperCase();
     
         // [핵심 수정] 여기서 화면에 표시될 텍스트를 원하는 대로 바꿀 수 있습니다.
-        switch (judgement) {
+        showJudgementFeedback(judgement, currentCombo) {
+        // 전달받은 판정 텍스트(예: "PERFECT")를 기본 표시 텍스트로 설정합니다.
+        let displayText = judgement; 
+    
+        // [핵심 수정] 비교하기 전에 입력값을 소문자로 변환합니다.
+        switch (judgement.toLowerCase()) {
             case 'perfect':
-                displayText = '순산!!'; // 예: 'MARVELOUS'
+                displayText = '호잇쨔!!'; // 원하는 텍스트로 변경하세요.
                 break;
             case 'good':
-                displayText = '호잇쨔!!'; // 예: 'NICE'
+                displayText = '!!호잇쨔잇호!!'; // 원하는 텍스트로 변경하세요.
                 break;
             case 'bad':
-                displayText = '!!쨔잇호'; // 이 부분도 원하시면 바꿀 수 있습니다.
+                displayText = '!!쨔잇호';
                 break;
             case 'miss':
-                displayText = '난산...'; // 이 부분도 원하시면 바꿀 수 있습니다.
+                displayText = '실패...';
                 break;
         }
+    
+        // 판정 텍스트를 설정하고 애니메이션을 시작합니다.
+        DOM.judgementTextEl.textContent = displayText;
+        DOM.judgementTextEl.className = 'judgement-text';
+        void DOM.judgementTextEl.offsetWidth;
+        DOM.judgementTextEl.classList.add('show');
+        setTimeout(() => DOM.judgementTextEl.classList.remove('show'), CONFIG.JUDGEMENT_ANIMATION_MS);
+    
+        // 콤보 텍스트 표시 로직
+        if (currentCombo > 2) {
+            DOM.comboTextEl.textContent = `${currentCombo} COMBO`;
+            DOM.comboTextEl.className = 'combo-text';
+            void DOM.comboTextEl.offsetWidth;
+            DOM.comboTextEl.classList.add('show');
+            setTimeout(() => DOM.comboTextEl.classList.remove('show'), CONFIG.JUDGEMENT_ANIMATION_MS);
+        }
+    },
     
         // 판정 텍스트를 설정하고 애니메이션을 시작합니다.
         DOM.judgementTextEl.textContent = displayText;
