@@ -40,10 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('start-game-btn').addEventListener('click', async () => {
+            Audio.playGameStartSound();
             await Game.start();
         });
 
-        document.getElementById('give-up-btn').addEventListener('click', () => Game.end());
+        document.getElementById('give-up-btn').addEventListener('click', () => {
+            Audio.playGameEndSound();
+            Game.end();
+        });
 
         document.getElementById('back-to-menu-btn').addEventListener('click', () => {
             DOM.lanesContainer.innerHTML = '';
