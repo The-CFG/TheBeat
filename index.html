@@ -141,7 +141,7 @@
         <div id="playing-screen" class="hidden h-full flex flex-col justify-between">
             <div>
                 <div class="flex justify-between items-center mb-4">
-                    <h2 id="playing-status-label" class="text-3xl font-bold text-white">플레이 중</h2>
+                    <h2 id="playing-status-label" class="text-3xl font-bold text-white">출산 중...</h2>
                     <button id="settings-icon-playing" class="p-2 rounded-full hover:bg-gray-600 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -162,19 +162,19 @@
                 <div class="mt-4 bg-gray-700 p-4 rounded-lg">
                     <h3 class="text-xl mb-2 text-gray-300">판정</h3>
                     <div class="space-y-1 text-lg">
-                        <p>PERFECT: <span id="perfect-count">0</span></p>
-                        <p>GOOD: <span id="good-count">0</span></p>
-                        <p>BAD: <span id="bad-count">0</span></p>
-                        <p>MISS: <span id="miss-count">0</span></p>
+                        <p>호잇쨔: <span id="perfect-count">0</span></p>
+                        <p>호잇쨔잇호: <span id="good-count">0</span></p>
+                        <p>쨔잇호: <span id="bad-count">0</span></p>
+                        <p>실패: <span id="miss-count">0</span></p>
                     </div>
                 </div>
             </div>
             <div class="space-y-3 mt-auto">
                 <div id="pause-resume-container">
-                    <button id="pause-game-btn" class="w-full py-3 text-lg font-bold bg-yellow-600 hover:bg-yellow-500 rounded-lg transition">일시 정지</button>
-                    <button id="resume-game-btn" class="hidden w-full py-3 text-lg font-bold bg-green-600 hover:bg-green-500 rounded-lg transition">계속하기</button>
+                    <button id="pause-game-btn" class="w-full py-3 text-lg font-bold bg-yellow-600 hover:bg-yellow-500 rounded-lg transition">잠깐 휴식!!</button>
+                    <button id="resume-game-btn" class="hidden w-full py-3 text-lg font-bold bg-green-600 hover:bg-green-500 rounded-lg transition">계속 순산하기</button>
                 </div>
-                <button id="give-up-btn" class="w-full py-3 text-lg font-bold bg-red-600 hover:bg-red-500 rounded-lg transition">포기하기</button>
+                <button id="give-up-btn" class="w-full py-3 text-lg font-bold bg-red-600 hover:bg-red-500 rounded-lg transition">출산 포기하기</button>
             </div>
         </div>
         
@@ -263,7 +263,7 @@
 
         <!-- Result Screen -->
         <div id="result-screen" class="hidden h-full flex flex-col justify-center items-center text-center">
-            <h2 class="text-5xl font-bold mb-4 text-white">게임 결과</h2>
+            <h2 class="text-5xl font-bold mb-4 text-white">출산 결과</h2>
             <div class="w-full bg-gray-700 p-6 rounded-lg">
                 <p class="text-2xl text-gray-400 mb-2">최종 점수</p>
                 <p id="final-score" class="text-6xl font-bold mb-6">0</p>
