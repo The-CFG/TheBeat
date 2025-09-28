@@ -1,25 +1,29 @@
 const Audio = {
     isReady: false,
     hitSound: null,
-    missSound: null, // Tone.Player 객체로 교체될 예정
+    missSound: null,
     countdownTickSound: null,
     countdownStartSound: null,
 
     initializeSynths() {
-        // 성공 타격음
-        this.hitSound = new Tone.Player({
-            url: "sfx/hit.mp3", // 실제 파일 경로
-            autostart: false,
-        }).toDestination();
-        
-        // [핵심 수정] 실패음도 new Tone.Player를 사용합니다.
-        // "sfx/miss.mp3" 부분은 실제 파일 경로에 맞게 수정해주세요.
-        this.missSound = new Tone.Player({
-            url: "sfx/miss.mp3", // 실제 파일 경로
-            autostart: false,
+        // [핵심 수정] Tone.Player 대신 Tone.Sampler를 사용합니다.
+        // Sampler는 여러 개의 동일한 사운드를 겹쳐서 재생할 수 있습니다.
+        this.hitSound = new Tone.Sampler({
+            urls: {
+                // "C4"는 사운드를 트리거하기 위한 임의의 키(노트 이름)입니다.
+                "C4": "hit.mp3",
+            },
+            baseUrl: "sfx/", // sfx 폴더 안에서 파일을 찾도록 경로를 지정합니다.
         }).toDestination();
 
-        // 카운트다운 소리는 신디사이저를 그대로 유지
+        this.missSound = new Tone.Sampler({
+            urls: {
+                "C4": "miss.mp3",
+            },
+            baseUrl: "sfx/",
+        }).toDestination();
+
+        // 카운트다운 소리는 신디사이저를 그대로 유지합니다.
         this.countdownTickSound = new Tone.Synth({
             oscillator: { type: 'sine' },
             envelope: { attack: 0.005, decay: 0.1, sustain: 0.1, release: 0.2 }
@@ -47,19 +51,16 @@ const Audio = {
         }
     },
 
+    // [핵심 수정] .start() 대신 .triggerAttack()를 사용하여 사운드를 재생합니다.
     playHitSound() {
         if (!this.isReady || !this.hitSound) return;
-        if (this.hitSound.loaded) {
-            this.hitSound.start();
-        }
+        // "C4" 키에 매핑된 사운드를 재생합니다.
+        this.hitSound.triggerAttack("C4");
     },
 
-    // [핵심 수정] triggerAttackRelease 대신 .start()를 호출합니다.
     playMissSound() {
         if (!this.isReady || !this.missSound) return;
-        if (this.missSound.loaded) {
-            this.missSound.start();
-        }
+        this.missSound.triggerAttack("C4");
     },
 
     playCountdownTick() {
@@ -83,11 +84,10 @@ const Audio = {
         const db = (value - 100) * 0.5;
         const synthVolume = (value === 0) ? -Infinity : db;
 
-        // Tone.Player 객체들의 볼륨을 조절
+        // Tone.Sampler도 동일한 .volume 속성을 사용하므로 수정할 필요가 없습니다.
         if (this.hitSound) this.hitSound.volume.value = synthVolume;
         if (this.missSound) this.missSound.volume.value = synthVolume;
         
-        // 나머지 신디사이저 볼륨을 조절
         if (this.countdownTickSound) this.countdownTickSound.volume.value = synthVolume;
         if (this.countdownStartSound) this.countdownStartSound.volume.value = synthVolume;
     }
