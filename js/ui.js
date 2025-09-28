@@ -21,6 +21,22 @@ const UI = {
         document.getElementById('miss-count').textContent = Game.state.judgements.miss;
     },
     showJudgementFeedback(judgement, currentCombo) {
+        switch (judgement) {
+            case 'perfect':
+                displayText = '도티낳음!!!';
+                break;
+            case 'good':
+                displayText = '호잇쨔!!';
+                break;
+            case 'bad':
+                displayText = '!!쨔잇호';
+                break;
+            case 'miss':
+                displayText = '도티들어감...';
+                break;
+            // 다른 판정은 기본값(대문자)을 사용합니다.
+        }
+            
         DOM.judgementTextEl.textContent = judgement;
         DOM.judgementTextEl.className = 'judgement-text';
         void DOM.judgementTextEl.offsetWidth;
