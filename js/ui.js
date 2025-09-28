@@ -21,28 +21,32 @@ const UI = {
         document.getElementById('miss-count').textContent = Game.state.judgements.miss;
     },
     showJudgementFeedback(judgement, currentCombo) {
+        let displayText = judgement.toUpperCase();
+    
+        // [핵심 수정] 여기서 화면에 표시될 텍스트를 원하는 대로 바꿀 수 있습니다.
         switch (judgement) {
             case 'perfect':
-                displayText = '도티낳음!!!';
+                displayText = '순산!!'; // 예: 'MARVELOUS'
                 break;
             case 'good':
-                displayText = '호잇쨔!!';
+                displayText = '호잇쨔!!'; // 예: 'NICE'
                 break;
             case 'bad':
-                displayText = '!!쨔잇호';
+                displayText = '!!쨔잇호'; // 이 부분도 원하시면 바꿀 수 있습니다.
                 break;
             case 'miss':
-                displayText = '도티들어감...';
+                displayText = '난산...'; // 이 부분도 원하시면 바꿀 수 있습니다.
                 break;
-            // 다른 판정은 기본값(대문자)을 사용합니다.
         }
-            
-        DOM.judgementTextEl.textContent = judgement;
+    
+        // 판정 텍스트를 설정하고 애니메이션을 시작합니다.
+        DOM.judgementTextEl.textContent = displayText;
         DOM.judgementTextEl.className = 'judgement-text';
         void DOM.judgementTextEl.offsetWidth;
         DOM.judgementTextEl.classList.add('show');
         setTimeout(() => DOM.judgementTextEl.classList.remove('show'), CONFIG.JUDGEMENT_ANIMATION_MS);
-
+    
+        // 콤보 텍스트 표시 로직 (기존과 동일)
         if (currentCombo > 2) {
             DOM.comboTextEl.textContent = `${currentCombo} COMBO`;
             DOM.comboTextEl.className = 'combo-text';
