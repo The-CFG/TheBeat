@@ -32,7 +32,7 @@ const UI = {
                 displayText = '호잇쨔!!'; // 원하는 텍스트로 변경하세요.
                 break;
             case 'good':
-                displayText = '!!호잇쨔잇호!!'; // 원하는 텍스트로 변경하세요.
+                displayText = '호잇쨔잇호'; // 원하는 텍스트로 변경하세요.
                 break;
             case 'bad':
                 displayText = '!!쨔잇호';
