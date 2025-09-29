@@ -122,16 +122,29 @@ const Game = {
     },
 
     end() {
-        const activeStates = ['playing', 'countdown'];
-        if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) return;
-        this.cancelCountdown();
-        cancelAnimationFrame(this.state.animationFrameId);
-        this.state.animationFrameId = null; 
-        if (this.state.settings.mode === 'music') DOM.musicPlayer.pause();
-        this.state.gameState = 'result';
-        resetPlayingScreenUI();
-        UI.updateResultScreen();
-        UI.showScreen('result');
+        try {
+            const activeStates = ['playing', 'countdown'];
+            if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) return;
+    
+            this.cancelCountdown();
+            
+            cancelAnimationFrame(this.state.animationFrameId);
+            this.state.animationFrameId = null; 
+    
+            if (this.state.settings.mode === 'music' && DOM.musicPlayer.src) {
+                DOM.musicPlayer.pause();
+                // [핵심 추가] 오디오 플레이어의 내부 상태를 완전히 리셋하여
+                // 다음 플레이를 위해 깨끗한 상태로 만듭니다.
+                DOM.musicPlayer.load();
+            }
+            
+            this.state.gameState = 'result';
+            resetPlayingScreenUI();
+            UI.updateResultScreen();
+            UI.showScreen('result');
+        } catch (err) {
+            Debugger.logError(err, 'Game.end');
+        }
     },
 
     prepareNotesFromChartData() {
