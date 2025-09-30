@@ -33,7 +33,7 @@ const Game = {
         previousScreen: 'menu',
         countdownIntervalId: null,
         unprocessedNoteIndex: 0,
-        chartData: null, 
+        chartData: null,
         notes: [],
     },
 
@@ -90,7 +90,7 @@ const Game = {
         await Audio.start();
         this.resetState();
         resetPlayingScreenUI();
-    
+
         if (this.state.settings.mode === 'random') {
             this.generateRandomNotes();
         } else { // Music Mode
@@ -98,14 +98,13 @@ const Game = {
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 차트 파일을 먼저 불러와주세요.');
                 return;
             }
-            // [핵심 수정] 음악 파일이 없으면 게임 시작을 막는 검사를 다시 추가합니다.
             if (!this.state.settings.musicSrc) {
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 음악 파일을 먼저 불러와주세요.');
                 return;
             }
             this.prepareNotesFromChartData();
         }
-        
+
         this.setupLanes();
         UI.showScreen('playing');
         UI.updateScoreboard();
@@ -125,19 +124,19 @@ const Game = {
         try {
             const activeStates = ['playing', 'countdown'];
             if (!activeStates.includes(this.state.gameState) && !this.state.isPaused) return;
-    
+
             this.cancelCountdown();
-            
+
             cancelAnimationFrame(this.state.animationFrameId);
-            this.state.animationFrameId = null; 
-    
+            this.state.animationFrameId = null;
+
             if (this.state.settings.mode === 'music' && DOM.musicPlayer.src) {
                 DOM.musicPlayer.pause();
-                // [핵심 추가] 오디오 플레이어의 내부 상태를 완전히 리셋하여
+                // [핵심 수정] 오디오 플레이어의 내부 상태를 완전히 리셋하여
                 // 다음 플레이를 위해 깨끗한 상태로 만듭니다.
                 DOM.musicPlayer.load();
             }
-            
+
             this.state.gameState = 'result';
             resetPlayingScreenUI();
             UI.updateResultScreen();
@@ -151,13 +150,13 @@ const Game = {
         // [핵심 수정] JSON.parse(JSON.stringify(...))를 사용하여
         // 원본 chartData와 완전히 분리된 '깊은 복사본'을 만듭니다.
         const chartData = JSON.parse(JSON.stringify(this.state.chartData));
-        
+
         const playerLaneCount = this.state.settings.lanes;
         const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[playerLaneCount];
-    
+
         const processedNotes = [];
         let noteIdCounter = 0;
-    
+
         // 이제부터 사용하는 'note' 객체는 원본과 완전히 분리된 안전한 복사본입니다.
         chartData.notes.forEach(note => {
             const laneId = note.lane;
@@ -174,7 +173,7 @@ const Game = {
                 }
             }
         });
-        
+
         this.state.notes = processedNotes.sort((a, b) => a.time - b.time);
         this.state.totalNotes = this.state.notes.filter(n => n.type !== 'long_tail').length;
     },
@@ -183,19 +182,18 @@ const Game = {
         try {
             Debugger.profileStart('Game.loop');
             if (this.state.isPaused) return;
-            
+
             const self = this;
             let elapsedTime;
-    
-            // [수정] 모드에 따라 시간 소스를 명확하게 분리하는 단순한 로직으로 변경
+
             if (self.state.settings.mode === 'music') {
                 elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - self.state.settings.startTimeOffset) * 1000);
             } else { // 'random'
                 elapsedTime = timestamp - self.state.gameStartTime - self.state.totalPausedTime;
             }
-    
+
             self.updateNotes(elapsedTime);
-            
+
             if (self.state.processedNotes >= self.state.totalNotes && self.state.totalNotes > 0) {
                 setTimeout(() => self.end(), 500);
                 return;
@@ -338,14 +336,14 @@ const Game = {
             this.state.activeLanes[laneIndex] = true;
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
-    
+
             let elapsedTime;
             if (this.state.settings.mode === 'music') {
                 elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000);
             } else {
                 elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
             }
-    
+
             let bestMatch = null;
             let smallestDiff = Infinity;
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
@@ -380,7 +378,7 @@ const Game = {
         } else {
             elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
         }
-            
+
         let bestMatch = null;
         let smallestDiff = Infinity;
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
@@ -508,7 +506,7 @@ const Game = {
             currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
         }
         this.state.totalNotes = generatedNotesCount;
-        this.state.notes.sort((a,b) => a.time - b.time);
+        this.state.notes.sort((a, b) => a.time - b.time);
     },
 
     loadChartNotes(chartData) {
