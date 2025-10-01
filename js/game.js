@@ -10,6 +10,7 @@ const Game = {
             falseNoteProbability: 0,
             lanes: 4,
             musicSrc: null,
+            musicFileObject: null,
             musicVolume: 100,
             sfxVolume: 100,
             bpm: 120,
@@ -98,7 +99,7 @@ const Game = {
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 차트 파일을 먼저 불러와주세요.');
                 return;
             }
-            if (!this.state.settings.musicSrc) {
+            if (!this.state.settings.musicFileObject) {
                 UI.showMessage('menu', '뮤직 모드를 시작하려면 음악 파일을 먼저 불러와주세요.');
                 return;
             }
@@ -109,6 +110,10 @@ const Game = {
         UI.showScreen('playing');
         UI.updateScoreboard();
         this.state.gameState = 'countdown';
+        if (this.state.settings.mode === 'music' && this.state.settings.musicFileObject) {
+            const musicUrl = URL.createObjectURL(this.state.settings.musicFileObject);
+            DOM.musicPlayer.src = musicUrl;
+        }
         this.runCountdown(() => {
             this.state.gameState = 'playing';
             if (this.state.settings.mode === 'music' && DOM.musicPlayer.src) {
@@ -135,6 +140,10 @@ const Game = {
                 // [핵심 수정] 오디오 플레이어의 내부 상태를 완전히 리셋하여
                 // 다음 플레이를 위해 깨끗한 상태로 만듭니다.
                 DOM.musicPlayer.load();
+
+                if (DOM.musicPlayer.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(DOM.musicPlayer.src);
+                }
             }
 
             this.state.gameState = 'result';
