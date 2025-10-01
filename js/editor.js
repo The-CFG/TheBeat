@@ -115,16 +115,17 @@ const Editor = {
     drawGrid() {
         try {
             DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
-    
+
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
             const beatsPerMeasure = 4;
             const totalBeats = this.state.totalMeasures * beatsPerMeasure;
-            const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+            const timelineHeight = totalBeats * adjustedBeatHeight;
     
             DOM.editor.timeline.style.height = `${timelineHeight}px`;
             DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
             DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
     
-            const measureHeight = beatsPerMeasure * CONFIG.EDITOR_BEAT_HEIGHT;
+            const measureHeight = beatsPerMeasure * adjustedBeatHeight; 
     
             for (let i = 0; i < this.state.totalMeasures; i++) {
                 for (let j = 0; j < this.state.snapDivision; j++) {
@@ -231,9 +232,10 @@ const Editor = {
             const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
     
             const y = e.clientY - rect.top + container.scrollTop;
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
             const beatsPerSecond = this.state.bpm / 60;
             const snapsPerBeat = this.state.snapDivision / 4;
-            const snapHeight = CONFIG.EDITOR_BEAT_HEIGHT / snapsPerBeat;
+            const snapHeight = adjustedBeatHeight / snapsPerBeat;
             const snapIndex = Math.round(y / snapHeight);
             const snappedBeat = snapIndex / snapsPerBeat;
             const timeInMs = Math.round((snappedBeat / beatsPerSecond) * 1000);
@@ -250,6 +252,13 @@ const Editor = {
     handleSnapChange(e) {
         this.state.snapDivision = parseInt(e.target.value) || 4;
         this.drawGrid();
+    },
+
+    _getAdjustedBeatHeight() {
+        // 기본 높이(20)에 분할 값에 따른 보정치를 곱합니다.
+        // 1/4 분할일 때 기본 높이(x1), 1/8일 때 1.5배, 1/16일 때 2배 등으로 점차 늘어납니다.
+        const scaleFactor = Math.max(1, this.state.snapDivision / 4);
+        return CONFIG.EDITOR_BEAT_HEIGHT * scaleFactor;
     },
 
     placeSimpleNote(time, laneId) {
@@ -290,7 +299,8 @@ const Editor = {
             // [핵심 수정] 노트 너비 계산의 기준도 'container.clientWidth'로 통일합니다.
             const container = DOM.editor.container;
             if (container.clientWidth === 0) return;
-    
+
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
             const laneWidth = container.clientWidth / CONFIG.EDITOR_LANE_IDS.length; // 스크롤바를 제외한 실제 너비 사용
             const beatsPerSecond = this.state.bpm / 60;
     
@@ -304,10 +314,10 @@ const Editor = {
                 noteEl.style.width = `${laneWidth}px`;
                 noteEl.style.left = `${laneIndex * laneWidth}px`;
                 const beats = (note.time / 1000) * beatsPerSecond;
-                noteEl.style.top = `${beats * CONFIG.EDITOR_BEAT_HEIGHT - 4}px`;
+                noteEl.style.top = `${beats * adjustedBeatHeight - 4}px`;
                 if (note.duration) {
                     const durationInBeats = (note.duration / 1000) * beatsPerSecond;
-                    noteEl.style.height = `${durationInBeats * CONFIG.EDITOR_BEAT_HEIGHT}px`;
+                    noteEl.style.height = `${durationInBeats * adjustedBeatHeight}px`;
                 }
                 noteEl.dataset.time = note.time;
                 noteEl.dataset.lane = note.lane;
@@ -436,9 +446,10 @@ const Editor = {
                 DOM.musicPlayer.currentTime = this.state.startTimeOffset;
             }
             DOM.editor.playBtn.textContent = "재생";
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
             const beatsPerSecond = this.state.bpm / 60;
             const offsetBeats = this.state.startTimeOffset * beatsPerSecond;
-            const playheadPosition = offsetBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+            const playheadPosition = offsetBeats * adjustedBeatHeight;
             DOM.editor.playhead.style.top = `${playheadPosition}px`;
             DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
         } catch (err) {
@@ -457,10 +468,11 @@ const Editor = {
                 const elapsedTimeMs = performance.now() - this.state.playbackStartTime;
                 elapsedSeconds = elapsedTimeMs / 1000;
             }
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
             const beatsPerSecond = this.state.bpm / 60;
             // startTimeOffset을 빼는 것이 아니라, 오디오가 없을 때의 타이머에 오프셋을 더해주는 방식으로 변경
             const beats = ((isMusicLoaded ? elapsedSeconds : this.state.startTimeOffset + elapsedSeconds)) * beatsPerSecond;
-            const playheadPosition = beats * CONFIG.EDITOR_BEAT_HEIGHT;
+            const playheadPosition = beats * adjustedBeatHeight;
             DOM.editor.playhead.style.top = `${playheadPosition}px`;
             DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
             this.state.animationFrameId = requestAnimationFrame(this.loop.bind(this));
