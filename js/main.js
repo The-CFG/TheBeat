@@ -224,8 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         DOM.editor.backBtn.addEventListener('click', () => {
-            Game.state.gameState = 'menu';
-            UI.showScreen('menu');
+            if (Editor._confirmDiscardChanges()) { // [핵심 변경]
+                Game.state.gameState = 'menu';
+                UI.showScreen('menu');
+            }
         });
 
         document.getElementById('mode-selector').addEventListener('click', (e) => {
@@ -396,9 +398,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
-        DOM.editor.startTimeInput.addEventListener('input', (e) => { Editor.state.startTimeOffset = parseFloat(e.target.value) || 0; });
-        DOM.editor.bpmInput.addEventListener('input', (e) => { Editor.state.bpm = parseInt(e.target.value) || 120; Editor.drawTimeline(); Editor.renderNotes(); });
+        DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));DOM.editor.startTimeInput.addEventListener('input', (e) => {
+        DOM.editor.startTimeInput.addEventListener('input', (e) => {
+            Editor.state.startTimeOffset = parseFloat(e.target.value) || 0;
+            Editor.setDirty(true); // [핵심 추가]
+        });
+        DOM.editor.bpmInput.addEventListener('input', (e) => {
+            Editor.state.bpm = parseInt(e.target.value) || 120;
+            Editor.setDirty(true); // [핵심 추가]
+            Editor.drawTimeline();
+            Editor.renderNotes();
+        });
         DOM.editor.snapSelector.addEventListener('change', (e) => Editor.handleSnapChange(e));
         DOM.editor.noteTypeSelector.addEventListener('click', (e) => Editor.handleNoteTypeSelect(e));
         DOM.editor.addMeasureBtn.addEventListener('click', () => Editor.addMeasure());
@@ -409,7 +419,26 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.editor.stopBtn.addEventListener('click', () => Editor.stopPlayback());
         DOM.editor.saveBtn.addEventListener('click', () => Editor.saveChart()); // 이제 여기서 한 번만 등록됩니다.
         DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
-        DOM.editor.loadInput.addEventListener('change', (e) => Editor.handleChartLoad(e));
+        DOM.editor.loadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+        
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                // [핵심 변경] 차트를 실제로 로드하기 전에 확인
+                if (Editor._confirmDiscardChanges('저장하지 않은 변경사항이 있습니다. 새 차트를 불러오시겠습니까?')) {
+                    try {
+                        const chartData = JSON.parse(event.target.result);
+                        Editor.loadChart(chartData, file.name);
+                    } catch (err) {
+                        Debugger.logError(err, 'Editor.handleChartLoad');
+                        UI.showMessage('editor', `잘못된 차트 파일 형식입니다: ${err.message}`);
+                    }
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = null;
+        });
         DOM.editor.resetBtn.addEventListener('click', () => Editor.handleReset());
     
         // 타임라인
