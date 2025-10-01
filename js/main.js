@@ -21,10 +21,7 @@ const Debugger = {
 
         const titleEl = DOM.debugTitle;
         if (titleEl) {
-            // 마우스 이벤트
             titleEl.addEventListener('mousedown', (e) => this.dragStart(e));
-            
-            // 터치 이벤트
             titleEl.addEventListener('touchstart', (e) => this.dragStart(e));
         }
     },
@@ -43,52 +40,34 @@ const Debugger = {
 
     dragStart(e) {
         this.dragState.isDragging = true;
-        
         const overlay = DOM.debugOverlay;
         const coords = this._getEventCoords(e);
-        
-        // 클릭 지점과 오버레이의 왼쪽 상단 모서리 사이의 오프셋을 계산
         this.dragState.offsetX = coords.x - overlay.offsetLeft;
         this.dragState.offsetY = coords.y - overlay.offsetTop;
-        
-        // CSS의 'right' 속성과의 충돌을 막기 위해 'left'로 전환
         overlay.style.right = 'auto';
-
-        // window에 이벤트 리스너를 등록해야 오버레이 밖으로 마우스가 나가도 계속 드래그됨
         this.boundDragMove = (ev) => this.dragMove(ev);
         this.boundDragEnd = () => this.dragEnd();
-
         window.addEventListener('mousemove', this.boundDragMove);
         window.addEventListener('mouseup', this.boundDragEnd);
         window.addEventListener('touchmove', this.boundDragMove);
         window.addEventListener('touchend', this.boundDragEnd);
-        
-        // 텍스트가 선택되는 기본 동작 방지
         e.preventDefault();
     },
 
     dragMove(e) {
         if (!this.dragState.isDragging) return;
-
         const coords = this._getEventCoords(e);
         const overlay = DOM.debugOverlay;
-        
-        // 마우스/터치 위치에서 오프셋을 뺀 값으로 오버레이의 새 위치를 계산
         let newX = coords.x - this.dragState.offsetX;
         let newY = coords.y - this.dragState.offsetY;
-        
-        // 화면 밖으로 나가지 않도록 최소/최대 위치를 제한
         newX = Math.max(0, Math.min(newX, window.innerWidth - overlay.offsetWidth));
         newY = Math.max(0, Math.min(newY, window.innerHeight - overlay.offsetHeight));
-
         overlay.style.left = `${newX}px`;
         overlay.style.top = `${newY}px`;
     },
 
     dragEnd() {
         this.dragState.isDragging = false;
-        
-        // 메모리 누수를 방지하기 위해 window에서 이벤트 리스너를 반드시 제거
         window.removeEventListener('mousemove', this.boundDragMove);
         window.removeEventListener('mouseup', this.boundDragEnd);
         window.removeEventListener('touchmove', this.boundDragMove);
@@ -98,57 +77,50 @@ const Debugger = {
     logError(error, context = 'Unknown') {
         console.error(`[${context}]`, error);
         if (!this.isActive) return;
-        // ... (기존 logError 로직은 동일) ...
+        const logContainer = DOM.debugLogContainer;
+        const errorEl = document.createElement('p');
+        errorEl.innerHTML = `<span class="error-context">[${context}]</span>: <span class="error-message">${error.message}</span>`;
+        logContainer.appendChild(errorEl);
+        logContainer.scrollTop = logContainer.scrollHeight;
     },
 
-    // [신규] 실시간 상태 뷰어 업데이트 함수
     updateState(stateObject) {
         if (!this.isActive) return;
-        
-        // 거대한 notes 배열이 UI를 멈추게 하는 것을 방지하기 위해 데이터를 정제
         const replacer = (key, value) => {
             if (key === "notes" && Array.isArray(value)) {
                 return `[...Array(${value.length})]`;
             }
             return value;
         };
-
         const sanitizedState = JSON.stringify(stateObject, replacer, 2);
         DOM.debugStateContainer.querySelector('pre').textContent = sanitizedState;
     },
 
-    // [신규] 성능 프로파일링 시작/종료 함수
     profileStart(name) {
         if (!this.isActive) return;
         this.perf.timings.set(name, { start: performance.now() });
     },
-    
+
     profileEnd(name) {
         if (!this.isActive || !this.perf.timings.has(name)) return;
         const timing = this.perf.timings.get(name);
         timing.duration = performance.now() - timing.start;
     },
-    
-    // [신규] 성능 정보 UI 업데이트 함수 (매 프레임 호출)
+
     updatePerf(timestamp) {
         if (!this.isActive) return;
-
-        // FPS 계산
         this.perf.frames++;
         if (timestamp > this.perf.lastPerfUpdate + 1000) {
             this.perf.fps = Math.round((this.perf.frames * 1000) / (timestamp - this.perf.lastPerfUpdate));
             this.perf.lastPerfUpdate = timestamp;
             this.perf.frames = 0;
         }
-
-        // UI 업데이트
         let perfHTML = `<p>FPS: ${this.perf.fps}</p>`;
         this.perf.timings.forEach((timing, name) => {
             if (timing.duration !== undefined) {
                 perfHTML += `<p>${name}: ${timing.duration.toFixed(2)}ms</p>`;
             }
         });
-        
         DOM.debugPerfContainer.innerHTML = perfHTML;
     }
 };
@@ -163,9 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isListeningForKey) {
                 handleKeyBinding(e);
             } else if (Game.state.gameState === 'editor') {
-                Editor.handleEditorKeyPress(e); // 에디터가 활성화 상태일 때
+                Editor.handleEditorKeyPress(e);
             } else {
-                Game.handleKeyDown(e); // 그 외의 경우 (메뉴, 플레이 등)
+                Game.handleKeyDown(e);
             }
         });
 
@@ -201,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('give-up-btn').addEventListener('click', () => Game.end());
-
         document.getElementById('back-to-menu-btn').addEventListener('click', () => {
             DOM.lanesContainer.innerHTML = '';
             resetPlayingScreenUI();
@@ -216,7 +187,6 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.uiArea.classList.add('md:w-1/2');
             Game.state.gameState = 'editor';
             Editor.init();
-
             setTimeout(() => {
                 Editor.drawTimeline();
                 Editor.renderNotes();
@@ -224,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         DOM.editor.backBtn.addEventListener('click', () => {
-            if (Editor._confirmDiscardChanges()) { // [핵심 변경]
+            if (Editor._confirmDiscardChanges()) {
                 Game.state.gameState = 'menu';
                 UI.showScreen('menu');
             }
@@ -232,20 +202,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('mode-selector').addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
-        
             Game.state.settings.mode = e.target.dataset.mode;
             document.querySelectorAll('#mode-selector button').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
-        
             const isMusicMode = Game.state.settings.mode === 'music';
-        
-            // 뮤직 모드일 경우: 노트 수, 난이도 UI 숨기기
-            // 랜덤 모드일 경우: 해당 UI 보이기
             DOM.musicModeControls.classList.toggle('hidden', !isMusicMode);
             DOM.noteCountContainer.classList.toggle('hidden', isMusicMode);
             DOM.difficultyControls.classList.toggle('hidden', isMusicMode);
-        
-            // 랜덤 모드로 전환 시, 뮤직 모드 관련 정보 초기화
             if (!isMusicMode) {
                 DOM.chartFileNameEl.textContent = '';
                 DOM.musicFileNameEl.textContent = '';
@@ -283,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
-            DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
+            DOM.difficulty.dongValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
 
@@ -297,11 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const isEnabled = e.target.checked;
             DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !isEnabled);
             if (isEnabled) {
-                // 켰을 때 슬라이더 값으로 확률 설정
                 const probValue = parseInt(DOM.difficulty.falseNoteProbSlider.value);
-                Game.state.settings.falseNoteProbability = probValue / 1000; // 50 -> 0.05 (5%)
+                Game.state.settings.falseNoteProbability = probValue / 1000;
             } else {
-                // 껐을 때 확률 0으로 설정
                 Game.state.settings.falseNoteProbability = 0;
             }
             setCustomDifficulty();
@@ -309,9 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.falseNoteProbSlider.addEventListener('input', (e) => {
             const probValue = parseInt(e.target.value);
-            // 슬라이더 값(0~50)을 확률(0~0.05) 및 퍼센트(0~5%)로 변환
             Game.state.settings.falseNoteProbability = probValue / 1000;
-            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10)}%`; 
+            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10)}%`;
             setCustomDifficulty();
         });
 
@@ -329,11 +289,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const chartData = JSON.parse(event.target.result);
                     if (Game.loadChartNotes(chartData)) {
                         DOM.chartFileNameEl.textContent = `차트: ${file.name}`;
-
                         if (Game.state.settings.requiredSongName) {
                             DOM.requiredMusicFileNameEl.textContent = `요구 음악 파일: ${Game.state.settings.requiredSongName}`;
                         } else {
-                            DOM.requiredMusicFileNameEl.textContent = ''; // 없으면 비움
+                            DOM.requiredMusicFileNameEl.textContent = '';
                         }
                     }
                 } catch (error) {
@@ -347,9 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('music-file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                // [핵심 변경] 임시 URL 대신 파일 객체 자체를 저장합니다.
                 Game.state.settings.musicFileObject = file;
-                // [변경] musicSrc는 게임 시작 시 동적으로 생성되므로 여기서 제거합니다.
                 DOM.musicFileNameEl.textContent = `음악: ${file.name}`;
             }
             e.target.value = null;
@@ -380,16 +337,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.settings.controls.keybindBoxes.forEach(box => {
             box.addEventListener('click', () => {
-                if (isListeningForKey) {
-                    cancelKeyBinding();
-                }
+                if (isListeningForKey) cancelKeyBinding();
                 startKeyBinding(box);
             });
         });
 
-        DOM.settings.controls.saveBtn.addEventListener('click', () => {
-            saveKeyBindings();
-        });
+        DOM.settings.controls.saveBtn.addEventListener('click', () => saveKeyBindings());
 
         window.addEventListener('resize', () => {
             if (Game.state.gameState === 'editor') {
@@ -398,14 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));DOM.editor.startTimeInput.addEventListener('input', (e) => {
+        DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
         DOM.editor.startTimeInput.addEventListener('input', (e) => {
             Editor.state.startTimeOffset = parseFloat(e.target.value) || 0;
-            Editor.setDirty(true); // [핵심 추가]
+            Editor.setDirty(true);
         });
         DOM.editor.bpmInput.addEventListener('input', (e) => {
             Editor.state.bpm = parseInt(e.target.value) || 120;
-            Editor.setDirty(true); // [핵심 추가]
+            Editor.setDirty(true);
             Editor.drawTimeline();
             Editor.renderNotes();
         });
@@ -413,19 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.editor.noteTypeSelector.addEventListener('click', (e) => Editor.handleNoteTypeSelect(e));
         DOM.editor.addMeasureBtn.addEventListener('click', () => Editor.addMeasure());
         DOM.editor.removeMeasureBtn.addEventListener('click', () => Editor.removeMeasure());
-        
-        // 관리 버튼
         DOM.editor.playBtn.addEventListener('click', () => Editor.handlePlayPause());
         DOM.editor.stopBtn.addEventListener('click', () => Editor.stopPlayback());
-        DOM.editor.saveBtn.addEventListener('click', () => Editor.saveChart()); // 이제 여기서 한 번만 등록됩니다.
+        DOM.editor.saveBtn.addEventListener('click', () => Editor.saveChart());
         DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
         DOM.editor.loadInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
-        
             const reader = new FileReader();
             reader.onload = (event) => {
-                // [핵심 변경] 차트를 실제로 로드하기 전에 확인
                 if (Editor._confirmDiscardChanges('저장하지 않은 변경사항이 있습니다. 새 차트를 불러오시겠습니까?')) {
                     try {
                         const chartData = JSON.parse(event.target.result);
@@ -440,8 +389,6 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.value = null;
         });
         DOM.editor.resetBtn.addEventListener('click', () => Editor.handleReset());
-    
-        // 타임라인
         DOM.editor.notesContainer.addEventListener('click', (e) => Editor.handleTimelineClick(e));
     }
 
@@ -546,8 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const falseNoteEnabled = falseNoteProb > 0;
         DOM.difficulty.falseNoteToggle.checked = falseNoteEnabled;
         DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !falseNoteEnabled);
-        
-        // 확률(0~0.05)을 슬라이더 값(0~50) 및 퍼센트로 변환
         const sliderValue = Math.round(falseNoteProb * 1000);
         DOM.difficulty.falseNoteProbSlider.value = sliderValue;
         DOM.difficulty.falseNoteProbValue.textContent = `${(sliderValue / 10).toFixed(1)}%`;
