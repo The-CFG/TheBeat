@@ -248,6 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 DOM.requiredMusicFileNameEl.textContent = '';
                 Game.state.notes = [];
                 Game.state.settings.musicSrc = null;
+                Game.state.settings.musicFileObject = null;
                 Game.state.settings.requiredSongName = null;
             }
         });
@@ -342,7 +343,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('music-file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                Game.state.settings.musicSrc = URL.createObjectURL(file);
+                // [핵심 변경] 임시 URL 대신 파일 객체 자체를 저장합니다.
+                Game.state.settings.musicFileObject = file;
+                // [변경] musicSrc는 게임 시작 시 동적으로 생성되므로 여기서 제거합니다.
                 DOM.musicFileNameEl.textContent = `음악: ${file.name}`;
             }
             e.target.value = null;
