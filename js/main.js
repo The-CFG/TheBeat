@@ -397,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
         DOM.editor.startTimeInput.addEventListener('input', (e) => { Editor.state.startTimeOffset = parseFloat(e.target.value) || 0; });
         DOM.editor.bpmInput.addEventListener('input', (e) => { Editor.state.bpm = parseInt(e.target.value) || 120; Editor.drawTimeline(); Editor.renderNotes(); });
+        DOM.editor.snapSelector.addEventListener('change', (e) => Editor.handleSnapChange(e));
         DOM.editor.noteTypeSelector.addEventListener('click', (e) => Editor.handleNoteTypeSelect(e));
         DOM.editor.addMeasureBtn.addEventListener('click', () => Editor.addMeasure());
         DOM.editor.removeMeasureBtn.addEventListener('click', () => Editor.removeMeasure());
