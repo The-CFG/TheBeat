@@ -162,8 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('keydown', (e) => {
             if (isListeningForKey) {
                 handleKeyBinding(e);
+            } else if (Game.state.gameState === 'editor') {
+                Editor.handleEditorKeyPress(e); // 에디터가 활성화 상태일 때
             } else {
-                Game.handleKeyDown(e);
+                Game.handleKeyDown(e); // 그 외의 경우 (메뉴, 플레이 등)
             }
         });
 
