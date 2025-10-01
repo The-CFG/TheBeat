@@ -2,6 +2,7 @@ const Editor = {
     state: {
         notes: [],
         bpm: 120,
+        snapDivision: 4,
         startTimeOffset: 0,
         audioFileName: '',
         isPlaying: false,
@@ -114,21 +115,40 @@ const Editor = {
     drawGrid() {
         try {
             DOM.editor.notesContainer.querySelectorAll('.beat-line').forEach(l => l.remove());
+    
             const beatsPerMeasure = 4;
             const totalBeats = this.state.totalMeasures * beatsPerMeasure;
             const timelineHeight = totalBeats * CONFIG.EDITOR_BEAT_HEIGHT;
+    
             DOM.editor.timeline.style.height = `${timelineHeight}px`;
             DOM.editor.notesContainer.style.height = `${timelineHeight}px`;
             DOM.editor.gridContainer.style.height = `${timelineHeight}px`;
-            for (let beatIndex = 0; beatIndex < totalBeats; beatIndex++) {
-                const line = document.createElement('div');
-                line.className = 'beat-line';
-                if (beatIndex % beatsPerMeasure === 0) {
-                    line.classList.add('measure');
+    
+            const measureHeight = beatsPerMeasure * CONFIG.EDITOR_BEAT_HEIGHT;
+    
+            for (let i = 0; i < this.state.totalMeasures; i++) {
+                for (let j = 0; j < this.state.snapDivision; j++) {
+                    const line = document.createElement('div');
+                    line.className = 'beat-line';
+    
+                    // 마디선 (가장 굵게)
+                    if (j === 0) {
+                        line.classList.add('measure');
+                    }
+                    // 4분박자선 (중간 굵기, 기존 선)
+                    else if (j % (this.state.snapDivision / 4) === 0) {
+                        line.style.backgroundColor = '#6b7280'; // Tailwind gray-500
+                    }
+                    // 나머지 분할선 (가장 가늘게)
+                    else {
+                        line.style.backgroundColor = '#4a5568'; // Tailwind gray-600
+                    }
+    
+                    const yPosition = (i * measureHeight) + (j / this.state.snapDivision) * measureHeight;
+                    line.style.top = `${yPosition}px`;
+                    line.style.width = '100%';
+                    DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
                 }
-                line.style.top = `${beatIndex * CONFIG.EDITOR_BEAT_HEIGHT}px`;
-                line.style.width = '100%';
-                DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
             }
         } catch (err) {
             Debugger.logError(err, 'Editor.drawGrid');
@@ -212,8 +232,11 @@ const Editor = {
     
             const y = e.clientY - rect.top + container.scrollTop;
             const beatsPerSecond = this.state.bpm / 60;
-            const beat = Math.round(y / CONFIG.EDITOR_BEAT_HEIGHT);
-            const timeInMs = Math.round((beat / beatsPerSecond) * 1000);
+            const snapsPerBeat = this.state.snapDivision / 4;
+            const snapHeight = CONFIG.EDITOR_BEAT_HEIGHT / snapsPerBeat;
+            const snapIndex = Math.round(y / snapHeight);
+            const snappedBeat = snapIndex / snapsPerBeat;
+            const timeInMs = Math.round((snappedBeat / beatsPerSecond) * 1000);
             
             switch (this.state.selectedNoteType) {
                 case 'long': this.placeLongNote(timeInMs, laneId); break;
@@ -222,6 +245,11 @@ const Editor = {
         } catch (err) {
             Debugger.logError(err, 'Editor.handleTimelineClick');
         }
+    },
+
+    handleSnapChange(e) {
+        this.state.snapDivision = parseInt(e.target.value) || 4;
+        this.drawGrid();
     },
 
     placeSimpleNote(time, laneId) {
