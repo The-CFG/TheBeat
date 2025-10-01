@@ -77,6 +77,7 @@ const DOM = {
         // 기타 UI
         loadInput: document.getElementById('editor-load-input'),
         statusLabel: document.getElementById('editor-status-label'),
+        dirtyIndicator: document.getElementById('editor-dirty-indicator'),
     },
     pauseGameBtn: document.getElementById('pause-game-btn'),
     resumeGameBtn: document.getElementById('resume-game-btn'),
