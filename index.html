@@ -372,6 +372,17 @@
                                     <input type="number" id="bpm-input" value="120" class="w-20 p-1 bg-gray-700 rounded text-sm">
                                 </div>
                                 <div class="flex items-center space-x-2">
+                                    <label for="editor-snap-selector" class="text-sm">분할:</label>
+                                    <select id="editor-snap-selector" class="p-1 bg-gray-700 rounded text-sm">
+                                        <option value="4">1/4</option>
+                                        <option value="8">1/8</option>
+                                        <option value="12">1/12</option>
+                                        <option value="16">1/16</option>
+                                        <option value="24">1/24</option>
+                                        <option value="32">1/32</option>
+                                    </select>
+                                </div>
+                                <div class="flex items-center space-x-2">
                                     <label class="text-sm">마디:</label>
                                     <button id="editor-add-measure-btn" class="px-2 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-sm">+</button>
                                     <button id="editor-remove-measure-btn" class="px-2 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-sm">-</button>
