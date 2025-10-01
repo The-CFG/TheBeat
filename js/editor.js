@@ -21,7 +21,6 @@ const Editor = {
     init() {
         try {
             this.state.isPlaying = false;
-            this.state.isConfirmingReset = false;
             this.resetLongNotePlacement();
             UI.showScreen('editor');
             this.resetEditorState();
@@ -45,10 +44,6 @@ const Editor = {
             DOM.editor.startTimeInput.value = this.state.startTimeOffset;
             DOM.editor.audioFileNameEl.textContent = '선택된 파일 없음';
             DOM.editor.chartFilenameInput.value = '';
-            DOM.editor.resetBtn.textContent = '재설정';
-            DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
-            DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
-            this.state.isConfirmingReset = false;
             this.updateNoteTypeUI();
             this.drawTimeline();
             this.renderNotes();
