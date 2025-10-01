@@ -3,6 +3,7 @@ const Editor = {
         notes: [],
         bpm: 120,
         snapDivision: 4,
+        history: [],
         startTimeOffset: 0,
         audioFileName: '',
         isPlaying: false,
@@ -30,6 +31,7 @@ const Editor = {
 
     resetEditorState() {
         try {
+            this.state.history = [];
             this.state.notes = [];
             this.state.bpm = 120;
             this.state.startTimeOffset = 0;
@@ -55,6 +57,7 @@ const Editor = {
     },
 
     clearNotes() {
+        this._saveStateForUndo();
         this.state.notes = [];
         this.renderNotes();
         UI.showMessage('editor', '모든 노트를 삭제했습니다.');
@@ -214,6 +217,7 @@ const Editor = {
     handleTimelineClick(e) {
         try {
             if (this.state.isPlaying) return;
+            this._saveStateForUndo();
             if (e.target.classList.contains('editor-note')) {
                 const time = parseFloat(e.target.dataset.time);
                 const lane = e.target.dataset.lane;
@@ -365,6 +369,7 @@ const Editor = {
     loadChart(chartData, loadedFileName) {
         try {
             this.resetEditorState();
+            this.state.history = [];
             this.state.bpm = chartData.bpm || 120;
             this.state.notes = chartData.notes.map(note => {
                 const measure = this._getMeasureFromTime(note.time);
@@ -505,6 +510,96 @@ const Editor = {
             DOM.editor.statusLabel.textContent = '롱노트의 시작 지점을 지정해주세요.';
         } else {
             this.resetLongNotePlacement();
+        }
+    },
+
+    _saveStateForUndo() {
+        this.state.history.push(JSON.parse(JSON.stringify(this.state.notes)));
+        if (this.state.history.length > CONFIG.EDITOR_UNDO_HISTORY_LIMIT) {
+            this.state.history.shift(); // 가장 오래된 기록 제거
+        }
+    },
+    
+    // 노트 타입 변경 단축키를 위한 함수
+    setSelectedNoteType(type) {
+        this.state.selectedNoteType = type;
+        this.updateNoteTypeUI();
+        if (type === 'long') {
+            this.state.isPlacingLongNote = false;
+            DOM.editor.statusLabel.textContent = '롱노트의 시작 지점을 지정해주세요.';
+        } else {
+            this.resetLongNotePlacement();
+        }
+    },
+    
+    // 재생 헤드 위치에 노트를 배치하는 함수
+    placeNoteAtPlayhead(laneId) {
+        if (!laneId) return;
+    
+        // 1. 재생 헤드의 현재 y 좌표 가져오기
+        const playheadTop = parseFloat(DOM.editor.playhead.style.top) || 0;
+    
+        // 2. y 좌표를 시간(ms)으로 변환 (handleTimelineClick 로직 재사용)
+        const adjustedBeatHeight = this._getAdjustedBeatHeight();
+        const beatsPerSecond = this.state.bpm / 60;
+        const snapsPerBeat = this.state.snapDivision / 4;
+        const snapHeight = adjustedBeatHeight / snapsPerBeat;
+        const snapIndex = Math.round(playheadTop / snapHeight);
+        const snappedBeat = snapIndex / snapsPerBeat;
+        const timeInMs = Math.round((snappedBeat / beatsPerSecond) * 1000);
+    
+        // 3. 노트 배치
+        this._saveStateForUndo();
+        this.placeSimpleNote(timeInMs, laneId);
+    },
+    
+    // 실행 취소 함수
+    handleUndo() {
+        if (this.state.history.length > 0) {
+            const previousNotes = this.state.history.pop();
+            this.state.notes = previousNotes;
+            this.renderNotes();
+        }
+    },
+    
+    // 모든 에디터 키 입력을 처리할 메인 핸들러
+    handleEditorKeyPress(e) {
+        // 텍스트 입력 필드에 포커스가 있을 때는 단축키를 무시
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+            return;
+        }
+    
+        // Ctrl + Z (실행 취소)
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            this.handleUndo();
+            return;
+        }
+    
+        // 단축키가 Ctrl, Alt 등과 함께 눌렸을 경우 무시 (Undo 제외)
+        if (e.ctrlKey || e.altKey || e.metaKey) return;
+    
+        // 노트 타입 변경 (1, 2, 3)
+        switch (e.key) {
+            case '1':
+                e.preventDefault();
+                this.setSelectedNoteType('tap');
+                return;
+            case '2':
+                e.preventDefault();
+                this.setSelectedNoteType('long');
+                return;
+            case '3':
+                e.preventDefault();
+                this.setSelectedNoteType('false');
+                return;
+        }
+    
+        // 노트 배치 (Q, W, E, ...)
+        const laneId = CONFIG.EDITOR_KEY_LANE_MAP[e.code];
+        if (laneId) {
+            e.preventDefault();
+            this.placeNoteAtPlayhead(laneId);
         }
     }
 };
