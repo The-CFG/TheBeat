@@ -4,6 +4,7 @@ const Editor = {
         bpm: 120,
         snapDivision: 4,
         history: [],
+        isDirty: false,
         startTimeOffset: 0,
         audioFileName: '',
         isPlaying: false,
@@ -51,12 +52,14 @@ const Editor = {
             this.updateNoteTypeUI();
             this.drawTimeline();
             this.renderNotes();
+            this.setDirty(false);
         } catch (err) {
             Debugger.logError(err, 'Editor.resetEditorState');
         }
     },
 
     clearNotes() {
+        this.setDirty(true);
         this._saveStateForUndo();
         this.state.notes = [];
         this.renderNotes();
@@ -65,6 +68,7 @@ const Editor = {
 
     addMeasure() {
         try {
+            this.setDirty(true);
             this.state.totalMeasures++;
             this.drawGrid();
             this.renderNotes();
@@ -76,6 +80,7 @@ const Editor = {
     removeMeasure() {
         try {
             if (this.state.totalMeasures > 1) {
+                this.setDirty(true);
                 const measureToRemove = this.state.totalMeasures - 1;
                 this.state.notes = this.state.notes.filter(note => note.measure !== measureToRemove);
                 this.state.totalMeasures--;
@@ -192,31 +197,22 @@ const Editor = {
     },
 
     handleReset() {
-        if (!this.state.isConfirmingReset) {
-            this.state.isConfirmingReset = true;
-            DOM.editor.resetBtn.textContent = '확인?';
-            DOM.editor.resetBtn.classList.remove('bg-red-700', 'hover:bg-red-600');
-            DOM.editor.resetBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-400');
-            setTimeout(() => {
-                if(this.state.isConfirmingReset) {
-                    this.state.isConfirmingReset = false;
-                    DOM.editor.resetBtn.textContent = '재설정';
-                    DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
-                    DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
-                }
-            }, 3000);
-        } else {
+        const confirmMessage = this.state.isDirty
+            ? '저장하지 않은 변경사항이 있습니다. 모든 노트를 삭제하고 재설정하시겠습니까?'
+            : '모든 노트를 삭제합니다. 정말로 재설정하시겠습니까?';
+    
+        if (confirm(confirmMessage)) {
+            this.setDirty(true); // 초기화된 상태도 '저장되지 않은' 상태입니다.
+            this._saveStateForUndo();
             this.clearNotes();
-            this.state.isConfirmingReset = false;
-            DOM.editor.resetBtn.textContent = '재설정';
-            DOM.editor.resetBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-400');
-            DOM.editor.resetBtn.classList.add('bg-red-700', 'hover:bg-red-600');
+            // 참고: clearNotes는 중복으로 setDirty를 호출하지만 문제는 없습니다.
         }
     },
 
     handleTimelineClick(e) {
         try {
             if (this.state.isPlaying) return;
+            this.setDirty(true);
             this._saveStateForUndo();
             if (e.target.classList.contains('editor-note')) {
                 const time = parseFloat(e.target.dataset.time);
@@ -254,6 +250,7 @@ const Editor = {
     },
 
     handleSnapChange(e) {
+        this.setDirty(true);
         this.state.snapDivision = parseInt(e.target.value) || 4;
         this.drawGrid();
     },
@@ -332,6 +329,23 @@ const Editor = {
         }
     },
 
+    _updateDirtyIndicator() {
+        DOM.editor.dirtyIndicator.textContent = this.state.isDirty ? '*' : '';
+    },
+    
+    setDirty(isDirty) {
+        if (this.state.isDirty === isDirty) return;
+        this.state.isDirty = isDirty;
+        this._updateDirtyIndicator();
+    },
+    
+    _confirmDiscardChanges(message = '저장하지 않은 변경사항이 있습니다. 정말로 나가시겠습니까?') {
+        if (!this.state.isDirty) {
+            return true; // 변경 사항이 없으면 항상 진행
+        }
+        return confirm(message); // 변경 사항이 있으면 사용자에게 확인
+    },
+
     saveChart() {
         try {
             if (!this.state.audioFileName) {
@@ -360,6 +374,7 @@ const Editor = {
             document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
+            this.setDirty(false);
         } catch (err) {
             Debugger.logError(err, 'Editor.saveChart');
             UI.showMessage('editor', `저장 실패: ${err.message}`);
@@ -393,6 +408,7 @@ const Editor = {
             }
             this.drawTimeline();
             this.renderNotes();
+            this.setDirty(false);
         } catch (err) {
             Debugger.logError(err, 'Editor.loadChart');
             UI.showMessage('editor', `차트 해석 오류: ${err.message}`);
@@ -535,7 +551,7 @@ const Editor = {
     // 재생 헤드 위치에 노트를 배치하는 함수
     placeNoteAtPlayhead(laneId) {
         if (!laneId) return;
-    
+        this.setDirty(true);
         // 1. 재생 헤드의 현재 y 좌표 가져오기
         const playheadTop = parseFloat(DOM.editor.playhead.style.top) || 0;
     
