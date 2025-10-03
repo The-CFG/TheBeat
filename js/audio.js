@@ -8,7 +8,7 @@ const Audio = {
     initializeSynths() {
         this.hitSound = new Tone.Synth({
             oscillator: { type: 'sine' },
-            envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 }
+            envelope: { attack: 0.005, decay: 0.05, sustain: 0, release: 0.1 }
         }).toDestination();
 
         this.missSound = new Tone.Synth({
@@ -45,7 +45,7 @@ const Audio = {
 
     playHitSound() {
         if (!this.isReady || !this.hitSound) return;
-        this.hitSound.triggerAttackRelease("G5", "16n", Tone.now());
+        this.hitSound.triggerAttackRelease("G5", 0.05, Tone.now());
     },
 
     playMissSound() {
