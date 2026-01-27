@@ -90,10 +90,6 @@ const Debugger = {
             if (key === "notes" && Array.isArray(value)) {
                 return `[...Array(${value.length})]`;
             }
-            if (key === "renderingNotes" && Array.isArray(value)) {
-                 return `[...Array(${value.length})]`;
-            }
-            if (key === "element" || key === "musicFileObject") return "[Object]";
             return value;
         };
         const sanitizedState = JSON.stringify(stateObject, replacer, 2);
@@ -135,23 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let tempKeyMappings = {};
 
     function setupEventListeners() {
-        // [추가] 리사이즈 이벤트 처리 (디바운스 적용)
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                // 게임 에디터 리사이즈
-                if (Game.state.gameState === 'editor') {
-                    Editor.drawTimeline();
-                    Editor.renderNotes();
-                }
-                // 게임 플레이 리사이즈 (판정선 재계산)
-                if (Game.resize) {
-                    Game.resize();
-                }
-            }, 100);
-        });
-
         window.addEventListener('keydown', (e) => {
             if (isListeningForKey) {
                 handleKeyBinding(e);
@@ -267,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
-            DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
+            DOM.difficulty.dongValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
 
@@ -364,6 +343,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         DOM.settings.controls.saveBtn.addEventListener('click', () => saveKeyBindings());
+
+        window.addEventListener('resize', () => {
+            if (Game.state.gameState === 'editor') {
+                Editor.drawTimeline();
+                Editor.renderNotes();
+            }
+        });
 
         DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
         DOM.editor.startTimeInput.addEventListener('input', (e) => {
