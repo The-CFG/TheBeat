@@ -10,9 +10,11 @@ const DOM = {
     countdownTextEl: document.getElementById('countdown-text'),
     noteCountContainer: document.getElementById('note-count-container'),
     noteCountInput: document.getElementById('note-count-input'),
+    difficultyControls: document.getElementById('difficulty-controls'),
     musicModeControls: document.getElementById('music-mode-controls'),
     chartFileNameEl: document.getElementById('chart-file-name'),
     musicFileNameEl: document.getElementById('music-file-name'),
+    requiredMusicFileNameEl: document.getElementById('required-music-file-name'),
     screens: {
         menu: document.getElementById('menu-screen'),
         playing: document.getElementById('playing-screen'),
@@ -48,20 +50,43 @@ const DOM = {
     editor: {
         container: document.getElementById('editor-container'),
         timeline: document.getElementById('editor-timeline'),
+        gridContainer: document.getElementById('editor-grid-container'),
+        notesContainer: document.getElementById('editor-notes-container'),
         playhead: document.getElementById('editor-playhead'),
+        playhead: document.getElementById('editor-playhead'),
+        
+        // 상단 컨트롤
         audioFileInput: document.getElementById('audio-file-input-editor'),
         audioFileNameEl: document.getElementById('audio-file-name-editor'),
+        startTimeInput: document.getElementById('editor-start-time'),
         bpmInput: document.getElementById('bpm-input'),
-        lanesSelector: document.getElementById('editor-lanes-selector'),
-        loadInput: document.getElementById('editor-load-input'),
-        playPauseBtn: document.getElementById('editor-play-pause-btn'),
+        snapSelector: document.getElementById('editor-snap-selector'),
+        addMeasureBtn: document.getElementById('editor-add-measure-btn'),
+        removeMeasureBtn: document.getElementById('editor-remove-measure-btn'),
+        noteTypeSelector: document.getElementById('editor-note-type-selector'),
+        
+        // 관리 버튼
+        playBtn: document.getElementById('editor-play-btn'),
+        stopBtn: document.getElementById('editor-stop-btn'),
+        chartFilenameInput: document.getElementById('editor-chart-filename'),
         saveBtn: document.getElementById('editor-save-btn'),
         loadBtn: document.getElementById('editor-load-btn'),
+        resetBtn: document.getElementById('editor-reset-btn'),
         backBtn: document.getElementById('editor-back-btn'),
+        
+        // 기타 UI
+        loadInput: document.getElementById('editor-load-input'),
+        statusLabel: document.getElementById('editor-status-label'),
+        dirtyIndicator: document.getElementById('editor-dirty-indicator'),
     },
     pauseGameBtn: document.getElementById('pause-game-btn'),
     resumeGameBtn: document.getElementById('resume-game-btn'),
     playingStatusLabel: document.getElementById('playing-status-label'),
+    debugOverlay: document.getElementById('debug-overlay'),
+    debugTitle: document.querySelector('#debug-overlay .title'),
+    debugPerfContainer: document.getElementById('debug-perf-container'),
+    debugStateContainer: document.getElementById('debug-state-container'),
+    debugLogContainer: document.getElementById('debug-log-container'),
     settings: {
         iconMenu: document.getElementById('settings-icon-menu'),
         iconPlaying: document.getElementById('settings-icon-playing'),
@@ -72,6 +97,7 @@ const DOM = {
         musicVolumeValue: document.getElementById('volume-value-music'),
         sfxVolumeSlider: document.getElementById('volume-slider-sfx'),
         sfxVolumeValue: document.getElementById('volume-value-sfx'),
+        debugModeToggle: document.getElementById('debug-mode-toggle'),
         controls: {
             keybindBoxes: document.querySelectorAll('.keybind-box'),
             statusLabel: document.getElementById('keybind-status-label'),

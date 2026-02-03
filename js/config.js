@@ -17,6 +17,7 @@ const CONFIG = {
         normal: 0,
         hard: 0.03, // 3%
     },
+    EDITOR_LANE_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
     KEY_BINDING_IDS: ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'],
     
     DEFAULT_KEYS: {
@@ -45,4 +46,10 @@ const CONFIG = {
     MESSAGE_DURATION_MS: 3000,
     JUDGEMENT_ANIMATION_MS: 300,
     EDITOR_BEAT_HEIGHT: 20,
+    EDITOR_KEY_LANE_MAP: {
+        'KeyQ': 'L4', 'KeyW': 'L3', 'KeyE': 'L2', 'KeyR': 'L1',
+        'KeyT': 'C1',
+        'KeyY': 'R1', 'KeyU': 'R2', 'KeyI': 'R3', 'KeyO': 'R4'
+    },
+    EDITOR_UNDO_HISTORY_LIMIT: 50
 };

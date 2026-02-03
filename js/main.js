@@ -1,3 +1,130 @@
+const Debugger = {
+    isActive: false,
+    perf: {
+        lastFrameTime: 0,
+        frames: 0,
+        fps: 0,
+        timings: new Map(),
+        lastPerfUpdate: 0,
+    },
+
+    dragState: {
+        isDragging: false,
+        offsetX: 0,
+        offsetY: 0,
+    },
+
+    init() {
+        DOM.settings.debugModeToggle.addEventListener('change', (e) => {
+            this.toggle(e.target.checked);
+        });
+
+        const titleEl = DOM.debugTitle;
+        if (titleEl) {
+            titleEl.addEventListener('mousedown', (e) => this.dragStart(e));
+            titleEl.addEventListener('touchstart', (e) => this.dragStart(e));
+        }
+    },
+
+    toggle(isEnabled) {
+        this.isActive = isEnabled;
+        DOM.debugOverlay.classList.toggle('hidden', !isEnabled);
+    },
+
+    _getEventCoords(e) {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    },
+
+    dragStart(e) {
+        this.dragState.isDragging = true;
+        const overlay = DOM.debugOverlay;
+        const coords = this._getEventCoords(e);
+        this.dragState.offsetX = coords.x - overlay.offsetLeft;
+        this.dragState.offsetY = coords.y - overlay.offsetTop;
+        overlay.style.right = 'auto';
+        this.boundDragMove = (ev) => this.dragMove(ev);
+        this.boundDragEnd = () => this.dragEnd();
+        window.addEventListener('mousemove', this.boundDragMove);
+        window.addEventListener('mouseup', this.boundDragEnd);
+        window.addEventListener('touchmove', this.boundDragMove);
+        window.addEventListener('touchend', this.boundDragEnd);
+        e.preventDefault();
+    },
+
+    dragMove(e) {
+        if (!this.dragState.isDragging) return;
+        const coords = this._getEventCoords(e);
+        const overlay = DOM.debugOverlay;
+        let newX = coords.x - this.dragState.offsetX;
+        let newY = coords.y - this.dragState.offsetY;
+        newX = Math.max(0, Math.min(newX, window.innerWidth - overlay.offsetWidth));
+        newY = Math.max(0, Math.min(newY, window.innerHeight - overlay.offsetHeight));
+        overlay.style.left = `${newX}px`;
+        overlay.style.top = `${newY}px`;
+    },
+
+    dragEnd() {
+        this.dragState.isDragging = false;
+        window.removeEventListener('mousemove', this.boundDragMove);
+        window.removeEventListener('mouseup', this.boundDragEnd);
+        window.removeEventListener('touchmove', this.boundDragMove);
+        window.removeEventListener('touchend', this.boundDragEnd);
+    },
+
+    logError(error, context = 'Unknown') {
+        console.error(`[${context}]`, error);
+        if (!this.isActive) return;
+        const logContainer = DOM.debugLogContainer;
+        const errorEl = document.createElement('p');
+        errorEl.innerHTML = `<span class="error-context">[${context}]</span>: <span class="error-message">${error.message}</span>`;
+        logContainer.appendChild(errorEl);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    },
+
+    updateState(stateObject) {
+        if (!this.isActive) return;
+        const replacer = (key, value) => {
+            if (key === "notes" && Array.isArray(value)) {
+                return `[...Array(${value.length})]`;
+            }
+            return value;
+        };
+        const sanitizedState = JSON.stringify(stateObject, replacer, 2);
+        DOM.debugStateContainer.querySelector('pre').textContent = sanitizedState;
+    },
+
+    profileStart(name) {
+        if (!this.isActive) return;
+        this.perf.timings.set(name, { start: performance.now() });
+    },
+
+    profileEnd(name) {
+        if (!this.isActive || !this.perf.timings.has(name)) return;
+        const timing = this.perf.timings.get(name);
+        timing.duration = performance.now() - timing.start;
+    },
+
+    updatePerf(timestamp) {
+        if (!this.isActive) return;
+        this.perf.frames++;
+        if (timestamp > this.perf.lastPerfUpdate + 1000) {
+            this.perf.fps = Math.round((this.perf.frames * 1000) / (timestamp - this.perf.lastPerfUpdate));
+            this.perf.lastPerfUpdate = timestamp;
+            this.perf.frames = 0;
+        }
+        let perfHTML = `<p>FPS: ${this.perf.fps}</p>`;
+        this.perf.timings.forEach((timing, name) => {
+            if (timing.duration !== undefined) {
+                perfHTML += `<p>${name}: ${timing.duration.toFixed(2)}ms</p>`;
+            }
+        });
+        DOM.debugPerfContainer.innerHTML = perfHTML;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     let isListeningForKey = false;
     let currentBindingElement = null;
@@ -7,6 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('keydown', (e) => {
             if (isListeningForKey) {
                 handleKeyBinding(e);
+            } else if (Game.state.gameState === 'editor') {
+                Editor.handleEditorKeyPress(e);
             } else {
                 Game.handleKeyDown(e);
             }
@@ -44,7 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('give-up-btn').addEventListener('click', () => Game.end());
-
         document.getElementById('back-to-menu-btn').addEventListener('click', () => {
             DOM.lanesContainer.innerHTML = '';
             resetPlayingScreenUI();
@@ -53,13 +181,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('editor-btn').addEventListener('click', () => {
+            DOM.gameArea.classList.remove('md:w-2/3');
+            DOM.gameArea.classList.add('md:w-1/2');
+            DOM.uiArea.classList.remove('md:w-1/3');
+            DOM.uiArea.classList.add('md:w-1/2');
             Game.state.gameState = 'editor';
             Editor.init();
+            setTimeout(() => {
+                Editor.drawTimeline();
+                Editor.renderNotes();
+            }, 0);
         });
 
         DOM.editor.backBtn.addEventListener('click', () => {
-            Game.state.gameState = 'menu';
-            UI.showScreen('menu');
+            if (Editor._confirmDiscardChanges()) {
+                Game.state.gameState = 'menu';
+                UI.showScreen('menu');
+            }
         });
 
         document.getElementById('mode-selector').addEventListener('click', (e) => {
@@ -70,11 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const isMusicMode = Game.state.settings.mode === 'music';
             DOM.musicModeControls.classList.toggle('hidden', !isMusicMode);
             DOM.noteCountContainer.classList.toggle('hidden', isMusicMode);
+            DOM.difficultyControls.classList.toggle('hidden', isMusicMode);
             if (!isMusicMode) {
                 DOM.chartFileNameEl.textContent = '';
                 DOM.musicFileNameEl.textContent = '';
+                DOM.requiredMusicFileNameEl.textContent = '';
                 Game.state.notes = [];
                 Game.state.settings.musicSrc = null;
+                Game.state.settings.musicFileObject = null;
+                Game.state.settings.requiredSongName = null;
             }
         });
 
@@ -104,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
-            DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
+            DOM.difficulty.dongValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
 
@@ -118,11 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const isEnabled = e.target.checked;
             DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !isEnabled);
             if (isEnabled) {
-                // 켰을 때 슬라이더 값으로 확률 설정
                 const probValue = parseInt(DOM.difficulty.falseNoteProbSlider.value);
-                Game.state.settings.falseNoteProbability = probValue / 1000; // 50 -> 0.05 (5%)
+                Game.state.settings.falseNoteProbability = probValue / 1000;
             } else {
-                // 껐을 때 확률 0으로 설정
                 Game.state.settings.falseNoteProbability = 0;
             }
             setCustomDifficulty();
@@ -130,9 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.difficulty.falseNoteProbSlider.addEventListener('input', (e) => {
             const probValue = parseInt(e.target.value);
-            // 슬라이더 값(0~50)을 확률(0~0.05) 및 퍼센트(0~5%)로 변환
             Game.state.settings.falseNoteProbability = probValue / 1000;
-            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10)}%`; 
+            DOM.difficulty.falseNoteProbValue.textContent = `${(probValue / 10)}%`;
             setCustomDifficulty();
         });
 
@@ -150,20 +289,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     const chartData = JSON.parse(event.target.result);
                     if (Game.loadChartNotes(chartData)) {
                         DOM.chartFileNameEl.textContent = `차트: ${file.name}`;
+                        if (Game.state.settings.requiredSongName) {
+                            DOM.requiredMusicFileNameEl.textContent = `요구 음악 파일: ${Game.state.settings.requiredSongName}`;
+                        } else {
+                            DOM.requiredMusicFileNameEl.textContent = '';
+                        }
                     }
                 } catch (error) {
                     UI.showMessage('menu', '잘못된 차트 파일 형식입니다.');
                 }
             };
             reader.readAsText(file);
+            e.target.value = null;
         });
 
         document.getElementById('music-file-input').addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                Game.state.settings.musicSrc = URL.createObjectURL(file);
+                Game.state.settings.musicFileObject = file;
                 DOM.musicFileNameEl.textContent = `음악: ${file.name}`;
             }
+            e.target.value = null;
         });
 
         DOM.settings.tabsContainer.addEventListener('click', (e) => {
@@ -191,16 +337,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         DOM.settings.controls.keybindBoxes.forEach(box => {
             box.addEventListener('click', () => {
-                if (isListeningForKey) {
-                    cancelKeyBinding();
-                }
+                if (isListeningForKey) cancelKeyBinding();
                 startKeyBinding(box);
             });
         });
 
-        DOM.settings.controls.saveBtn.addEventListener('click', () => {
-            saveKeyBindings();
+        DOM.settings.controls.saveBtn.addEventListener('click', () => saveKeyBindings());
+
+        window.addEventListener('resize', () => {
+            if (Game.state.gameState === 'editor') {
+                Editor.drawTimeline();
+                Editor.renderNotes();
+            }
         });
+
+        DOM.editor.audioFileInput.addEventListener('change', (e) => Editor.handleAudioLoad(e));
+        DOM.editor.startTimeInput.addEventListener('input', (e) => {
+            Editor.state.startTimeOffset = parseFloat(e.target.value) || 0;
+            Editor.setDirty(true);
+        });
+        DOM.editor.bpmInput.addEventListener('input', (e) => {
+            Editor.state.bpm = parseInt(e.target.value) || 120;
+            Editor.setDirty(true);
+            Editor.drawTimeline();
+            Editor.renderNotes();
+        });
+        DOM.editor.snapSelector.addEventListener('change', (e) => Editor.handleSnapChange(e));
+        DOM.editor.noteTypeSelector.addEventListener('click', (e) => Editor.handleNoteTypeSelect(e));
+        DOM.editor.addMeasureBtn.addEventListener('click', () => Editor.addMeasure());
+        DOM.editor.removeMeasureBtn.addEventListener('click', () => Editor.removeMeasure());
+        DOM.editor.playBtn.addEventListener('click', () => Editor.handlePlayPause());
+        DOM.editor.stopBtn.addEventListener('click', () => Editor.stopPlayback());
+        DOM.editor.saveBtn.addEventListener('click', () => Editor.saveChart());
+        DOM.editor.loadBtn.addEventListener('click', () => DOM.editor.loadInput.click());
+        DOM.editor.loadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (Editor._confirmDiscardChanges('저장하지 않은 변경사항이 있습니다. 새 차트를 불러오시겠습니까?')) {
+                    try {
+                        const chartData = JSON.parse(event.target.result);
+                        Editor.loadChart(chartData, file.name);
+                    } catch (err) {
+                        Debugger.logError(err, 'Editor.handleChartLoad');
+                        UI.showMessage('editor', `잘못된 차트 파일 형식입니다: ${err.message}`);
+                    }
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = null;
+        });
+        DOM.editor.resetBtn.addEventListener('click', () => Editor.handleReset());
+        DOM.editor.notesContainer.addEventListener('click', (e) => Editor.handleTimelineClick(e));
     }
 
     function populateKeybindUI() {
@@ -304,8 +493,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const falseNoteEnabled = falseNoteProb > 0;
         DOM.difficulty.falseNoteToggle.checked = falseNoteEnabled;
         DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !falseNoteEnabled);
-        
-        // 확률(0~0.05)을 슬라이더 값(0~50) 및 퍼센트로 변환
         const sliderValue = Math.round(falseNoteProb * 1000);
         DOM.difficulty.falseNoteProbSlider.value = sliderValue;
         DOM.difficulty.falseNoteProbValue.textContent = `${(sliderValue / 10).toFixed(1)}%`;
@@ -321,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#mode-selector button[data-mode="random"]').classList.add('active');
         document.querySelector('#difficulty-selector button[data-difficulty="normal"]').classList.add('active');
         updateDetailedSettingsUI();
+        Debugger.init();
     }
 
     initialize();
