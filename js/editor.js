@@ -134,7 +134,7 @@ const Editor = {
             const gridContainer = DOM.editor.gridContainer;
             gridContainer.innerHTML = '';
 
-            CONFIG.EDITOR_LANE_IDS.forEach((id) => {
+            CONFIG.EDITOR_LANE_IDS.forEach((id, index) => {
                 const laneEl = document.createElement('div');
                 laneEl.className = 'editor-lane';
                 laneEl.dataset.laneId = id;
@@ -142,6 +142,7 @@ const Editor = {
             });
 
             this.drawGrid();
+            this.addLaneLabels();
         } catch (err) {
             Debugger.logError(err, 'Editor.drawTimeline');
         }
@@ -178,6 +179,9 @@ const Editor = {
                     DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
                 }
             }
+            
+            // 레인 라벨 재생성
+            this.addLaneLabels();
         } catch (err) {
             Debugger.logError(err, 'Editor.drawGrid');
         }
@@ -549,19 +553,6 @@ const Editor = {
             // 선택된 레인 수 가져오기
             const laneCount = parseInt(DOM.editor.previewLanesSelector.value) || 4;
             
-            // UI 영역 너비 조정 (7레인 이상은 축소)
-            if (laneCount >= 7) {
-                DOM.uiArea.classList.remove('md:w-1/2');
-                DOM.uiArea.classList.add('md:w-1/3');
-                DOM.gameArea.classList.remove('md:w-1/2');
-                DOM.gameArea.classList.add('md:w-2/3');
-            } else {
-                DOM.uiArea.classList.remove('md:w-1/3');
-                DOM.uiArea.classList.add('md:w-1/2');
-                DOM.gameArea.classList.remove('md:w-2/3');
-                DOM.gameArea.classList.add('md:w-1/2');
-            }
-            
             // 게임 화면 레인 설정
             DOM.lanesContainer.innerHTML = '';
             DOM.lanesContainer.style.width = `${laneCount * 100}px`;
@@ -578,6 +569,9 @@ const Editor = {
                 
                 DOM.lanesContainer.appendChild(lane);
             }
+            
+            // 에디터 레인 하이라이트
+            this.highlightEditorLanes(laneCount);
             
             // 미리보기 노트 준비
             this.preparePreviewNotes(laneCount);
@@ -744,11 +738,8 @@ const Editor = {
             // 레인 초기화
             DOM.lanesContainer.innerHTML = '';
             
-            // UI 영역 너비 복원
-            DOM.uiArea.classList.remove('md:w-1/3');
-            DOM.uiArea.classList.add('md:w-1/2');
-            DOM.gameArea.classList.remove('md:w-2/3');
-            DOM.gameArea.classList.add('md:w-1/2');
+            // 에디터 레인 하이라이트 제거
+            this.clearEditorLaneHighlight();
             
             // 상태 초기화
             this.state.previewNotes = [];
@@ -756,6 +747,63 @@ const Editor = {
             this.state.previewLaneCount = 4;
         } catch (err) {
             Debugger.logError(err, 'Editor.clearPreview');
+        }
+    },
+    
+    highlightEditorLanes(laneCount) {
+        try {
+            // 먼저 모든 하이라이트 제거
+            this.clearEditorLaneHighlight();
+            
+            // 선택된 레인에 해당하는 레인 ID 가져오기
+            const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+            if (!requiredLaneIds) return;
+            
+            // 해당 레인들 하이라이트
+            requiredLaneIds.forEach(laneId => {
+                const laneEl = DOM.editor.gridContainer.querySelector(`[data-lane-id="${laneId}"]`);
+                if (laneEl) {
+                    laneEl.classList.add('highlighted');
+                }
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.highlightEditorLanes');
+        }
+    },
+    
+    clearEditorLaneHighlight() {
+        try {
+            const lanes = DOM.editor.gridContainer.querySelectorAll('.editor-lane');
+            lanes.forEach(lane => lane.classList.remove('highlighted'));
+        } catch (err) {
+            Debugger.logError(err, 'Editor.clearEditorLaneHighlight');
+        }
+    },
+    
+    addLaneLabels() {
+        try {
+            // 기존 라벨 제거
+            DOM.editor.gridContainer.querySelectorAll('.editor-lane-label').forEach(label => label.remove());
+            
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
+            const beatsPerMeasure = 4;
+            const measureHeight = beatsPerMeasure * adjustedBeatHeight;
+            
+            // 8마디마다 라벨 추가
+            const lanes = DOM.editor.gridContainer.querySelectorAll('.editor-lane');
+            lanes.forEach((laneEl, index) => {
+                const laneId = CONFIG.EDITOR_LANE_IDS[index];
+                
+                for (let measure = 0; measure < this.state.totalMeasures; measure += 8) {
+                    const label = document.createElement('div');
+                    label.className = 'editor-lane-label';
+                    label.textContent = `${laneId} - ${measure}`;
+                    label.style.top = `${measure * measureHeight}px`;
+                    laneEl.appendChild(label);
+                }
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.addLaneLabels');
         }
     },
 
