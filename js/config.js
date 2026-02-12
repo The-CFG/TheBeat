@@ -51,5 +51,8 @@ const CONFIG = {
         'KeyT': 'C1',
         'KeyY': 'R1', 'KeyU': 'R2', 'KeyI': 'R3', 'KeyO': 'R4'
     },
-    EDITOR_UNDO_HISTORY_LIMIT: 50
+    EDITOR_UNDO_HISTORY_LIMIT: 50,
+    NOTE_SPAWN_TIME_MS: 2000, // 노트가 화면에 나타나는 시간
+    GAME_AREA_HEIGHT: 600, // 게임 영역 높이 (픽셀)
+    NOTE_FALL_SPEED_FACTOR: 35, // 노트 낙하 속도 배수
 };
