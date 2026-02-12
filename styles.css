@@ -7,6 +7,7 @@ body {
     /* 노트 색상 CSS 변수 */
     --note-tap-color: #63b3ed;
     --note-long-color: #a78bfa;
+    --note-long-gradient-start: #818cf8;
     --note-false-color: #fca5a5;
 }
 .key-hint {
@@ -36,7 +37,7 @@ body {
     will-change: transform;
 }
 .note.long {
-    background: linear-gradient(to top, #818cf8, var(--note-long-color));
+    background: linear-gradient(to top, var(--note-long-gradient-start), var(--note-long-color));
     opacity: 0.9;
 }
 .note.false {
@@ -47,14 +48,22 @@ body {
 /* 원형 노트일 때 */
 body.circle-notes .note {
     border-radius: 50%;
-    width: 60px !important;
-    height: 60px !important;
+    width: 100px !important;
+    height: 100px !important;
 }
 
 body.circle-notes .note.long {
     border-radius: 50% 50% 0 0;
     height: auto !important;
-    min-height: 60px;
+    min-height: 100px;
+}
+
+/* 원형 노트일 때 판정선도 원형으로 */
+body.circle-notes .judgement-line {
+    border-radius: 50%;
+    height: 8px;
+    width: 80%;
+    left: 10%;
 }
 .judgement-text {
     position: absolute;
@@ -158,19 +167,30 @@ body.circle-notes .note.long {
     border-color: #b91c1c;
 }
 
-/* 원형 노트일 때 */
-body.circle-notes .editor-note {
+/* 게임 중 원형 노트 스타일 (에디터 제외) */
+body.circle-notes .note {
     border-radius: 50%;
-    width: 12px !important;
-    height: 12px !important;
-    left: 50% !important;
-    transform: translateX(-50%);
+    width: 100px !important;
+    height: 100px !important;
 }
 
-body.circle-notes .editor-note.long {
+body.circle-notes .note.long {
     border-radius: 50% 50% 0 0;
     height: auto !important;
-    min-height: 12px;
+    min-height: 100px;
+}
+
+/* 원형 노트일 때 판정선도 원형으로 */
+body.circle-notes .judgement-line {
+    border-radius: 50%;
+    height: 8px;
+    width: 80%;
+    left: 10%;
+}
+
+/* 에디터 노트는 항상 막대형 유지 */
+.editor-note {
+    border-radius: 2px !important;
 }
 #editor-playhead {
     position: sticky;
@@ -361,33 +381,6 @@ body.circle-notes .editor-note.long {
     opacity: 0.9;
 }
 
-/* 원형 노트 스타일 */
-.note.circle {
-    border-radius: 50%;
-    width: 60px !important;
-    height: 60px !important;
-}
-
-.note.circle.long {
-    border-radius: 50% 50% 0 0;
-    height: auto !important;
-    min-height: 60px;
-}
-
-.editor-note.circle {
-    border-radius: 50%;
-    width: 12px !important;
-    height: 12px !important;
-    left: 50% !important;
-    transform: translateX(-50%);
-}
-
-.editor-note.circle.long {
-    border-radius: 50% 50% 0 0;
-    height: auto !important;
-    min-height: 12px;
-}
-
 /* 에디터 레인 하이라이트 */
 .editor-lane.highlighted {
     background-color: rgba(99, 179, 237, 0.08);
@@ -399,12 +392,10 @@ body.circle-notes .editor-note.long {
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    color: rgba(160, 174, 192, 0.5);
-    font-size: 11px;
+    color: rgba(160, 174, 192, 0.4);
+    font-size: 10px;
     font-weight: bold;
     padding: 2px 4px;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 3px;
     pointer-events: none;
     z-index: 5;
 }
