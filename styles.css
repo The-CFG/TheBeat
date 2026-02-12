@@ -302,3 +302,14 @@ body {
     margin: 0;
     padding: 1px 0;
 }
+
+/* 롱노트 라인 스타일 (에디터 미리보기용) */
+.long-note-line {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    background: linear-gradient(to top, rgba(168, 139, 250, 0.8), rgba(168, 139, 250, 0.3));
+    border-radius: 3px;
+}
