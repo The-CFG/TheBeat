@@ -258,6 +258,20 @@ const Game = {
                 }
                 if (note.element && note.element.isConnected) {
                     note.element.style.transform = `translateY(${noteTopPosition}px)`;
+                    
+                    // 롱노트가 판정되어 수축 중인 경우
+                    if (isLongNote && note.shrinking && note.tailTime) {
+                        const timeUntilTail = note.tailTime - elapsedTime;
+                        const currentDuration = Math.max(0, timeUntilTail);
+                        const newHeight = (currentDuration / 10) * this.state.settings.noteSpeed;
+                        note.element.style.height = `${newHeight}px`;
+                        
+                        // 꼬리에 도달하면 제거
+                        if (timeUntilTail <= 0) {
+                            note.element.remove();
+                            note.element = null;
+                        }
+                    }
                 }
                 if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
                     this.handleJudgement('miss', note);
@@ -292,8 +306,14 @@ const Game = {
         } else {
             this.state.combo++;
             if (note.type === 'long_head') {
+                // 롱노트 헤드가 성공적으로 판정되면 수축 시작
+                note.shrinking = true;
+                note.shrinkStartTime = performance.now();
                 const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
-                if (tailNote) tailNote.headProcessed = true;
+                if (tailNote) {
+                    tailNote.headProcessed = true;
+                    note.tailTime = tailNote.time;
+                }
             }
         }
     },

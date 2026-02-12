@@ -104,7 +104,10 @@ const Appearance = {
             }
 
             if (longPreview) {
-                longPreview.style.background = `linear-gradient(to top, #818cf8, ${this.settings.colors.long})`;
+                const longColor = this.settings.colors.long;
+                // 그라디언트를 위한 밝은 색상 계산
+                const darkerColor = this.adjustColor(longColor, -20);
+                longPreview.style.background = `linear-gradient(to top, ${darkerColor}, ${longColor})`;
                 longPreview.className = 'note-preview note-preview-long';
                 if (this.settings.noteShape === 'circle') {
                     longPreview.style.borderRadius = '50% 50% 0 0';
@@ -138,6 +141,11 @@ const Appearance = {
             // CSS 변수로 색상 적용
             document.documentElement.style.setProperty('--note-tap-color', this.settings.colors.tap);
             document.documentElement.style.setProperty('--note-long-color', this.settings.colors.long);
+            
+            // 롱노트 그라디언트 시작 색상 계산 및 적용
+            const gradientStart = this.adjustColor(this.settings.colors.long, -20);
+            document.documentElement.style.setProperty('--note-long-gradient-start', gradientStart);
+            
             document.documentElement.style.setProperty('--note-false-color', this.settings.colors.false);
 
             // 노트 모양 클래스 적용
@@ -205,6 +213,15 @@ const Appearance = {
         } catch (err) {
             Debugger.logError(err, 'Appearance.resetSettings');
         }
+    },
+
+    adjustColor(color, amount) {
+        // HEX 색상을 RGB로 변환하고 밝기 조절
+        const hex = color.replace('#', '');
+        const r = Math.max(0, Math.min(255, parseInt(hex.substr(0, 2), 16) + amount));
+        const g = Math.max(0, Math.min(255, parseInt(hex.substr(2, 2), 16) + amount));
+        const b = Math.max(0, Math.min(255, parseInt(hex.substr(4, 2), 16) + amount));
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     },
 
     getNoteClass() {

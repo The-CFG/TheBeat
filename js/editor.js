@@ -24,6 +24,14 @@ const Editor = {
             this.state.isPlaying = false;
             UI.showScreen('editor');
             this.resetEditorState();
+            
+            // 미리보기 레인 선택 변경 시 하이라이트 업데이트
+            if (DOM.editor.previewLanesSelector) {
+                DOM.editor.previewLanesSelector.addEventListener('change', () => {
+                    const laneCount = parseInt(DOM.editor.previewLanesSelector.value) || 4;
+                    this.highlightEditorLanes(laneCount);
+                });
+            }
         } catch (err) {
             Debugger.logError(err, 'Editor.init');
         }
@@ -143,6 +151,10 @@ const Editor = {
 
             this.drawGrid();
             this.addLaneLabels();
+            
+            // 초기 하이라이트 적용
+            const laneCount = parseInt(DOM.editor.previewLanesSelector?.value) || 4;
+            this.highlightEditorLanes(laneCount);
         } catch (err) {
             Debugger.logError(err, 'Editor.drawTimeline');
         }
@@ -738,8 +750,7 @@ const Editor = {
             // 레인 초기화
             DOM.lanesContainer.innerHTML = '';
             
-            // 에디터 레인 하이라이트 제거
-            this.clearEditorLaneHighlight();
+            // 하이라이트는 유지 (제거하지 않음)
             
             // 상태 초기화
             this.state.previewNotes = [];
