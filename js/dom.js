@@ -59,6 +59,7 @@ const DOM = {
         audioFileInput: document.getElementById('audio-file-input-editor'),
         audioFileNameEl: document.getElementById('audio-file-name-editor'),
         startTimeInput: document.getElementById('editor-start-time'),
+        previewLanesSelector: document.getElementById('editor-preview-lanes'),
         bpmInput: document.getElementById('bpm-input'),
         snapSelector: document.getElementById('editor-snap-selector'),
         addMeasureBtn: document.getElementById('editor-add-measure-btn'),

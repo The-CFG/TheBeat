@@ -16,6 +16,7 @@ const Editor = {
         previewNotes: [],
         previewAnimationId: null,
         previewStartTime: 0,
+        previewLaneCount: 4,
     },
 
     init() {
@@ -545,8 +546,23 @@ const Editor = {
     
     startPreview() {
         try {
+            // 선택된 레인 수 가져오기
+            const laneCount = parseInt(DOM.editor.previewLanesSelector.value) || 4;
+            
+            // UI 영역 너비 조정 (7레인 이상은 축소)
+            if (laneCount >= 7) {
+                DOM.uiArea.classList.remove('md:w-1/2');
+                DOM.uiArea.classList.add('md:w-1/3');
+                DOM.gameArea.classList.remove('md:w-1/2');
+                DOM.gameArea.classList.add('md:w-2/3');
+            } else {
+                DOM.uiArea.classList.remove('md:w-1/3');
+                DOM.uiArea.classList.add('md:w-1/2');
+                DOM.gameArea.classList.remove('md:w-2/3');
+                DOM.gameArea.classList.add('md:w-1/2');
+            }
+            
             // 게임 화면 레인 설정
-            const laneCount = 4; // 에디터는 4레인 고정
             DOM.lanesContainer.innerHTML = '';
             DOM.lanesContainer.style.width = `${laneCount * 100}px`;
             
@@ -564,10 +580,11 @@ const Editor = {
             }
             
             // 미리보기 노트 준비
-            this.preparePreviewNotes();
+            this.preparePreviewNotes(laneCount);
             
             // 미리보기 시작 시간 기록
             this.state.previewStartTime = performance.now();
+            this.state.previewLaneCount = laneCount;
             
             // 미리보기 루프 시작
             this.previewLoop();
@@ -576,37 +593,50 @@ const Editor = {
         }
     },
     
-    preparePreviewNotes() {
+    preparePreviewNotes(laneCount) {
         try {
+            // 선택된 레인 수에 맞는 레인 ID 매핑 가져오기
+            const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+            if (!requiredLaneIds) {
+                console.error(`Invalid lane count: ${laneCount}`);
+                return;
+            }
+            
             // 에디터 노트를 게임 형식으로 변환
             this.state.previewNotes = [];
             let noteIdCounter = 0;
             
             this.state.notes.forEach(note => {
-                const newNote = {
-                    time: note.time,
-                    lane: CONFIG.EDITOR_LANE_IDS.indexOf(note.lane),
-                    type: note.type,
-                    processed: false,
-                    element: null
-                };
+                // 에디터 레인 ID를 게임 레인 인덱스로 변환
+                const gameLaneIndex = requiredLaneIds.indexOf(note.lane);
                 
-                if (note.type === 'long_head') {
-                    newNote.noteId = noteIdCounter++;
-                    newNote.duration = note.duration;
-                    this.state.previewNotes.push(newNote);
-                    
-                    // long_tail 노트 추가
-                    this.state.previewNotes.push({
-                        time: note.time + note.duration,
-                        lane: CONFIG.EDITOR_LANE_IDS.indexOf(note.lane),
-                        type: 'long_tail',
-                        noteId: newNote.noteId,
+                // 현재 선택된 레인 수에 해당하는 노트만 미리보기에 포함
+                if (gameLaneIndex !== -1) {
+                    const newNote = {
+                        time: note.time,
+                        lane: gameLaneIndex,
+                        type: note.type,
                         processed: false,
                         element: null
-                    });
-                } else if (note.type !== 'long_tail') {
-                    this.state.previewNotes.push(newNote);
+                    };
+                    
+                    if (note.type === 'long_head') {
+                        newNote.noteId = noteIdCounter++;
+                        newNote.duration = note.duration;
+                        this.state.previewNotes.push(newNote);
+                        
+                        // long_tail 노트 추가
+                        this.state.previewNotes.push({
+                            time: note.time + note.duration,
+                            lane: gameLaneIndex,
+                            type: 'long_tail',
+                            noteId: newNote.noteId,
+                            processed: false,
+                            element: null
+                        });
+                    } else if (note.type !== 'long_tail') {
+                        this.state.previewNotes.push(newNote);
+                    }
                 }
             });
             
@@ -714,9 +744,16 @@ const Editor = {
             // 레인 초기화
             DOM.lanesContainer.innerHTML = '';
             
+            // UI 영역 너비 복원
+            DOM.uiArea.classList.remove('md:w-1/3');
+            DOM.uiArea.classList.add('md:w-1/2');
+            DOM.gameArea.classList.remove('md:w-2/3');
+            DOM.gameArea.classList.add('md:w-1/2');
+            
             // 상태 초기화
             this.state.previewNotes = [];
             this.state.previewStartTime = 0;
+            this.state.previewLaneCount = 4;
         } catch (err) {
             Debugger.logError(err, 'Editor.clearPreview');
         }
