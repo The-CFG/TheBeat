@@ -286,6 +286,13 @@ const Game = {
                     } else {
                         // 일반 노트 또는 수축 중이 아닌 롱노트
                         note.element.style.transform = `translateY(${noteTopPosition}px)`;
+                        
+                        // 롱노트는 매 프레임 최소 높이 적용
+                        if (isLongNote && !note.shrinking) {
+                            const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                            const currentHeight = Math.max(noteHeight, minHeight);
+                            note.element.style.height = `${currentHeight}px`;
+                        }
                     }
                 }
                 if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
@@ -388,23 +395,34 @@ const Game = {
                 elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
             }
 
+            // 원형 노트일 때 판정 윈도우 확장
+            const isCircleMode = document.body.classList.contains('circle-notes');
+            const noteSize = isCircleMode ? 90 : 25; // 노트 높이
+            const extraWindow = isCircleMode ? (noteSize / 2) * (10 / this.state.settings.noteSpeed) : 0;
+            const judgementWindow = {
+                perfect: CONFIG.JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
+                good: CONFIG.JUDGEMENT_WINDOWS_MS.good + extraWindow,
+                bad: CONFIG.JUDGEMENT_WINDOWS_MS.bad + extraWindow,
+                miss: CONFIG.JUDGEMENT_WINDOWS_MS.miss + extraWindow
+            };
+
             let bestMatch = null;
             let smallestDiff = Infinity;
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
                 const note = this.state.notes[i];
-                if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
+                if (note.time - elapsedTime > judgementWindow.miss) break;
                 if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
                     const timeDiff = Math.abs(note.time - elapsedTime);
-                    if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                    if (timeDiff <= judgementWindow.miss && timeDiff < smallestDiff) {
                         smallestDiff = timeDiff;
                         bestMatch = note;
                     }
                 }
             }
             if (bestMatch) {
-                if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+                if (smallestDiff <= judgementWindow.perfect) this.handleJudgement('perfect', bestMatch);
+                else if (smallestDiff <= judgementWindow.good) this.handleJudgement('good', bestMatch);
+                else if (smallestDiff <= judgementWindow.bad) this.handleJudgement('bad', bestMatch);
             }
         } catch (err) {
             Debugger.logError(err, 'Game.handleInputDown');
@@ -423,23 +441,34 @@ const Game = {
             elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
         }
 
+        // 원형 노트일 때 판정 윈도우 확장
+        const isCircleMode = document.body.classList.contains('circle-notes');
+        const noteSize = isCircleMode ? 90 : 25;
+        const extraWindow = isCircleMode ? (noteSize / 2) * (10 / this.state.settings.noteSpeed) : 0;
+        const judgementWindow = {
+            perfect: CONFIG.JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
+            good: CONFIG.JUDGEMENT_WINDOWS_MS.good + extraWindow,
+            bad: CONFIG.JUDGEMENT_WINDOWS_MS.bad + extraWindow,
+            miss: CONFIG.JUDGEMENT_WINDOWS_MS.miss + extraWindow
+        };
+
         let bestMatch = null;
         let smallestDiff = Infinity;
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
-            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
+            if (note.time - elapsedTime > judgementWindow.miss) break;
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
-                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                if (timeDiff <= judgementWindow.miss && timeDiff < smallestDiff) {
                     smallestDiff = timeDiff;
                     bestMatch = note;
                 }
             }
         }
         if (bestMatch) {
-            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+            if (smallestDiff <= judgementWindow.perfect) this.handleJudgement('perfect', bestMatch);
+            else if (smallestDiff <= judgementWindow.good) this.handleJudgement('good', bestMatch);
+            else if (smallestDiff <= judgementWindow.bad) this.handleJudgement('bad', bestMatch);
         }
     },
 
