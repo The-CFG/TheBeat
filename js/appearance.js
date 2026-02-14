@@ -66,6 +66,8 @@ const Appearance = {
                         this.updatePreview();
                         // 즉시 CSS 변수 업데이트 (저장하지 않고도 미리보기)
                         this.updateCSSVariables();
+                        // 기존 노트들도 강제로 업데이트
+                        this.forceUpdateNotes();
                     });
                 }
             });
@@ -258,6 +260,26 @@ const Appearance = {
         const g = Math.max(0, Math.min(255, parseInt(hex.substring(2, 4), 16) + amount));
         const b = Math.max(0, Math.min(255, parseInt(hex.substring(4, 6), 16) + amount));
         return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    },
+
+    forceUpdateNotes() {
+        // 게임 중이거나 에디터 중일 때 기존 노트들의 스타일을 강제로 업데이트
+        try {
+            const notes = document.querySelectorAll('.note, .editor-note');
+            notes.forEach(noteEl => {
+                if (noteEl.classList.contains('long')) {
+                    const gradientStart = this.adjustColor(this.settings.colors.long, -20);
+                    noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${this.settings.colors.long})`;
+                } else if (noteEl.classList.contains('false')) {
+                    noteEl.style.backgroundColor = this.settings.colors.false;
+                    noteEl.style.boxShadow = `0 0 8px ${this.settings.colors.false}`;
+                } else {
+                    noteEl.style.backgroundColor = this.settings.colors.tap;
+                }
+            });
+        } catch (err) {
+            // 조용히 무시
+        }
     },
 
     getNoteClass() {

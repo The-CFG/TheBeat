@@ -241,7 +241,17 @@ const Game = {
                 const timeToHit = note.time - elapsedTime;
                 const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
                 const isLongNote = note.type === 'long_head';
-                const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
+                
+                // 롱노트 높이 계산 시 최소 높이 적용
+                let noteHeight;
+                if (isLongNote) {
+                    const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                    const calculatedHeight = (note.duration / 10) * this.state.settings.noteSpeed;
+                    noteHeight = Math.max(calculatedHeight, minHeight);
+                } else {
+                    noteHeight = 25;
+                }
+                
                 const noteTopPosition = noteBottomPosition - noteHeight;
                 if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                     if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
