@@ -1,14 +1,16 @@
+/* 노트 색상 CSS 변수 */
+:root {
+    --note-tap-color: #63b3ed;
+    --note-long-color: #a78bfa;
+    --note-long-gradient-start: #818cf8;
+    --note-false-color: #fca5a5;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #2d3748; /* UI 영역 배경색과 통일 */
     color: #e2e8f0;
     overscroll-behavior: none;
-    
-    /* 노트 색상 CSS 변수 */
-    --note-tap-color: #63b3ed;
-    --note-long-color: #a78bfa;
-    --note-long-gradient-start: #818cf8;
-    --note-false-color: #fca5a5;
 }
 .key-hint {
     position: absolute;
