@@ -251,19 +251,31 @@ const Game = {
                             note.element.className = 'note';
                             if (isLongNote) note.element.classList.add('long');
                             if (note.type === 'false') note.element.classList.add('false');
-                            if (isLongNote) note.element.style.height = `${noteHeight}px`;
+                            // 롱노트는 최소 높이 보장 (원형 노트 대응)
+                            if (isLongNote) {
+                                const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                                note.element.style.height = `${Math.max(noteHeight, minHeight)}px`;
+                            }
                             laneEl.appendChild(note.element);
                         }
                     }
                 }
                 if (note.element && note.element.isConnected) {
-                    note.element.style.transform = `translateY(${noteTopPosition}px)`;
-                    
                     // 롱노트가 판정되어 수축 중인 경우
                     if (isLongNote && note.shrinking && note.tailTime) {
                         const timeUntilTail = note.tailTime - elapsedTime;
                         const currentDuration = Math.max(0, timeUntilTail);
-                        const newHeight = (currentDuration / 10) * this.state.settings.noteSpeed;
+                        const calculatedHeight = (currentDuration / 10) * this.state.settings.noteSpeed;
+                        
+                        // 최소 높이 보장 (원형 노트 대응)
+                        const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                        const newHeight = Math.max(calculatedHeight, minHeight);
+                        
+                        // 판정선 위치(gameHeight - 100)에 노트 하단을 고정
+                        const fixedBottomPosition = gameHeight - 100;
+                        const fixedTopPosition = fixedBottomPosition - newHeight;
+                        
+                        note.element.style.transform = `translateY(${fixedTopPosition}px)`;
                         note.element.style.height = `${newHeight}px`;
                         
                         // 꼬리에 도달하면 제거
@@ -271,6 +283,9 @@ const Game = {
                             note.element.remove();
                             note.element = null;
                         }
+                    } else {
+                        // 일반 노트 또는 수축 중이 아닌 롱노트
+                        note.element.style.transform = `translateY(${noteTopPosition}px)`;
                     }
                 }
                 if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {

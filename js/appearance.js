@@ -35,6 +35,12 @@ const Appearance = {
                         this.settings.noteShape = shape;
                         this.updateShapeUI();
                         this.updatePreview();
+                        // 즉시 body 클래스 업데이트
+                        if (shape === 'circle') {
+                            document.body.classList.add('circle-notes');
+                        } else {
+                            document.body.classList.remove('circle-notes');
+                        }
                     }
                 });
             }
@@ -46,6 +52,8 @@ const Appearance = {
                     colorInput.addEventListener('input', (e) => {
                         this.settings.colors[type] = e.target.value;
                         this.updatePreview();
+                        // 즉시 CSS 변수 업데이트 (저장하지 않고도 미리보기)
+                        this.updateCSSVariables();
                     });
                 }
             });
@@ -133,6 +141,22 @@ const Appearance = {
             }
         } catch (err) {
             Debugger.logError(err, 'Appearance.updatePreview');
+        }
+    },
+
+    updateCSSVariables() {
+        try {
+            // CSS 변수만 업데이트 (저장하지 않고 미리보기용)
+            document.documentElement.style.setProperty('--note-tap-color', this.settings.colors.tap);
+            document.documentElement.style.setProperty('--note-long-color', this.settings.colors.long);
+            
+            // 롱노트 그라디언트 시작 색상 계산 및 적용
+            const gradientStart = this.adjustColor(this.settings.colors.long, -20);
+            document.documentElement.style.setProperty('--note-long-gradient-start', gradientStart);
+            
+            document.documentElement.style.setProperty('--note-false-color', this.settings.colors.false);
+        } catch (err) {
+            Debugger.logError(err, 'Appearance.updateCSSVariables');
         }
     },
 
