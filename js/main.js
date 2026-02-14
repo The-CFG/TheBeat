@@ -181,10 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('editor-btn').addEventListener('click', () => {
-            DOM.gameArea.classList.remove('md:w-2/3');
-            DOM.gameArea.classList.add('md:w-1/2');
-            DOM.uiArea.classList.remove('md:w-1/3');
-            DOM.uiArea.classList.add('md:w-1/2');
+            // 화면 비율은 항상 3:2로 고정
             Game.state.gameState = 'editor';
             Editor.init();
             setTimeout(() => {
@@ -277,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('lanes-selector').addEventListener('change', (e) => {
             Game.state.settings.lanes = parseInt(e.target.value);
-            updateGameAreaWidth(Game.state.settings.lanes);
+            // 화면 비율은 항상 3:2로 고정 (updateGameAreaWidth 호출 제거)
         });
 
         document.getElementById('chart-file-input').addEventListener('change', (e) => {
@@ -463,20 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.settings.musicVolumeValue.textContent = Game.state.settings.musicVolume;
         DOM.settings.sfxVolumeSlider.value = Game.state.settings.sfxVolume;
         DOM.settings.sfxVolumeValue.textContent = Game.state.settings.sfxVolume;
-    }
-
-    function updateGameAreaWidth(lanes) {
-        if (lanes >= 7) {
-            DOM.gameArea.classList.remove('md:w-1/2');
-            DOM.gameArea.classList.add('md:w-2/3');
-            DOM.uiArea.classList.remove('md:w-1/2');
-            DOM.uiArea.classList.add('md:w-1/3');
-        } else {
-            DOM.gameArea.classList.remove('md:w-2/3');
-            DOM.gameArea.classList.add('md:w-1/2');
-            DOM.uiArea.classList.remove('md:w-1/3');
-            DOM.uiArea.classList.add('md:w-1/2');
-        }
     }
 
     function updateDetailedSettingsUI() {
