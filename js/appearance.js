@@ -8,6 +8,14 @@ const Appearance = {
         }
     },
 
+    _logError(err, context) {
+        if (typeof Debugger !== 'undefined' && this._logError) {
+            this._logError(err, context);
+        } else {
+            console.error(`[${context}]`, err);
+        }
+    },
+
     init() {
         try {
             // 로컬 스토리지에서 설정 불러오기
@@ -15,12 +23,16 @@ const Appearance = {
             
             // 초기 UI 반영
             this.applySettings();
-            this.updatePreview();
+            
+            // 미리보기 요소가 있을 때만 업데이트
+            if (document.getElementById('preview-tap-note')) {
+                this.updatePreview();
+            }
             
             // 이벤트 리스너 등록
             this.setupEventListeners();
         } catch (err) {
-            Debugger.logError(err, 'Appearance.init');
+            this._logError(err, 'Appearance.init');
         }
     },
 
@@ -80,7 +92,7 @@ const Appearance = {
                 });
             }
         } catch (err) {
-            Debugger.logError(err, 'Appearance.setupEventListeners');
+            this._logError(err, 'Appearance.setupEventListeners');
         }
     },
 
@@ -140,7 +152,7 @@ const Appearance = {
                 }
             }
         } catch (err) {
-            Debugger.logError(err, 'Appearance.updatePreview');
+            this._logError(err, 'Appearance.updatePreview');
         }
     },
 
@@ -156,7 +168,7 @@ const Appearance = {
             
             document.documentElement.style.setProperty('--note-false-color', this.settings.colors.false);
         } catch (err) {
-            Debugger.logError(err, 'Appearance.updateCSSVariables');
+            this._logError(err, 'Appearance.updateCSSVariables');
         }
     },
 
@@ -183,7 +195,7 @@ const Appearance = {
             this.updateShapeUI();
             this.updateColorInputs();
         } catch (err) {
-            Debugger.logError(err, 'Appearance.applySettings');
+            this._logError(err, 'Appearance.applySettings');
         }
     },
 
@@ -197,7 +209,7 @@ const Appearance = {
             if (longInput) longInput.value = this.settings.colors.long;
             if (falseInput) falseInput.value = this.settings.colors.false;
         } catch (err) {
-            Debugger.logError(err, 'Appearance.updateColorInputs');
+            this._logError(err, 'Appearance.updateColorInputs');
         }
     },
 
@@ -205,7 +217,7 @@ const Appearance = {
         try {
             localStorage.setItem('theBeat_appearance', JSON.stringify(this.settings));
         } catch (err) {
-            Debugger.logError(err, 'Appearance.saveSettings');
+            this._logError(err, 'Appearance.saveSettings');
         }
     },
 
@@ -217,7 +229,7 @@ const Appearance = {
                 this.settings = { ...this.settings, ...parsed };
             }
         } catch (err) {
-            Debugger.logError(err, 'Appearance.loadSettings');
+            this._logError(err, 'Appearance.loadSettings');
         }
     },
 
@@ -235,7 +247,7 @@ const Appearance = {
             this.updateShapeUI();
             this.applySettings();
         } catch (err) {
-            Debugger.logError(err, 'Appearance.resetSettings');
+            this._logError(err, 'Appearance.resetSettings');
         }
     },
 
