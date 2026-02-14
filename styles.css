@@ -45,26 +45,30 @@ body {
     box-shadow: 0 0 8px var(--note-false-color);
 }
 
-/* 원형 노트일 때 */
+/* 게임 중 원형 노트 스타일 (에디터 제외) */
 body.circle-notes .note {
     border-radius: 50%;
-    width: 100px !important;
-    height: 100px !important;
+    width: 90px !important;
+    height: 90px !important;
+    left: 5px !important;
 }
 
 body.circle-notes .note.long {
     border-radius: 50% 50% 0 0;
     height: auto !important;
-    min-height: 100px;
+    min-height: 90px;
 }
 
 /* 원형 노트일 때 판정선도 원형으로 */
 body.circle-notes .judgement-line {
     border-radius: 50%;
-    height: 8px;
-    width: 80%;
-    left: 10%;
+    height: 90px;
+    width: 90px;
+    left: 5px;
+    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.1) 100%);
+    box-shadow: 0 0 10px #fff, 0 0 20px #fff;
 }
+
 .judgement-text {
     position: absolute;
     top: 50%;
