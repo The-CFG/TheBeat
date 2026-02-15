@@ -254,13 +254,21 @@ const Editor = {
             const laneIndex = Math.floor(x / laneWidth);
             const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
             const y = e.clientY - rect.top + container.scrollTop;
+            
+            // 그리드 라인과 정확히 일치하는 계산
             const adjustedBeatHeight = this._getAdjustedBeatHeight();
-            const beatsPerSecond = this.state.bpm / 60;
-            const snapsPerBeat = this.state.snapDivision / 4;
-            const snapHeight = adjustedBeatHeight / snapsPerBeat;
+            const beatsPerMeasure = 4;
+            const measureHeight = beatsPerMeasure * adjustedBeatHeight;
+            const snapHeight = measureHeight / this.state.snapDivision;
+            
+            // 가장 가까운 스냅 포인트 찾기
             const snapIndex = Math.round(y / snapHeight);
-            const snappedBeat = snapIndex / snapsPerBeat;
-            const timeInMs = Math.round((snappedBeat / beatsPerSecond) * 1000);
+            const snappedY = snapIndex * snapHeight;
+            
+            // 시간 계산 (비트 -> 밀리초)
+            const beatsPerSecond = this.state.bpm / 60;
+            const totalBeats = snappedY / adjustedBeatHeight;
+            const timeInMs = Math.round((totalBeats / beatsPerSecond) * 1000);
 
             switch (this.state.selectedNoteType) {
                 case 'long': this.placeLongNote(timeInMs, laneId); break;
@@ -320,8 +328,12 @@ const Editor = {
                 if (laneIndex === -1) return;
                 noteEl.style.width = `${laneWidth}px`;
                 noteEl.style.left = `${laneIndex * laneWidth}px`;
+                
+                // 그리드 라인과 정확히 일치하도록 위치 계산
                 const beats = (note.time / 1000) * beatsPerSecond;
-                noteEl.style.top = `${beats * adjustedBeatHeight - 4}px`;
+                const yPosition = beats * adjustedBeatHeight;
+                noteEl.style.top = `${yPosition}px`;
+                
                 if (note.duration) {
                     const durationInBeats = (note.duration / 1000) * beatsPerSecond;
                     noteEl.style.height = `${durationInBeats * adjustedBeatHeight}px`;
@@ -618,17 +630,17 @@ const Editor = {
                 
                 // 현재 선택된 레인 수에 해당하는 노트만 미리보기에 포함
                 if (gameLaneIndex !== -1) {
-                    const newNote = {
-                        time: note.time,
-                        lane: gameLaneIndex,
-                        type: note.type,
-                        processed: false,
-                        element: null
-                    };
-                    
-                    if (note.type === 'long_head') {
-                        newNote.noteId = noteIdCounter++;
-                        newNote.duration = note.duration;
+                    // duration이 있는 노트는 롱노트로 처리
+                    if (note.duration) {
+                        const newNote = {
+                            time: note.time,
+                            lane: gameLaneIndex,
+                            type: 'long_head',
+                            duration: note.duration,
+                            noteId: noteIdCounter++,
+                            processed: false,
+                            element: null
+                        };
                         this.state.previewNotes.push(newNote);
                         
                         // long_tail 노트 추가
@@ -640,7 +652,15 @@ const Editor = {
                             processed: false,
                             element: null
                         });
-                    } else if (note.type !== 'long_tail') {
+                    } else {
+                        // 일반 노트 (tap, false)
+                        const newNote = {
+                            time: note.time,
+                            lane: gameLaneIndex,
+                            type: note.type || 'tap',
+                            processed: false,
+                            element: null
+                        };
                         this.state.previewNotes.push(newNote);
                     }
                 }
@@ -677,15 +697,18 @@ const Editor = {
             // 노트 생성 및 업데이트
             this.state.previewNotes.forEach(note => {
                 const timeToHit = note.time - elapsedTime;
-                const noteBottomPosition = gameHeight - 100 - (timeToHit * noteSpeed / 10);
+                
+                // 롱노트 여부 확인 및 높이 계산
                 const isLongNote = note.type === 'long_head';
-                const noteHeight = isLongNote ? (note.duration / 10) * noteSpeed : 25;
+                const noteHeight = isLongNote && note.duration ? (note.duration / 10) * noteSpeed : 25;
+                
+                const noteBottomPosition = gameHeight - 100 - (timeToHit * noteSpeed / 10);
                 const noteTopPosition = noteBottomPosition - noteHeight;
                 
                 // 노트 생성
                 if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                     if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
-                        this.createPreviewNoteElement(note, gameHeight);
+                        this.createPreviewNoteElement(note, gameHeight, noteHeight);
                     }
                 }
                 
@@ -711,7 +734,7 @@ const Editor = {
         }
     },
     
-    createPreviewNoteElement(note, gameHeight) {
+    createPreviewNoteElement(note, gameHeight, noteHeight) {
         try {
             const lane = DOM.lanesContainer.querySelector(`[data-lane-index="${note.lane}"]`);
             if (!lane) return;
@@ -723,6 +746,10 @@ const Editor = {
             
             if (isLongNote) {
                 noteEl.classList.add('long');
+                // 롱노트의 경우 높이 설정
+                if (noteHeight) {
+                    noteEl.style.height = `${noteHeight}px`;
+                }
             }
             if (note.type === 'false') {
                 noteEl.classList.add('false');
