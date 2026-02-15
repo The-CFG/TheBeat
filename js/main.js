@@ -223,6 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
             Game.state.settings.difficulty = preset;
             Game.state.settings.noteSpeed = CONFIG.DIFFICULTY_SPEED[preset];
             Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
+            Game.state.settings.maxSimultaneousNotes = CONFIG.MAX_SIMULTANEOUS_NOTES[preset];
+            Game.state.settings.dongtaNoteTypeProbabilities = { ...CONFIG.SIMULTANEOUS_NOTE_TYPE_PROBABILITY[preset] };
             Game.state.settings.longNoteProbability = CONFIG.LONG_NOTE_PROBABILITY[preset];
             Game.state.settings.falseNoteProbability = CONFIG.FALSE_NOTE_PROBABILITY[preset];
             updateDetailedSettingsUI();
@@ -244,6 +246,33 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
             DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.maxSimultaneousSlider.addEventListener('input', (e) => {
+            Game.state.settings.maxSimultaneousNotes = parseInt(e.target.value);
+            DOM.difficulty.maxSimultaneousValue.textContent = e.target.value;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaTapProbSlider.addEventListener('input', (e) => {
+            const tapProb = parseInt(e.target.value) / 100;
+            Game.state.settings.dongtaNoteTypeProbabilities.tap = tapProb;
+            DOM.difficulty.dongtaTapProbValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaLongProbSlider.addEventListener('input', (e) => {
+            const longProb = parseInt(e.target.value) / 100;
+            Game.state.settings.dongtaNoteTypeProbabilities.long = longProb;
+            DOM.difficulty.dongtaLongProbValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaFalseProbSlider.addEventListener('input', (e) => {
+            const falseProb = parseInt(e.target.value) / 100;
+            Game.state.settings.dongtaNoteTypeProbabilities.false = falseProb;
+            DOM.difficulty.dongtaFalseProbValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
 
@@ -465,14 +494,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateDetailedSettingsUI() {
         const speed = Game.state.settings.noteSpeed;
         const dongtaProb = Math.round(Game.state.settings.dongtaProbability * 100);
+        const maxSimultaneous = Game.state.settings.maxSimultaneousNotes;
+        const dongtaTypeProbs = Game.state.settings.dongtaNoteTypeProbabilities;
         const longNoteProb = Math.round(Game.state.settings.longNoteProbability * 100);
         const falseNoteProb = Game.state.settings.falseNoteProbability;
+        
         DOM.difficulty.speedSlider.value = speed;
         DOM.difficulty.speedValue.textContent = speed;
         DOM.difficulty.dongtaSlider.value = dongtaProb;
         DOM.difficulty.dongtaValue.textContent = `${dongtaProb}%`;
+        
+        DOM.difficulty.maxSimultaneousSlider.value = maxSimultaneous;
+        DOM.difficulty.maxSimultaneousValue.textContent = maxSimultaneous;
+        
+        const tapProb = Math.round(dongtaTypeProbs.tap * 100);
+        const longProbDongta = Math.round(dongtaTypeProbs.long * 100);
+        const falseProbDongta = Math.round(dongtaTypeProbs.false * 100);
+        
+        DOM.difficulty.dongtaTapProbSlider.value = tapProb;
+        DOM.difficulty.dongtaTapProbValue.textContent = `${tapProb}%`;
+        DOM.difficulty.dongtaLongProbSlider.value = longProbDongta;
+        DOM.difficulty.dongtaLongProbValue.textContent = `${longProbDongta}%`;
+        DOM.difficulty.dongtaFalseProbSlider.value = falseProbDongta;
+        DOM.difficulty.dongtaFalseProbValue.textContent = `${falseProbDongta}%`;
+        
         DOM.difficulty.longNoteSlider.value = longNoteProb;
         DOM.difficulty.longNoteValue.textContent = `${longNoteProb}%`;
+        
         const falseNoteEnabled = falseNoteProb > 0;
         DOM.difficulty.falseNoteToggle.checked = falseNoteEnabled;
         DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !falseNoteEnabled);

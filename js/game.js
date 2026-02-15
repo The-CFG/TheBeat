@@ -6,6 +6,8 @@ const Game = {
             difficulty: 'normal',
             noteSpeed: CONFIG.DIFFICULTY_SPEED.normal,
             dongtaProbability: CONFIG.SIMULTANEOUS_NOTE_PROBABILITY.normal,
+            maxSimultaneousNotes: CONFIG.MAX_SIMULTANEOUS_NOTES.normal,
+            dongtaNoteTypeProbabilities: CONFIG.SIMULTANEOUS_NOTE_TYPE_PROBABILITY.normal,
             longNoteProbability: CONFIG.LONG_NOTE_PROBABILITY.normal,
             falseNoteProbability: 0,
             lanes: 4,
@@ -552,24 +554,67 @@ const Game = {
         if (totalNotesToGenerate < CONFIG.NOTE_COUNT_MIN) totalNotesToGenerate = CONFIG.NOTE_COUNT_MIN;
         if (totalNotesToGenerate > CONFIG.NOTE_COUNT_MAX) totalNotesToGenerate = CONFIG.NOTE_COUNT_MAX;
         const simProbability = this.state.settings.dongtaProbability;
+        const maxSimultaneous = this.state.settings.maxSimultaneousNotes;
+        const dongtaTypeProbs = this.state.settings.dongtaNoteTypeProbabilities;
         const longNoteProbability = this.state.settings.longNoteProbability;
         const falseNoteProbability = this.state.settings.falseNoteProbability;
         let generatedNotesCount = 0;
         let currentTime = 1000;
         let noteIdCounter = 0;
+        
+        // 노트 타입 결정 함수 (동타용)
+        const determineNoteType = () => {
+            const rand = Math.random();
+            const cumulative = {
+                tap: dongtaTypeProbs.tap,
+                long: dongtaTypeProbs.tap + dongtaTypeProbs.long,
+                false: dongtaTypeProbs.tap + dongtaTypeProbs.long + dongtaTypeProbs.false
+            };
+            
+            if (rand < cumulative.tap) return 'tap';
+            if (rand < cumulative.long) return 'long';
+            return 'false';
+        };
+        
         while (generatedNotesCount < totalNotesToGenerate) {
-            const canGenerateSimultaneous = this.state.settings.lanes > 1 && (totalNotesToGenerate - generatedNotesCount >= 2);
-            const canGenerateLongNote = (totalNotesToGenerate - generatedNotesCount >= 1);
+            const remainingNotes = totalNotesToGenerate - generatedNotesCount;
+            const canGenerateSimultaneous = this.state.settings.lanes > 1 && remainingNotes >= 2;
+            const canGenerateLongNote = remainingNotes >= 1;
+            
             if (canGenerateSimultaneous && Math.random() < simProbability) {
+                // 동시타 생성
+                const numSimultaneous = Math.min(
+                    maxSimultaneous,
+                    this.state.settings.lanes,
+                    remainingNotes
+                );
+                const actualCount = Math.max(2, Math.floor(Math.random() * (numSimultaneous - 1)) + 2);
+                
+                // 사용 가능한 레인 섞기
                 const availableLanes = Array.from({ length: this.state.settings.lanes }, (_, i) => i);
                 for (let i = availableLanes.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [availableLanes[i], availableLanes[j]] = [availableLanes[j], availableLanes[i]];
                 }
-                this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: 'tap' });
-                this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: 'tap' });
-                generatedNotesCount += 2;
+                
+                // 동시타 노트 생성
+                for (let i = 0; i < actualCount; i++) {
+                    const lane = availableLanes[i];
+                    const noteType = determineNoteType();
+                    
+                    if (noteType === 'long') {
+                        const duration = 500 + Math.random() * 1000;
+                        const noteId = noteIdCounter++;
+                        this.state.notes.push({ lane, time: currentTime, duration, type: 'long_head', noteId });
+                        this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
+                    } else {
+                        this.state.notes.push({ lane, time: currentTime, type: noteType });
+                    }
+                }
+                
+                generatedNotesCount += actualCount;
             } else if (canGenerateLongNote && Math.random() < longNoteProbability) {
+                // 일반 롱노트 (동타 아님)
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
                 const duration = 500 + Math.random() * 1000;
                 const noteId = noteIdCounter++;
@@ -578,10 +623,12 @@ const Game = {
                 currentTime += duration;
                 generatedNotesCount += 1;
             } else if (falseNoteProbability > 0 && Math.random() < falseNoteProbability) {
+                // 일반 가짜 노트
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
                 this.state.notes.push({ lane, time: currentTime, type: 'false' });
                 generatedNotesCount++;
             } else {
+                // 일반 탭 노트
                 const lane = Math.floor(Math.random() * this.state.settings.lanes);
                 this.state.notes.push({ lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
