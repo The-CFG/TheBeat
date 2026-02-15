@@ -160,6 +160,8 @@ body.circle-notes .judgement-line {
     box-sizing: border-box;
     border: 1px solid #1a202c;
     z-index: 10;
+    /* 노트를 그리드 라인에 정확히 정렬 */
+    transform: translateY(-4px);
 }
 
 .editor-note.long {
