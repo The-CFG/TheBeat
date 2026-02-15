@@ -59,9 +59,9 @@ body.circle-notes .note:not(.long) {
 }
 
 body.circle-notes .note.long {
-    border-radius: 50% 50% 0 0;
+    border-radius: 45px;
     min-height: 90px;
-    /* JavaScript에서 설정한 높이를 존중하여 롱노트의 전체 길이를 표시 */
+    /* 위아래 모두 둥글게 처리하여 캡슐 모양으로 표시 */
 }
 
 /* 원형 노트일 때 판정선도 원형으로 */
