@@ -250,8 +250,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         DOM.difficulty.maxSimultaneousSlider.addEventListener('input', (e) => {
-            Game.state.settings.maxSimultaneousNotes = parseInt(e.target.value);
-            DOM.difficulty.maxSimultaneousValue.textContent = e.target.value;
+            const requestedMax = parseInt(e.target.value);
+            const currentLanes = Game.state.settings.lanes;
+            
+            if (requestedMax > currentLanes) {
+                Game.state.settings.maxSimultaneousNotes = currentLanes;
+                DOM.difficulty.maxSimultaneousSlider.value = currentLanes;
+                DOM.difficulty.maxSimultaneousValue.textContent = currentLanes;
+                UI.showMessage('menu', `최대 동시타 개수가 지정된 레인 수(${currentLanes})를 넘어 자동으로 ${currentLanes}개로 조정되었습니다.`);
+            } else {
+                Game.state.settings.maxSimultaneousNotes = requestedMax;
+                DOM.difficulty.maxSimultaneousValue.textContent = requestedMax;
+            }
             setCustomDifficulty();
         });
 
@@ -302,8 +312,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('lanes-selector').addEventListener('change', (e) => {
-            Game.state.settings.lanes = parseInt(e.target.value);
-            // 화면 비율은 항상 3:2로 고정 (updateGameAreaWidth 호출 제거)
+            const newLanes = parseInt(e.target.value);
+            Game.state.settings.lanes = newLanes;
+            
+            // 최대 동시타 개수가 레인 수를 초과하는지 검증
+            if (Game.state.settings.maxSimultaneousNotes > newLanes) {
+                Game.state.settings.maxSimultaneousNotes = newLanes;
+                DOM.difficulty.maxSimultaneousSlider.value = newLanes;
+                DOM.difficulty.maxSimultaneousValue.textContent = newLanes;
+                UI.showMessage('menu', `레인 수가 ${newLanes}개로 변경되어 최대 동시타 개수도 ${newLanes}개로 조정되었습니다.`);
+            }
         });
 
         document.getElementById('chart-file-input').addEventListener('change', (e) => {
