@@ -93,6 +93,39 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-300">
+                                        <label for="max-simultaneous-slider">최대 동시타 개수</label>
+                                        <span id="max-simultaneous-value" class="font-mono">3</span>
+                                    </div>
+                                    <input id="max-simultaneous-slider" type="range" min="2" max="8" value="3" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                <div class="border-t border-gray-700 pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">동시타 노트 타입 확률</h4>
+                                    <div class="space-y-3">
+                                        <div>
+                                            <div class="flex justify-between items-center text-gray-300">
+                                                <label for="dongta-tap-prob-slider" class="text-sm">기본 노트</label>
+                                                <span id="dongta-tap-prob-value" class="font-mono text-sm">70%</span>
+                                            </div>
+                                            <input id="dongta-tap-prob-slider" type="range" min="0" max="100" value="70" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between items-center text-gray-300">
+                                                <label for="dongta-long-prob-slider" class="text-sm">롱 노트</label>
+                                                <span id="dongta-long-prob-value" class="font-mono text-sm">20%</span>
+                                            </div>
+                                            <input id="dongta-long-prob-slider" type="range" min="0" max="100" value="20" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between items-center text-gray-300">
+                                                <label for="dongta-false-prob-slider" class="text-sm">가짜 노트</label>
+                                                <span id="dongta-false-prob-value" class="font-mono text-sm">10%</span>
+                                            </div>
+                                            <input id="dongta-false-prob-slider" type="range" min="0" max="100" value="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center text-gray-300">
                                         <label for="long-note-prob-slider">롱노트 확률</label>
                                         <span id="long-note-prob-value" class="font-mono">15%</span>
                                     </div>
