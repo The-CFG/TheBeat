@@ -222,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const preset = e.target.dataset.difficulty;
             Game.state.settings.difficulty = preset;
             Game.state.settings.noteSpeed = CONFIG.DIFFICULTY_SPEED[preset];
+            Game.state.settings.noteSpawnSpeed = CONFIG.NOTE_SPAWN_SPEED[preset];
             Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
             Game.state.settings.maxSimultaneousNotes = CONFIG.MAX_SIMULTANEOUS_NOTES[preset];
             Game.state.settings.dongtaNoteTypeProbabilities = { ...CONFIG.SIMULTANEOUS_NOTE_TYPE_PROBABILITY[preset] };
@@ -237,9 +238,16 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.difficulty.toggleIcon.classList.toggle('rotate-180');
         });
 
-        DOM.difficulty.speedSlider.addEventListener('input', (e) => {
+        DOM.difficulty.fallSpeedSlider.addEventListener('input', (e) => {
             Game.state.settings.noteSpeed = parseInt(e.target.value);
-            DOM.difficulty.speedValue.textContent = e.target.value;
+            DOM.difficulty.fallSpeedValue.textContent = e.target.value;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.spawnSpeedSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            Game.state.settings.noteSpawnSpeed = value / 100;
+            DOM.difficulty.spawnSpeedValue.textContent = `${(value / 100).toFixed(1)}x`;
             setCustomDifficulty();
         });
 
@@ -511,14 +519,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateDetailedSettingsUI() {
         const speed = Game.state.settings.noteSpeed;
+        const spawnSpeed = Game.state.settings.noteSpawnSpeed;
         const dongtaProb = Math.round(Game.state.settings.dongtaProbability * 100);
         const maxSimultaneous = Game.state.settings.maxSimultaneousNotes;
         const dongtaTypeProbs = Game.state.settings.dongtaNoteTypeProbabilities;
         const longNoteProb = Math.round(Game.state.settings.longNoteProbability * 100);
         const falseNoteProb = Game.state.settings.falseNoteProbability;
         
-        DOM.difficulty.speedSlider.value = speed;
-        DOM.difficulty.speedValue.textContent = speed;
+        DOM.difficulty.fallSpeedSlider.value = speed;
+        DOM.difficulty.fallSpeedValue.textContent = speed;
+        DOM.difficulty.spawnSpeedSlider.value = Math.round(spawnSpeed * 100);
+        DOM.difficulty.spawnSpeedValue.textContent = `${spawnSpeed.toFixed(1)}x`;
         DOM.difficulty.dongtaSlider.value = dongtaProb;
         DOM.difficulty.dongtaValue.textContent = `${dongtaProb}%`;
         

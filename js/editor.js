@@ -691,8 +691,8 @@ const Editor = {
             // 게임 영역 높이
             const gameHeight = DOM.lanesContainer.clientHeight || 600;
             
-            // 노트 속도 설정 (BPM 기반)
-            const noteSpeed = Math.max(1, Math.min(20, Math.round(this.state.bpm / 20)));
+            // 노트 하강 속도 설정 (에디터 입력값 사용, 기본값은 BPM 기반)
+            let noteSpeed = parseFloat(DOM.editor.noteFallSpeedInput?.value) || Math.max(1, Math.min(20, Math.round(this.state.bpm / 20)));
             
             // 노트 생성 및 업데이트
             this.state.previewNotes.forEach(note => {

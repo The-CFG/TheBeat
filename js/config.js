@@ -1,5 +1,6 @@
 const CONFIG = {
     DIFFICULTY_SPEED: { easy: 4, normal: 7, hard: 10 },
+    NOTE_SPAWN_SPEED: { easy: 1.0, normal: 1.5, hard: 2.0 }, // 노트 생성 속도 배율
     JUDGEMENT_WINDOWS_MS: { perfect: 50, good: 100, bad: 150, miss: 200 },
     VALID_LANES: [4, 5, 6, 7, 8],
     SIMULTANEOUS_NOTE_PROBABILITY: {

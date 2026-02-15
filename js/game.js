@@ -4,7 +4,8 @@ const Game = {
         settings: {
             mode: 'random',
             difficulty: 'normal',
-            noteSpeed: CONFIG.DIFFICULTY_SPEED.normal,
+            noteSpeed: CONFIG.DIFFICULTY_SPEED.normal, // 노트 하강 속도
+            noteSpawnSpeed: CONFIG.NOTE_SPAWN_SPEED.normal, // 노트 생성 속도
             dongtaProbability: CONFIG.SIMULTANEOUS_NOTE_PROBABILITY.normal,
             maxSimultaneousNotes: CONFIG.MAX_SIMULTANEOUS_NOTES.normal,
             dongtaNoteTypeProbabilities: CONFIG.SIMULTANEOUS_NOTE_TYPE_PROBABILITY.normal,
@@ -601,7 +602,8 @@ const Game = {
                 const availableLanes = getAvailableLanes();
                 if (availableLanes.length < 2) {
                     // 사용 가능한 레인이 부족하면 일반 노트 생성
-                    currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
                     continue;
                 }
                 
@@ -640,7 +642,8 @@ const Game = {
                 const availableLanes = getAvailableLanes();
                 if (availableLanes.length === 0) {
                     // 사용 가능한 레인이 없으면 건너뛰기
-                    currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
                     continue;
                 }
                 
@@ -655,7 +658,8 @@ const Game = {
                 // 일반 가짜 노트
                 const availableLanes = getAvailableLanes();
                 if (availableLanes.length === 0) {
-                    currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
                     continue;
                 }
                 const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
@@ -665,14 +669,17 @@ const Game = {
                 // 일반 탭 노트
                 const availableLanes = getAvailableLanes();
                 if (availableLanes.length === 0) {
-                    currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
                     continue;
                 }
                 const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
                 this.state.notes.push({ lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
             }
-            currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+            // 노트 생성 속도를 적용하여 시간 증가 (속도가 높을수록 간격이 짧아짐)
+            const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+            currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
         }
         this.state.totalNotes = generatedNotesCount;
         this.state.notes.sort((a, b) => a.time - b.time);
