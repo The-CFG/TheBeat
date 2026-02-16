@@ -15,8 +15,22 @@ const I18n = {
             'easy': '쉬움',
             'normal': '보통',
             'hard': '어려움',
-            'note_count': '노트 개수',
+            'note_count': '노트 수 (랜덤 모드)',
             'load_chart': '차트 불러오기',
+            'load_music': '음악 불러오기',
+            
+            // 세부 난이도 설정
+            'note_fall_speed': '노트 하강 속도',
+            'note_spawn_speed': '노트 속도 (생성 빈도)',
+            'dongta_prob': '동시타 확률',
+            'max_simultaneous': '최대 동시타 개수',
+            'dongta_note_type': '동시타 노트 타입 확률',
+            'tap_note_short': '기본 노트',
+            'long_note_short': '롱 노트',
+            'false_note_short': '가짜 노트',
+            'long_note_prob': '롱노트 확률',
+            'false_note_enable': '가짜 노트 활성화',
+            'false_note_prob': '가짜 노트 확률',
             
             // 환경설정
             'settings': '환경설정',
@@ -50,6 +64,7 @@ const I18n = {
             'save': '저장',
             'reset': '초기화',
             'apply': '적용',
+            'preset_slots': '프리셋 슬롯',
             
             // 게임 중
             'playing': '플레이 중',
@@ -66,12 +81,12 @@ const I18n = {
             'bad': 'BAD',
             'miss': 'MISS',
             'retry': '다시 하기',
-            'main_menu': '메인 메뉴',
+            'main_menu': '메인으로 돌아가기',
             
             // 에디터
-            'editor_title': '에디터',
+            'editor_title': '차트 에디터',
             'music_settings': '음악 설정',
-            'load_music': '음악 로딩',
+            'load_music': '음악 불러오기',
             'bpm': 'BPM',
             'music_start_time': '음악 시작 시간',
             'note_placement': '노트 배치',
@@ -86,6 +101,7 @@ const I18n = {
             'settings_reset': '모양 설정이 초기화되었습니다.',
             'preset_saved': '프리셋에 저장되었습니다.',
             'key_saved': '키 설정이 저장되었습니다.',
+            'language_changed': '언어가 변경되었습니다.',
         },
         
         en: {
@@ -101,8 +117,22 @@ const I18n = {
             'easy': 'Easy',
             'normal': 'Normal',
             'hard': 'Hard',
-            'note_count': 'Note Count',
+            'note_count': 'Note Count (Random)',
             'load_chart': 'Load Chart',
+            'load_music': 'Load Music',
+            
+            // Detailed difficulty settings
+            'note_fall_speed': 'Note Fall Speed',
+            'note_spawn_speed': 'Note Spawn Speed',
+            'dongta_prob': 'Simultaneous Note Probability',
+            'max_simultaneous': 'Max Simultaneous Notes',
+            'dongta_note_type': 'Simultaneous Note Type Probability',
+            'tap_note_short': 'Tap Note',
+            'long_note_short': 'Long Note',
+            'false_note_short': 'False Note',
+            'long_note_prob': 'Long Note Probability',
+            'false_note_enable': 'Enable False Notes',
+            'false_note_prob': 'False Note Probability',
             
             // Settings
             'settings': 'Settings',
@@ -136,6 +166,7 @@ const I18n = {
             'save': 'Save',
             'reset': 'Reset',
             'apply': 'Apply',
+            'preset_slots': 'Preset Slots',
             
             // In game
             'playing': 'Playing',
@@ -152,10 +183,10 @@ const I18n = {
             'bad': 'BAD',
             'miss': 'MISS',
             'retry': 'Retry',
-            'main_menu': 'Main Menu',
+            'main_menu': 'Back to Menu',
             
             // Editor
-            'editor_title': 'Editor',
+            'editor_title': 'Chart Editor',
             'music_settings': 'Music Settings',
             'load_music': 'Load Music',
             'bpm': 'BPM',
@@ -172,6 +203,7 @@ const I18n = {
             'settings_reset': 'Settings reset.',
             'preset_saved': 'Preset saved.',
             'key_saved': 'Key settings saved.',
+            'language_changed': 'Language changed.',
         }
     },
     
@@ -209,7 +241,7 @@ const I18n = {
         this.applyTranslations();
         this.updateButtonStates();
         
-        UI.showMessage('settings', lang === 'ko' ? '언어가 변경되었습니다.' : 'Language changed.');
+        UI.showMessage('settings', this.t('language_changed'));
     },
     
     applyTranslations() {
