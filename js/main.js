@@ -511,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveKeyBindings() {
         Game.state.settings.userKeyMappings = { ...tempKeyMappings };
-        UI.showMessage('menu', '키 설정이 저장되었습니다.');
+        UI.showMessage('settings', '키 설정이 저장되었습니다.');
         DOM.settings.controls.statusLabel.textContent = '저장되었습니다!';
         setTimeout(() => {
             if (DOM.settings.controls.statusLabel.textContent === '저장되었습니다!') {
