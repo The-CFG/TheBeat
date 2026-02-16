@@ -117,6 +117,14 @@ const Appearance = {
                     if (e.target.tagName === 'BUTTON') {
                         const mode = e.target.dataset.mode;
                         this.settings.colorMode = mode;
+                        
+                        // body 클래스 토글
+                        if (mode === 'lane') {
+                            document.body.classList.add('lane-color-mode');
+                        } else {
+                            document.body.classList.remove('lane-color-mode');
+                        }
+                        
                         this.updateColorModeUI();
                         this.updatePreview();
                         this.updateCSSVariables();
@@ -276,7 +284,7 @@ const Appearance = {
 
     applySettings() {
         try {
-            // CSS 변수로 색상 적용
+            // CSS 변수로 색상 적용 (노트 타입별 색상 모드용)
             document.documentElement.style.setProperty('--note-tap-color', this.settings.colors.tap);
             document.documentElement.style.setProperty('--note-long-color', this.settings.colors.long);
             
@@ -286,8 +294,16 @@ const Appearance = {
             
             document.documentElement.style.setProperty('--note-false-color', this.settings.colors.false);
 
+            // 색상 모드에 따라 body 클래스 설정
+            if (this.settings.colorMode === 'lane') {
+                document.body.classList.add('lane-color-mode');
+            } else {
+                document.body.classList.remove('lane-color-mode');
+            }
+
             // 디버깅: 설정된 색상 확인
             console.log('[Appearance] Colors applied:', {
+                mode: this.settings.colorMode,
                 tap: this.settings.colors.tap,
                 long: this.settings.colors.long,
                 longGradient: gradientStart,
@@ -313,6 +329,7 @@ const Appearance = {
             // UI 업데이트
             this.updateShapeUI();
             this.updateColorInputs();
+            this.updateColorModeUI();
         } catch (err) {
             this._logError(err, 'Appearance.applySettings');
         }
