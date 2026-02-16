@@ -2,17 +2,19 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>TheCFG TheBeat</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="w-screen h-screen flex items-center justify-center bg-[#2d3748]">
+<body class="w-screen h-screen flex items-center justify-center bg-[#2d3748] overflow-hidden touch-none">
 
-<div class="w-full h-full flex flex-row overflow-hidden">
+<div class="w-full h-full flex flex-col md:flex-row overflow-hidden">
     <!-- Game Area -->
-    <div id="game-area" class="w-3/5 h-full bg-black relative flex justify-center">
+    <div id="game-area" class="w-full md:w-3/5 h-2/5 md:h-full bg-black relative flex justify-center">
         <div id="lanes-container" class="h-full flex relative">
             <!-- Lanes will be generated here -->
         </div>
@@ -23,7 +25,7 @@
         </div>
     </div>
             <!-- UI Area -->
-            <div id="ui-area" class="w-2/5 h-full p-4 md:p-8 flex flex-col justify-start bg-[#2d3748] overflow-y-auto">
+            <div id="ui-area" class="w-full md:w-2/5 h-3/5 md:h-full p-2 md:p-4 lg:p-8 flex flex-col justify-start bg-[#2d3748] overflow-y-auto">
                 <!-- Menu Screen -->
                 <div id="menu-screen" class="flex flex-col flex-shrink-0">
                     <div class="flex justify-between items-center mb-8">
@@ -492,9 +494,10 @@
                                     <button id="editor-remove-measure-btn" class="px-2 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-sm">-</button>
                                 </div>
                                 <div id="editor-note-type-selector" class="flex space-x-2 btn-group pt-1">
-                                    <button data-type="tap" class="w-10 h-8 bg-blue-500 hover:bg-blue-400 rounded transition active"></button>
-                                    <button data-type="long" class="w-10 h-8 bg-purple-500 hover:bg-purple-400 rounded transition"></button>
-                                    <button data-type="false" class="w-10 h-8 bg-red-400 hover:bg-red-300 rounded transition"></button>
+                                    <button data-type="tap" class="w-10 h-8 bg-blue-500 hover:bg-blue-400 rounded transition active" title="기본 노트"></button>
+                                    <button data-type="long" class="w-10 h-8 bg-purple-500 hover:bg-purple-400 rounded transition" title="롱 노트"></button>
+                                    <button data-type="false" class="w-10 h-8 bg-red-400 hover:bg-red-300 rounded transition" title="가짜 노트"></button>
+                                    <button data-type="trigger" class="w-10 h-8 bg-yellow-500 hover:bg-yellow-400 rounded transition" title="설정 트리거">⚙️</button>
                                 </div>
                             </div>
                             <!-- 3. 관리 -->
@@ -549,6 +552,33 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Trigger Settings Modal -->
+        <div id="trigger-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 class="text-xl font-bold text-white mb-4">설정 트리거 배치</h3>
+                <p class="text-gray-300 text-sm mb-4">이 시점부터 BPM, 노트 속도, 하강 속도를 변경합니다.</p>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-300">BPM:</label>
+                        <input type="number" id="trigger-bpm" class="w-full p-2 bg-gray-700 rounded text-white" value="120">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-300">노트 속도:</label>
+                        <input type="number" id="trigger-spawn-speed" class="w-full p-2 bg-gray-700 rounded text-white" value="1.5" step="0.1">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-300">하강 속도:</label>
+                        <input type="number" id="trigger-fall-speed" class="w-full p-2 bg-gray-700 rounded text-white" value="7">
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button id="trigger-confirm-btn" class="flex-1 py-2 bg-green-600 hover:bg-green-500 rounded text-white">배치</button>
+                    <button id="trigger-cancel-btn" class="flex-1 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white">취소</button>
+                </div>
+            </div>
+        </div>
+        
         <audio id="music-player"></audio>
         <!-- JavaScript Files -->
         <script defer src="js/config.js"></script>
