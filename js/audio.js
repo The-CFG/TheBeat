@@ -45,22 +45,26 @@ const Audio = {
 
     playHitSound() {
         if (!this.isReady || !this.hitSound) return;
-        this.hitSound.triggerAttackRelease("G5", 0.05, Tone.now());
+        const now = Tone.now();
+        this.hitSound.triggerAttackRelease("G5", 0.05, now + 0.001);
     },
 
     playMissSound() {
         if (!this.isReady || !this.missSound) return;
-        this.missSound.triggerAttackRelease("C3", "8n", Tone.now());
+        const now = Tone.now();
+        this.missSound.triggerAttackRelease("C3", "8n", now + 0.001);
     },
 
     playCountdownTick() {
         if (!this.isReady || !this.countdownTickSound) return;
-        this.countdownTickSound.triggerAttackRelease("A4", "16n", Tone.now());
+        const now = Tone.now();
+        this.countdownTickSound.triggerAttackRelease("A4", "16n", now + 0.001);
     },
 
     playCountdownStart() {
         if (!this.isReady || !this.countdownStartSound) return;
-        this.countdownStartSound.triggerAttackRelease("A5", "8n", Tone.now());
+        const now = Tone.now();
+        this.countdownStartSound.triggerAttackRelease("A5", "8n", now + 0.001);
     },
 
     setMusicVolume(value) {

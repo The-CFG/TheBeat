@@ -1,11 +1,24 @@
 const CONFIG = {
     DIFFICULTY_SPEED: { easy: 4, normal: 7, hard: 10 },
+    NOTE_SPAWN_SPEED: { easy: 1.0, normal: 1.5, hard: 2.0 }, // 노트 생성 속도 배율
     JUDGEMENT_WINDOWS_MS: { perfect: 50, good: 100, bad: 150, miss: 200 },
     VALID_LANES: [4, 5, 6, 7, 8],
     SIMULTANEOUS_NOTE_PROBABILITY: {
         easy: 0.1,
         normal: 0.25,
         hard: 0.4,
+    },
+    // 최대 동시타 개수 설정
+    MAX_SIMULTANEOUS_NOTES: {
+        easy: 2,
+        normal: 3,
+        hard: 4,
+    },
+    // 동시타 내 노트 타입별 확률
+    SIMULTANEOUS_NOTE_TYPE_PROBABILITY: {
+        easy: { tap: 0.9, long: 0.05, false: 0.05 },
+        normal: { tap: 0.7, long: 0.2, false: 0.1 },
+        hard: { tap: 0.6, long: 0.25, false: 0.15 },
     },
     LONG_NOTE_PROBABILITY: {
         easy: 0.1,
@@ -51,5 +64,8 @@ const CONFIG = {
         'KeyT': 'C1',
         'KeyY': 'R1', 'KeyU': 'R2', 'KeyI': 'R3', 'KeyO': 'R4'
     },
-    EDITOR_UNDO_HISTORY_LIMIT: 50
+    EDITOR_UNDO_HISTORY_LIMIT: 50,
+    NOTE_SPAWN_TIME_MS: 2000, // 노트가 화면에 나타나는 시간
+    GAME_AREA_HEIGHT: 600, // 게임 영역 높이 (픽셀)
+    NOTE_FALL_SPEED_FACTOR: 35, // 노트 낙하 속도 배수
 };

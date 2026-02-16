@@ -1,6 +1,7 @@
 const Editor = {
     state: {
         notes: [],
+        triggers: [], // BPM/속도 변경 트리거
         bpm: 120,
         snapDivision: 4,
         history: [],
@@ -12,6 +13,11 @@ const Editor = {
         selectedNoteType: 'tap',
         isPlacingLongNote: false,
         longNoteStart: null,
+        // 미리보기 관련 상태
+        previewNotes: [],
+        previewAnimationId: null,
+        previewStartTime: 0,
+        previewLaneCount: 4,
     },
 
     init() {
@@ -19,6 +25,14 @@ const Editor = {
             this.state.isPlaying = false;
             UI.showScreen('editor');
             this.resetEditorState();
+            
+            // 미리보기 레인 선택 변경 시 하이라이트 업데이트
+            if (DOM.editor.previewLanesSelector) {
+                DOM.editor.previewLanesSelector.addEventListener('change', () => {
+                    const laneCount = parseInt(DOM.editor.previewLanesSelector.value) || 4;
+                    this.highlightEditorLanes(laneCount);
+                });
+            }
         } catch (err) {
             Debugger.logError(err, 'Editor.init');
         }
@@ -129,7 +143,7 @@ const Editor = {
             const gridContainer = DOM.editor.gridContainer;
             gridContainer.innerHTML = '';
 
-            CONFIG.EDITOR_LANE_IDS.forEach((id) => {
+            CONFIG.EDITOR_LANE_IDS.forEach((id, index) => {
                 const laneEl = document.createElement('div');
                 laneEl.className = 'editor-lane';
                 laneEl.dataset.laneId = id;
@@ -137,6 +151,11 @@ const Editor = {
             });
 
             this.drawGrid();
+            this.addLaneLabels();
+            
+            // 초기 하이라이트 적용
+            const laneCount = parseInt(DOM.editor.previewLanesSelector?.value) || 4;
+            this.highlightEditorLanes(laneCount);
         } catch (err) {
             Debugger.logError(err, 'Editor.drawTimeline');
         }
@@ -173,6 +192,9 @@ const Editor = {
                     DOM.editor.notesContainer.insertBefore(line, DOM.editor.playhead);
                 }
             }
+            
+            // 레인 라벨 재생성
+            this.addLaneLabels();
         } catch (err) {
             Debugger.logError(err, 'Editor.drawGrid');
         }
@@ -233,16 +255,25 @@ const Editor = {
             const laneIndex = Math.floor(x / laneWidth);
             const laneId = CONFIG.EDITOR_LANE_IDS[laneIndex];
             const y = e.clientY - rect.top + container.scrollTop;
+            
+            // 그리드 라인과 정확히 일치하는 계산
             const adjustedBeatHeight = this._getAdjustedBeatHeight();
-            const beatsPerSecond = this.state.bpm / 60;
-            const snapsPerBeat = this.state.snapDivision / 4;
-            const snapHeight = adjustedBeatHeight / snapsPerBeat;
+            const beatsPerMeasure = 4;
+            const measureHeight = beatsPerMeasure * adjustedBeatHeight;
+            const snapHeight = measureHeight / this.state.snapDivision;
+            
+            // 가장 가까운 스냅 포인트 찾기
             const snapIndex = Math.round(y / snapHeight);
-            const snappedBeat = snapIndex / snapsPerBeat;
-            const timeInMs = Math.round((snappedBeat / beatsPerSecond) * 1000);
+            const snappedY = snapIndex * snapHeight;
+            
+            // 시간 계산 (비트 -> 밀리초)
+            const beatsPerSecond = this.state.bpm / 60;
+            const totalBeats = snappedY / adjustedBeatHeight;
+            const timeInMs = Math.round((totalBeats / beatsPerSecond) * 1000);
 
             switch (this.state.selectedNoteType) {
                 case 'long': this.placeLongNote(timeInMs, laneId); break;
+                case 'trigger': this.placeTrigger(timeInMs); break;
                 case 'tap': case 'false': this.placeSimpleNote(timeInMs, laneId); break;
             }
         } catch (err) {
@@ -281,6 +312,90 @@ const Editor = {
         }
     },
 
+    placeTrigger(time) {
+        this.state.pendingTriggerTime = time;
+        this.showTriggerModal();
+    },
+
+    showTriggerModal() {
+        // 현재 설정값으로 모달 초기화
+        DOM.triggerModal.bpmInput.value = this.state.bpm;
+        DOM.triggerModal.spawnSpeedInput.value = parseFloat(DOM.editor.noteSpawnSpeedInput?.value) || 1.5;
+        DOM.triggerModal.fallSpeedInput.value = parseFloat(DOM.editor.noteFallSpeedInput?.value) || 7;
+        DOM.triggerModal.container.classList.remove('hidden');
+    },
+
+    hideTriggerModal() {
+        DOM.triggerModal.container.classList.add('hidden');
+        this.state.pendingTriggerTime = null;
+    },
+
+    confirmTrigger() {
+        const time = this.state.pendingTriggerTime;
+        if (time == null) return;
+
+        const bpm = parseFloat(DOM.triggerModal.bpmInput.value);
+        const spawnSpeed = parseFloat(DOM.triggerModal.spawnSpeedInput.value);
+        const fallSpeed = parseFloat(DOM.triggerModal.fallSpeedInput.value);
+
+        // 기존 동일 시간 트리거 제거
+        this.state.triggers = this.state.triggers.filter(t => Math.abs(t.time - time) >= 10);
+        
+        // 새 트리거 추가
+        this.state.triggers.push({
+            time,
+            bpm,
+            spawnSpeed,
+            fallSpeed
+        });
+
+        this.state.triggers.sort((a, b) => a.time - b.time);
+        this.renderTriggers();
+        this.hideTriggerModal();
+        this.setDirty(true);
+    },
+
+    renderTriggers() {
+        try {
+            DOM.editor.notesContainer.querySelectorAll('.editor-trigger').forEach(t => t.remove());
+            const container = DOM.editor.container;
+            if (container.clientWidth === 0) return;
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
+            const beatsPerSecond = this.state.bpm / 60;
+
+            this.state.triggers.forEach(trigger => {
+                const triggerEl = document.createElement('div');
+                triggerEl.className = 'editor-trigger';
+                triggerEl.style.width = '100%';
+                triggerEl.style.height = '3px';
+                triggerEl.style.backgroundColor = '#fbbf24';
+                triggerEl.style.position = 'absolute';
+                triggerEl.style.left = '0';
+                triggerEl.style.cursor = 'pointer';
+                triggerEl.style.zIndex = '5';
+                
+                const beats = (trigger.time / 1000) * beatsPerSecond;
+                const yPosition = beats * adjustedBeatHeight;
+                triggerEl.style.top = `${yPosition}px`;
+                
+                triggerEl.dataset.time = trigger.time;
+                triggerEl.title = `BPM: ${trigger.bpm}, 속도: ${trigger.spawnSpeed}x, 하강: ${trigger.fallSpeed}`;
+                
+                // 클릭 시 삭제
+                triggerEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.state.triggers = this.state.triggers.filter(t => t.time !== trigger.time);
+                    this.renderTriggers();
+                    this.setDirty(true);
+                });
+                
+                DOM.editor.notesContainer.appendChild(triggerEl);
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.renderTriggers');
+        }
+    },
+
     renderNotes() {
         try {
             DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
@@ -299,16 +414,40 @@ const Editor = {
                 if (laneIndex === -1) return;
                 noteEl.style.width = `${laneWidth}px`;
                 noteEl.style.left = `${laneIndex * laneWidth}px`;
+                
+                // 그리드 라인과 정확히 일치하도록 위치 계산
                 const beats = (note.time / 1000) * beatsPerSecond;
-                noteEl.style.top = `${beats * adjustedBeatHeight - 4}px`;
+                const yPosition = beats * adjustedBeatHeight;
+                noteEl.style.top = `${yPosition}px`;
+                
                 if (note.duration) {
                     const durationInBeats = (note.duration / 1000) * beatsPerSecond;
                     noteEl.style.height = `${durationInBeats * adjustedBeatHeight}px`;
                 }
                 noteEl.dataset.time = note.time;
                 noteEl.dataset.lane = note.lane;
+                
+                // 레인별 색상 모드일 때 인라인 스타일 적용
+                if (Appearance.settings.colorMode === 'lane' && note.lane) {
+                    const color = Appearance.settings.laneColors[note.lane];
+                    if (color) {
+                        if (note.duration) {
+                            const gradientStart = Appearance.adjustColor(color, -20);
+                            noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                        } else {
+                            noteEl.style.backgroundColor = color;
+                            if (note.type === 'false') {
+                                noteEl.style.boxShadow = `0 0 4px ${color}`;
+                            }
+                        }
+                    }
+                }
+                
                 DOM.editor.notesContainer.appendChild(noteEl);
             });
+            
+            // 트리거도 함께 렌더링
+            this.renderTriggers();
         } catch (err) {
             Debugger.logError(err, 'Editor.renderNotes');
         }
@@ -334,6 +473,7 @@ const Editor = {
                 bpm: this.state.bpm,
                 startTimeOffset: this.state.startTimeOffset,
                 notes: gameNotes.sort((a, b) => a.time - b.time),
+                triggers: this.state.triggers || []
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
             const downloadAnchorNode = document.createElement('a');
@@ -354,6 +494,7 @@ const Editor = {
             this.resetEditorState();
             this.state.history = [];
             this.state.bpm = chartData.bpm || 120;
+            this.state.triggers = chartData.triggers || [];
             this.state.notes = chartData.notes.map(note => {
                 const measure = this._getMeasureFromTime(note.time);
                 let newNote = { ...note, measure };
@@ -392,10 +533,14 @@ const Editor = {
             }
 
             if (!this.state.isPlaying) {
-                this.state.playbackStartTime = performance.now() - this.state.timeWhenPaused;
+                this.state.playbackStartTime = performance.now() - (this.state.timeWhenPaused || 0);
                 if (isMusicLoaded) await DOM.musicPlayer.play();
                 DOM.editor.playBtn.textContent = "일시정지";
                 this.state.isPlaying = true;
+                
+                // 게임 화면 미리보기 시작
+                this.startPreview();
+                
                 setTimeout(() => { if (this.state.isPlaying) this.loop(); }, 0);
             } else {
                 this.state.timeWhenPaused = performance.now() - this.state.playbackStartTime;
@@ -403,6 +548,12 @@ const Editor = {
                 DOM.editor.playBtn.textContent = "재생";
                 this.state.isPlaying = false;
                 cancelAnimationFrame(this.state.animationFrameId);
+                
+                // 게임 화면 미리보기 정지 (노트는 유지)
+                if (this.state.previewAnimationId) {
+                    cancelAnimationFrame(this.state.previewAnimationId);
+                    this.state.previewAnimationId = null;
+                }
             }
         } catch (err) {
             Debugger.logError(err, 'Editor.handlePlayPause');
@@ -414,6 +565,13 @@ const Editor = {
         try {
             this.state.isPlaying = false;
             cancelAnimationFrame(this.state.animationFrameId);
+            
+            // 게임 화면 미리보기 정지
+            if (this.state.previewAnimationId) {
+                cancelAnimationFrame(this.state.previewAnimationId);
+                this.state.previewAnimationId = null;
+            }
+            
             this.state.playbackStartTime = 0;
             this.state.timeWhenPaused = 0;
             if (DOM.musicPlayer.src) {
@@ -427,6 +585,9 @@ const Editor = {
             const playheadPosition = offsetBeats * adjustedBeatHeight;
             DOM.editor.playhead.style.top = `${playheadPosition}px`;
             DOM.editor.container.scrollTop = playheadPosition - DOM.editor.container.clientHeight / 2;
+            
+            // 게임 화면 초기화
+            this.clearPreview();
         } catch (err) {
             Debugger.logError(err, 'Editor.stopPlayback');
         }
@@ -514,6 +675,309 @@ const Editor = {
             const previousNotes = this.state.history.pop();
             this.state.notes = previousNotes;
             this.renderNotes();
+        }
+    },
+
+    // ===== 에디터 미리보기 기능 =====
+    
+    startPreview() {
+        try {
+            // 선택된 레인 수 가져오기
+            const laneCount = parseInt(DOM.editor.previewLanesSelector.value) || 4;
+            
+            // 레인 ID 매핑 가져오기
+            const laneIds = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+            
+            // 게임 화면 레인 설정
+            DOM.lanesContainer.innerHTML = '';
+            DOM.lanesContainer.style.width = `${laneCount * 100}px`;
+            
+            for (let i = 0; i < laneCount; i++) {
+                const lane = document.createElement('div');
+                lane.className = 'lane';
+                lane.style.width = '100px';
+                lane.dataset.laneIndex = i;
+                if (laneIds && laneIds[i]) {
+                    lane.dataset.laneId = laneIds[i]; // 레인 ID 저장
+                }
+                
+                const judgementLine = document.createElement('div');
+                judgementLine.className = 'judgement-line';
+                lane.appendChild(judgementLine);
+                
+                DOM.lanesContainer.appendChild(lane);
+            }
+            
+            // 에디터 레인 하이라이트
+            this.highlightEditorLanes(laneCount);
+            
+            // 미리보기 노트 준비
+            this.preparePreviewNotes(laneCount);
+            
+            // 미리보기 시작 시간 기록
+            this.state.previewStartTime = performance.now();
+            this.state.previewLaneCount = laneCount;
+            
+            // 미리보기 루프 시작
+            this.previewLoop();
+        } catch (err) {
+            Debugger.logError(err, 'Editor.startPreview');
+        }
+    },
+    
+    preparePreviewNotes(laneCount) {
+        try {
+            // 선택된 레인 수에 맞는 레인 ID 매핑 가져오기
+            const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+            if (!requiredLaneIds) {
+                console.error(`Invalid lane count: ${laneCount}`);
+                return;
+            }
+            
+            // 에디터 노트를 게임 형식으로 변환
+            this.state.previewNotes = [];
+            let noteIdCounter = 0;
+            
+            this.state.notes.forEach(note => {
+                // 에디터 레인 ID를 게임 레인 인덱스로 변환
+                const gameLaneIndex = requiredLaneIds.indexOf(note.lane);
+                
+                // 현재 선택된 레인 수에 해당하는 노트만 미리보기에 포함
+                if (gameLaneIndex !== -1) {
+                    // duration이 있는 노트는 롱노트로 처리
+                    if (note.duration) {
+                        const newNote = {
+                            time: note.time,
+                            lane: gameLaneIndex,
+                            type: 'long_head',
+                            duration: note.duration,
+                            noteId: noteIdCounter++,
+                            processed: false,
+                            element: null
+                        };
+                        this.state.previewNotes.push(newNote);
+                        
+                        // long_tail 노트 추가
+                        this.state.previewNotes.push({
+                            time: note.time + note.duration,
+                            lane: gameLaneIndex,
+                            type: 'long_tail',
+                            noteId: newNote.noteId,
+                            processed: false,
+                            element: null
+                        });
+                    } else {
+                        // 일반 노트 (tap, false)
+                        const newNote = {
+                            time: note.time,
+                            lane: gameLaneIndex,
+                            type: note.type || 'tap',
+                            processed: false,
+                            element: null
+                        };
+                        this.state.previewNotes.push(newNote);
+                    }
+                }
+            });
+            
+            // 시간순 정렬
+            this.state.previewNotes.sort((a, b) => a.time - b.time);
+        } catch (err) {
+            Debugger.logError(err, 'Editor.preparePreviewNotes');
+        }
+    },
+    
+    previewLoop() {
+        try {
+            if (!this.state.isPlaying) return;
+            
+            // 경과 시간 계산
+            let elapsedTime;
+            const isMusicLoaded = !!DOM.musicPlayer.src;
+            
+            if (isMusicLoaded && !DOM.musicPlayer.paused) {
+                elapsedTime = (DOM.musicPlayer.currentTime - this.state.startTimeOffset) * 1000;
+            } else {
+                const elapsedMs = performance.now() - this.state.playbackStartTime;
+                elapsedTime = elapsedMs;
+            }
+            
+            // 게임 영역 높이
+            const gameHeight = DOM.lanesContainer.clientHeight || 600;
+            
+            // 노트 하강 속도 설정 (에디터 입력값 사용, 기본값은 BPM 기반)
+            let noteSpeed = parseFloat(DOM.editor.noteFallSpeedInput?.value) || Math.max(1, Math.min(20, Math.round(this.state.bpm / 20)));
+            
+            // 노트 생성 및 업데이트
+            this.state.previewNotes.forEach(note => {
+                const timeToHit = note.time - elapsedTime;
+                
+                // 롱노트 여부 확인 및 높이 계산
+                const isLongNote = note.type === 'long_head';
+                const noteHeight = isLongNote && note.duration ? (note.duration / 10) * noteSpeed : 25;
+                
+                const noteBottomPosition = gameHeight - 100 - (timeToHit * noteSpeed / 10);
+                const noteTopPosition = noteBottomPosition - noteHeight;
+                
+                // 노트 생성
+                if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
+                    if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
+                        this.createPreviewNoteElement(note, gameHeight, noteHeight);
+                    }
+                }
+                
+                // 노트 위치 업데이트
+                if (note.element && note.element.isConnected) {
+                    note.element.style.transform = `translateY(${noteTopPosition}px)`;
+                    
+                    // 화면 밖으로 나가면 제거
+                    if (noteTopPosition > gameHeight + 100) {
+                        note.element.remove();
+                        note.element = null;
+                        note.processed = true;
+                    }
+                } else if (note.processed && note.element) {
+                    note.element.remove();
+                    note.element = null;
+                }
+            });
+            
+            this.state.previewAnimationId = requestAnimationFrame(this.previewLoop.bind(this));
+        } catch (err) {
+            Debugger.logError(err, 'Editor.previewLoop');
+        }
+    },
+    
+    createPreviewNoteElement(note, gameHeight, noteHeight) {
+        try {
+            const lane = DOM.lanesContainer.querySelector(`[data-lane-index="${note.lane}"]`);
+            if (!lane) return;
+            
+            const noteEl = document.createElement('div');
+            noteEl.className = 'note';
+            
+            // 레인 ID 저장
+            const laneId = lane.dataset.laneId;
+            if (laneId) {
+                noteEl.dataset.lane = laneId;
+            }
+            
+            const isLongNote = note.type === 'long_head';
+            
+            if (isLongNote) {
+                noteEl.classList.add('long');
+                // 롱노트의 경우 높이 설정
+                if (noteHeight) {
+                    noteEl.style.height = `${noteHeight}px`;
+                }
+            }
+            if (note.type === 'false') {
+                noteEl.classList.add('false');
+            }
+            
+            // 레인별 색상 모드일 때 인라인 스타일 적용
+            if (Appearance.settings.colorMode === 'lane' && laneId) {
+                const color = Appearance.settings.laneColors[laneId];
+                if (color) {
+                    if (isLongNote) {
+                        const gradientStart = Appearance.adjustColor(color, -20);
+                        noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                    } else {
+                        noteEl.style.backgroundColor = color;
+                        if (note.type === 'false') {
+                            noteEl.style.boxShadow = `0 0 8px ${color}`;
+                        }
+                    }
+                }
+            }
+            
+            lane.appendChild(noteEl);
+            note.element = noteEl;
+        } catch (err) {
+            Debugger.logError(err, 'Editor.createPreviewNoteElement');
+        }
+    },
+    
+    clearPreview() {
+        try {
+            // 모든 노트 요소 제거
+            if (this.state.previewNotes) {
+                this.state.previewNotes.forEach(note => {
+                    if (note.element) {
+                        note.element.remove();
+                        note.element = null;
+                    }
+                });
+            }
+            
+            // 레인 초기화
+            DOM.lanesContainer.innerHTML = '';
+            
+            // 하이라이트는 유지 (제거하지 않음)
+            
+            // 상태 초기화
+            this.state.previewNotes = [];
+            this.state.previewStartTime = 0;
+            this.state.previewLaneCount = 4;
+        } catch (err) {
+            Debugger.logError(err, 'Editor.clearPreview');
+        }
+    },
+    
+    highlightEditorLanes(laneCount) {
+        try {
+            // 먼저 모든 하이라이트 제거
+            this.clearEditorLaneHighlight();
+            
+            // 선택된 레인에 해당하는 레인 ID 가져오기
+            const requiredLaneIds = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+            if (!requiredLaneIds) return;
+            
+            // 해당 레인들 하이라이트
+            requiredLaneIds.forEach(laneId => {
+                const laneEl = DOM.editor.gridContainer.querySelector(`[data-lane-id="${laneId}"]`);
+                if (laneEl) {
+                    laneEl.classList.add('highlighted');
+                }
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.highlightEditorLanes');
+        }
+    },
+    
+    clearEditorLaneHighlight() {
+        try {
+            const lanes = DOM.editor.gridContainer.querySelectorAll('.editor-lane');
+            lanes.forEach(lane => lane.classList.remove('highlighted'));
+        } catch (err) {
+            Debugger.logError(err, 'Editor.clearEditorLaneHighlight');
+        }
+    },
+    
+    addLaneLabels() {
+        try {
+            // 기존 라벨 제거
+            DOM.editor.gridContainer.querySelectorAll('.editor-lane-label').forEach(label => label.remove());
+            
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
+            const beatsPerMeasure = 4;
+            const measureHeight = beatsPerMeasure * adjustedBeatHeight;
+            
+            // 8마디마다 라벨 추가
+            const lanes = DOM.editor.gridContainer.querySelectorAll('.editor-lane');
+            lanes.forEach((laneEl, index) => {
+                const laneId = CONFIG.EDITOR_LANE_IDS[index];
+                
+                for (let measure = 0; measure < this.state.totalMeasures; measure += 8) {
+                    const label = document.createElement('div');
+                    label.className = 'editor-lane-label';
+                    label.textContent = `${laneId} - ${measure}`;
+                    label.style.top = `${measure * measureHeight}px`;
+                    laneEl.appendChild(label);
+                }
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.addLaneLabels');
         }
     },
 

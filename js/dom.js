@@ -25,15 +25,26 @@ const DOM = {
     messages: {
         menu: document.getElementById('menu-message'),
         editor: document.getElementById('editor-message'),
+        settings: document.getElementById('settings-message'),
     },
     difficulty: {
         toggleBtn: document.getElementById('toggle-details-btn'),
         toggleIcon: document.querySelector('#toggle-details-btn svg'),
         detailsPanel: document.getElementById('detailed-difficulty-settings'),
-        speedSlider: document.getElementById('note-speed-slider'),
-        speedValue: document.getElementById('note-speed-value'),
+        fallSpeedSlider: document.getElementById('note-fall-speed-slider'),
+        fallSpeedValue: document.getElementById('note-fall-speed-value'),
+        spawnSpeedSlider: document.getElementById('note-spawn-speed-slider'),
+        spawnSpeedValue: document.getElementById('note-spawn-speed-value'),
         dongtaSlider: document.getElementById('dongta-prob-slider'),
         dongtaValue: document.getElementById('dongta-prob-value'),
+        maxSimultaneousSlider: document.getElementById('max-simultaneous-slider'),
+        maxSimultaneousValue: document.getElementById('max-simultaneous-value'),
+        dongtaTapProbSlider: document.getElementById('dongta-tap-prob-slider'),
+        dongtaTapProbValue: document.getElementById('dongta-tap-prob-value'),
+        dongtaLongProbSlider: document.getElementById('dongta-long-prob-slider'),
+        dongtaLongProbValue: document.getElementById('dongta-long-prob-value'),
+        dongtaFalseProbSlider: document.getElementById('dongta-false-prob-slider'),
+        dongtaFalseProbValue: document.getElementById('dongta-false-prob-value'),
         longNoteSlider: document.getElementById('long-note-prob-slider'),
         longNoteValue: document.getElementById('long-note-prob-value'),
         falseNoteToggle: document.getElementById('false-note-toggle'),
@@ -59,7 +70,10 @@ const DOM = {
         audioFileInput: document.getElementById('audio-file-input-editor'),
         audioFileNameEl: document.getElementById('audio-file-name-editor'),
         startTimeInput: document.getElementById('editor-start-time'),
+        previewLanesSelector: document.getElementById('editor-preview-lanes'),
         bpmInput: document.getElementById('bpm-input'),
+        noteSpawnSpeedInput: document.getElementById('editor-note-spawn-speed'),
+        noteFallSpeedInput: document.getElementById('editor-note-fall-speed'),
         snapSelector: document.getElementById('editor-snap-selector'),
         addMeasureBtn: document.getElementById('editor-add-measure-btn'),
         removeMeasureBtn: document.getElementById('editor-remove-measure-btn'),
@@ -103,5 +117,13 @@ const DOM = {
             statusLabel: document.getElementById('keybind-status-label'),
             saveBtn: document.getElementById('save-keybinds-btn')
         }
+    },
+    triggerModal: {
+        container: document.getElementById('trigger-modal'),
+        bpmInput: document.getElementById('trigger-bpm'),
+        spawnSpeedInput: document.getElementById('trigger-spawn-speed'),
+        fallSpeedInput: document.getElementById('trigger-fall-speed'),
+        confirmBtn: document.getElementById('trigger-confirm-btn'),
+        cancelBtn: document.getElementById('trigger-cancel-btn')
     }
 };

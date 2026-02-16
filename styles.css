@@ -1,3 +1,26 @@
+/* 노트 색상 CSS 변수 */
+:root {
+    --note-tap-color: #63b3ed;
+    --note-long-color: #a78bfa;
+    --note-long-gradient-start: #818cf8;
+    --note-false-color: #fca5a5;
+    /* 모바일 브라우저 하단 여백 - JavaScript에서 동적으로 설정됨 */
+    --vh: 1vh;
+    --safe-bottom: 80px;
+    --mobile-bottom-padding: var(--safe-bottom);
+}
+
+/* 모바일 브라우저 주소창/네비게이션 바 대응 */
+html, body {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+}
+
+body > div {
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: #2d3748; /* UI 영역 배경색과 통일 */
@@ -26,14 +49,50 @@ body {
     position: absolute;
     width: 100%;
     height: 25px;
-    background-color: #63b3ed;
     border-radius: 5px;
     will-change: transform;
 }
-.note.long {
-    background: linear-gradient(to top, #818cf8, #a78bfa);
+
+/* 노트 타입별 색상 모드일 때만 CSS 변수 사용 */
+body:not(.lane-color-mode) .note {
+    background-color: var(--note-tap-color);
+}
+body:not(.lane-color-mode) .note.long {
+    background: linear-gradient(to top, var(--note-long-gradient-start), var(--note-long-color));
     opacity: 0.9;
 }
+body:not(.lane-color-mode) .note.false {
+    background-color: var(--note-false-color);
+    box-shadow: 0 0 8px var(--note-false-color);
+}
+
+/* 게임 중 원형 노트 스타일 (에디터 제외) */
+body.circle-notes .note {
+    border-radius: 50%;
+    width: 90px !important;
+    left: 5px !important;
+}
+
+body.circle-notes .note:not(.long) {
+    height: 90px !important;
+}
+
+body.circle-notes .note.long {
+    border-radius: 45px;
+    min-height: 90px;
+    /* 위아래 모두 둥글게 처리하여 캡슐 모양으로 표시 */
+}
+
+/* 원형 노트일 때 판정선도 원형으로 */
+body.circle-notes .judgement-line {
+    border-radius: 50%;
+    height: 90px;
+    width: 90px;
+    left: 5px;
+    background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.1) 100%);
+    box-shadow: 0 0 10px #fff, 0 0 20px #fff;
+}
+
 .judgement-text {
     position: absolute;
     top: 50%;
@@ -118,11 +177,33 @@ body {
 .editor-note {
     position: absolute;
     height: 8px;
-    background-color: #63b3ed;
     border-radius: 2px;
     box-sizing: border-box;
     border: 1px solid #1a202c;
-    z-index: 10; /* [추가] 이 한 줄이 문제를 해결합니다. */
+    z-index: 10;
+    /* 노트를 그리드 라인에 정확히 정렬 */
+    transform: translateY(-4px);
+}
+
+/* 노트 타입별 색상 모드일 때만 CSS 변수 사용 */
+body:not(.lane-color-mode) .editor-note {
+    background-color: var(--note-tap-color);
+}
+
+body:not(.lane-color-mode) .editor-note.long {
+    background: linear-gradient(to top, var(--note-long-gradient-start), var(--note-long-color));
+    opacity: 0.9;
+    border-color: #4c1d95;
+}
+
+body:not(.lane-color-mode) .editor-note.false {
+    background-color: var(--note-false-color);
+    border-color: #b91c1c;
+}
+
+/* 에디터 노트는 항상 막대형 유지 */
+.editor-note {
+    border-radius: 2px !important;
 }
 #editor-playhead {
     position: sticky;
@@ -162,20 +243,6 @@ body {
 .keybind-box.listening {
     border-color: #f6e05e;
     background-color: #2d3748;
-}
-.note.false {
-    background-color: #fca5a5; /* Tailwind CSS red-300 */
-    box-shadow: 0 0 8px #ef4444;
-}
-.editor-note.long {
-    background: linear-gradient(to top, #818cf8, #a78bfa);
-    opacity: 0.9;
-    border-color: #4c1d95;
-}
-
-.editor-note.false {
-    background-color: #fca5a5;
-    border-color: #b91c1c;
 }
 
 /* 노트 선택 버튼의 활성 상태 스타일 */
@@ -301,4 +368,341 @@ body {
 #debug-perf-container p {
     margin: 0;
     padding: 1px 0;
+}
+
+/* 롱노트 라인 스타일 (에디터 미리보기용) */
+.long-note-line {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    background: linear-gradient(to top, rgba(168, 139, 250, 0.8), rgba(168, 139, 250, 0.3));
+    border-radius: 3px;
+}
+
+/* 노트 미리보기 스타일 */
+.note-preview {
+    width: 80px;
+    height: 25px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.note-preview-long {
+    height: 60px;
+    opacity: 0.9;
+}
+
+/* 에디터 레인 하이라이트 */
+.editor-lane.highlighted {
+    background-color: rgba(99, 179, 237, 0.08);
+}
+
+/* 에디터 레인 라벨 */
+.editor-lane-label {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(160, 174, 192, 0.4);
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 4px;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Tablet and Mobile optimizations - iPad, Android tablets, phones */
+/* Touch device detection - applies to all touch devices regardless of screen size */
+@media (hover: none) and (pointer: coarse) {
+    html, body {
+        font-size: 14px;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* Force proper flex layout on touch devices */
+    body > div {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+    
+    /* Game area takes fixed space */
+    #game-area {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        height: 35vh !important;
+        min-height: 200px !important;
+        max-height: 40vh !important;
+    }
+    
+    /* UI area takes remaining space and scrolls */
+    #ui-area {
+        flex: 1 1 auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        overflow-y: scroll !important;
+        padding: 0.5rem !important;
+        /* Add bottom padding to account for mobile browser UI */
+        padding-bottom: calc(0.5rem + var(--mobile-bottom-padding)) !important;
+    }
+    
+    /* Ensure all screens have proper bottom padding */
+    #menu-screen,
+    #playing-screen,
+    #editor-screen,
+    #settings-screen,
+    #result-screen {
+        padding-bottom: var(--mobile-bottom-padding) !important;
+    }
+}
+
+/* Tablet and mobile by screen size */
+@media (max-width: 1024px) {
+    html, body {
+        font-size: 14px;
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+    }
+    
+    /* Force proper flex layout on tablet/mobile */
+    body > div {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+    
+    /* Game area takes fixed space */
+    #game-area {
+        flex: 0 0 auto !important;
+        height: 35vh !important;
+        min-height: 200px !important;
+        max-height: 40vh !important;
+    }
+    
+    /* UI area takes remaining space and scrolls */
+    #ui-area {
+        flex: 1 1 auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        overflow-y: scroll !important;
+    }
+    
+    .judgement-text {
+        font-size: 3rem;
+    }
+    
+    .combo-text {
+        font-size: 2rem;
+    }
+    
+    .countdown-text {
+        font-size: 4rem;
+    }
+    
+    /* Make buttons more touch-friendly */
+    button {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+    
+    input[type="range"] {
+        height: 40px;
+        touch-action: pan-x;
+    }
+    
+    /* Better spacing for tablet/mobile UI */
+    #ui-area {
+        font-size: 0.9rem;
+        padding: 0.5rem !important;
+    }
+    
+    /* Make sliders easier to use on touch devices */
+    input[type="range"]::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    /* Ensure scrollable areas work on iOS */
+    .overflow-y-auto {
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Reduce spacing on tablet/mobile */
+    .space-y-6 > * + * {
+        margin-top: 1rem !important;
+    }
+    
+    .space-y-4 > * + * {
+        margin-top: 0.75rem !important;
+    }
+    
+    .space-y-3 > * + * {
+        margin-top: 0.5rem !important;
+    }
+    
+    /* Make text inputs smaller on touch devices */
+    input[type="number"],
+    input[type="text"],
+    select {
+        padding: 0.5rem !important;
+        font-size: 0.875rem !important;
+    }
+    
+    /* Compact headings on tablet/mobile */
+    h1 {
+        font-size: 1.75rem !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    h2 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    h3 {
+        font-size: 1.125rem !important;
+    }
+    
+    /* Reduce padding on cards/boxes */
+    .bg-gray-700,
+    .bg-gray-800 {
+        padding: 0.75rem !important;
+    }
+    
+    /* Make buttons more compact */
+    button {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    /* Compact playing screen stats */
+    #playing-screen .bg-gray-700 {
+        padding: 0.5rem !important;
+    }
+    
+    #playing-screen .text-3xl {
+        font-size: 1.5rem !important;
+    }
+    
+    #playing-screen .text-xl {
+        font-size: 1.125rem !important;
+    }
+    
+    #playing-screen .space-y-1 > * + * {
+        margin-top: 0.25rem !important;
+    }
+    
+    /* Ensure buttons are always visible */
+    #playing-screen {
+        padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    }
+}
+
+/* Fine-tuning for larger tablets in landscape */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+    #game-area {
+        height: 50vh !important;
+        max-height: 50vh !important;
+    }
+}
+
+/* Desktop only - restore side-by-side layout */
+@media (min-width: 1025px) {
+    body > div {
+        flex-direction: row !important;
+    }
+    
+    #game-area {
+        width: 60% !important;
+        height: 100% !important;
+        max-height: none !important;
+    }
+    
+    #ui-area {
+        width: 40% !important;
+        height: 100% !important;
+    }
+}
+
+/* Prevent touch callouts and selections on game elements only */
+#game-area,
+#lanes-container,
+.note,
+.judgement-line {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+}
+
+/* Allow scrolling in UI area */
+#ui-area,
+#menu-screen,
+#playing-screen,
+#editor-screen,
+#settings-screen,
+#result-screen {
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+}
+
+/* Allow interaction with UI controls */
+#ui-area button,
+#ui-area input,
+#ui-area select,
+#menu-screen button,
+#menu-screen input,
+#menu-screen select,
+#playing-screen button,
+#playing-screen input,
+#playing-screen select,
+#editor-screen button,
+#editor-screen input,
+#editor-screen select,
+#settings-screen button,
+#settings-screen input,
+#settings-screen select {
+    touch-action: manipulation;
+}
+
+/* Ensure all screen containers are properly scrollable */
+#menu-screen,
+#playing-screen,
+#result-screen,
+#editor-screen,
+#settings-screen {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+/* Better trigger visibility */
+.editor-trigger {
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+}
+
+/* Improve modal for mobile */
+@media (max-width: 640px) {
+    #trigger-modal > div {
+        width: 90%;
+        max-width: none;
+    }
 }

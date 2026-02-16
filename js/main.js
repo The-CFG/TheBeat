@@ -181,10 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('editor-btn').addEventListener('click', () => {
-            DOM.gameArea.classList.remove('md:w-2/3');
-            DOM.gameArea.classList.add('md:w-1/2');
-            DOM.uiArea.classList.remove('md:w-1/3');
-            DOM.uiArea.classList.add('md:w-1/2');
+            // 화면 비율은 항상 3:2로 고정
             Game.state.gameState = 'editor';
             Editor.init();
             setTimeout(() => {
@@ -197,6 +194,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Editor._confirmDiscardChanges()) {
                 Game.state.gameState = 'menu';
                 UI.showScreen('menu');
+            }
+        });
+
+        // Trigger modal event listeners
+        DOM.triggerModal.confirmBtn.addEventListener('click', () => {
+            Editor.confirmTrigger();
+        });
+
+        DOM.triggerModal.cancelBtn.addEventListener('click', () => {
+            Editor.hideTriggerModal();
+        });
+
+        DOM.triggerModal.container.addEventListener('click', (e) => {
+            if (e.target === DOM.triggerModal.container) {
+                Editor.hideTriggerModal();
             }
         });
 
@@ -225,7 +237,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const preset = e.target.dataset.difficulty;
             Game.state.settings.difficulty = preset;
             Game.state.settings.noteSpeed = CONFIG.DIFFICULTY_SPEED[preset];
+            Game.state.settings.noteSpawnSpeed = CONFIG.NOTE_SPAWN_SPEED[preset];
             Game.state.settings.dongtaProbability = CONFIG.SIMULTANEOUS_NOTE_PROBABILITY[preset];
+            Game.state.settings.maxSimultaneousNotes = CONFIG.MAX_SIMULTANEOUS_NOTES[preset];
+            Game.state.settings.dongtaNoteTypeProbabilities = { ...CONFIG.SIMULTANEOUS_NOTE_TYPE_PROBABILITY[preset] };
             Game.state.settings.longNoteProbability = CONFIG.LONG_NOTE_PROBABILITY[preset];
             Game.state.settings.falseNoteProbability = CONFIG.FALSE_NOTE_PROBABILITY[preset];
             updateDetailedSettingsUI();
@@ -238,15 +253,59 @@ document.addEventListener('DOMContentLoaded', () => {
             DOM.difficulty.toggleIcon.classList.toggle('rotate-180');
         });
 
-        DOM.difficulty.speedSlider.addEventListener('input', (e) => {
+        DOM.difficulty.fallSpeedSlider.addEventListener('input', (e) => {
             Game.state.settings.noteSpeed = parseInt(e.target.value);
-            DOM.difficulty.speedValue.textContent = e.target.value;
+            DOM.difficulty.fallSpeedValue.textContent = e.target.value;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.spawnSpeedSlider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            Game.state.settings.noteSpawnSpeed = value / 100;
+            DOM.difficulty.spawnSpeedValue.textContent = `${(value / 100).toFixed(1)}x`;
             setCustomDifficulty();
         });
 
         DOM.difficulty.dongtaSlider.addEventListener('input', (e) => {
             Game.state.settings.dongtaProbability = parseInt(e.target.value) / 100;
-            DOM.difficulty.dongValue.textContent = `${e.target.value}%`;
+            DOM.difficulty.dongtaValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.maxSimultaneousSlider.addEventListener('input', (e) => {
+            const requestedMax = parseInt(e.target.value);
+            const currentLanes = Game.state.settings.lanes;
+            
+            if (requestedMax > currentLanes) {
+                Game.state.settings.maxSimultaneousNotes = currentLanes;
+                DOM.difficulty.maxSimultaneousSlider.value = currentLanes;
+                DOM.difficulty.maxSimultaneousValue.textContent = currentLanes;
+                UI.showMessage('menu', `최대 동시타 개수가 지정된 레인 수(${currentLanes})를 넘어 자동으로 ${currentLanes}개로 조정되었습니다.`);
+            } else {
+                Game.state.settings.maxSimultaneousNotes = requestedMax;
+                DOM.difficulty.maxSimultaneousValue.textContent = requestedMax;
+            }
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaTapProbSlider.addEventListener('input', (e) => {
+            const tapProb = parseInt(e.target.value) / 100;
+            Game.state.settings.dongtaNoteTypeProbabilities.tap = tapProb;
+            DOM.difficulty.dongtaTapProbValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaLongProbSlider.addEventListener('input', (e) => {
+            const longProb = parseInt(e.target.value) / 100;
+            Game.state.settings.dongtaNoteTypeProbabilities.long = longProb;
+            DOM.difficulty.dongtaLongProbValue.textContent = `${e.target.value}%`;
+            setCustomDifficulty();
+        });
+
+        DOM.difficulty.dongtaFalseProbSlider.addEventListener('input', (e) => {
+            const falseProb = parseInt(e.target.value) / 100;
+            Game.state.settings.dongtaNoteTypeProbabilities.false = falseProb;
+            DOM.difficulty.dongtaFalseProbValue.textContent = `${e.target.value}%`;
             setCustomDifficulty();
         });
 
@@ -276,8 +335,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('lanes-selector').addEventListener('change', (e) => {
-            Game.state.settings.lanes = parseInt(e.target.value);
-            updateGameAreaWidth(Game.state.settings.lanes);
+            const newLanes = parseInt(e.target.value);
+            Game.state.settings.lanes = newLanes;
+            
+            // 최대 동시타 개수가 레인 수를 초과하는지 검증
+            if (Game.state.settings.maxSimultaneousNotes > newLanes) {
+                Game.state.settings.maxSimultaneousNotes = newLanes;
+                DOM.difficulty.maxSimultaneousSlider.value = newLanes;
+                DOM.difficulty.maxSimultaneousValue.textContent = newLanes;
+                UI.showMessage('menu', `레인 수가 ${newLanes}개로 변경되어 최대 동시타 개수도 ${newLanes}개로 조정되었습니다.`);
+            }
         });
 
         document.getElementById('chart-file-input').addEventListener('change', (e) => {
@@ -444,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveKeyBindings() {
         Game.state.settings.userKeyMappings = { ...tempKeyMappings };
-        UI.showMessage('menu', '키 설정이 저장되었습니다.');
+        UI.showMessage('settings', '키 설정이 저장되었습니다.');
         DOM.settings.controls.statusLabel.textContent = '저장되었습니다!';
         setTimeout(() => {
             if (DOM.settings.controls.statusLabel.textContent === '저장되었습니다!') {
@@ -465,31 +532,39 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.settings.sfxVolumeValue.textContent = Game.state.settings.sfxVolume;
     }
 
-    function updateGameAreaWidth(lanes) {
-        if (lanes >= 7) {
-            DOM.gameArea.classList.remove('md:w-1/2');
-            DOM.gameArea.classList.add('md:w-2/3');
-            DOM.uiArea.classList.remove('md:w-1/2');
-            DOM.uiArea.classList.add('md:w-1/3');
-        } else {
-            DOM.gameArea.classList.remove('md:w-2/3');
-            DOM.gameArea.classList.add('md:w-1/2');
-            DOM.uiArea.classList.remove('md:w-1/3');
-            DOM.uiArea.classList.add('md:w-1/2');
-        }
-    }
-
     function updateDetailedSettingsUI() {
         const speed = Game.state.settings.noteSpeed;
+        const spawnSpeed = Game.state.settings.noteSpawnSpeed;
         const dongtaProb = Math.round(Game.state.settings.dongtaProbability * 100);
+        const maxSimultaneous = Game.state.settings.maxSimultaneousNotes;
+        const dongtaTypeProbs = Game.state.settings.dongtaNoteTypeProbabilities;
         const longNoteProb = Math.round(Game.state.settings.longNoteProbability * 100);
         const falseNoteProb = Game.state.settings.falseNoteProbability;
-        DOM.difficulty.speedSlider.value = speed;
-        DOM.difficulty.speedValue.textContent = speed;
+        
+        DOM.difficulty.fallSpeedSlider.value = speed;
+        DOM.difficulty.fallSpeedValue.textContent = speed;
+        DOM.difficulty.spawnSpeedSlider.value = Math.round(spawnSpeed * 100);
+        DOM.difficulty.spawnSpeedValue.textContent = `${spawnSpeed.toFixed(1)}x`;
         DOM.difficulty.dongtaSlider.value = dongtaProb;
         DOM.difficulty.dongtaValue.textContent = `${dongtaProb}%`;
+        
+        DOM.difficulty.maxSimultaneousSlider.value = maxSimultaneous;
+        DOM.difficulty.maxSimultaneousValue.textContent = maxSimultaneous;
+        
+        const tapProb = Math.round(dongtaTypeProbs.tap * 100);
+        const longProbDongta = Math.round(dongtaTypeProbs.long * 100);
+        const falseProbDongta = Math.round(dongtaTypeProbs.false * 100);
+        
+        DOM.difficulty.dongtaTapProbSlider.value = tapProb;
+        DOM.difficulty.dongtaTapProbValue.textContent = `${tapProb}%`;
+        DOM.difficulty.dongtaLongProbSlider.value = longProbDongta;
+        DOM.difficulty.dongtaLongProbValue.textContent = `${longProbDongta}%`;
+        DOM.difficulty.dongtaFalseProbSlider.value = falseProbDongta;
+        DOM.difficulty.dongtaFalseProbValue.textContent = `${falseProbDongta}%`;
+        
         DOM.difficulty.longNoteSlider.value = longNoteProb;
         DOM.difficulty.longNoteValue.textContent = `${longNoteProb}%`;
+        
         const falseNoteEnabled = falseNoteProb > 0;
         DOM.difficulty.falseNoteToggle.checked = falseNoteEnabled;
         DOM.difficulty.falseNoteProbContainer.classList.toggle('hidden', !falseNoteEnabled);
@@ -509,6 +584,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#difficulty-selector button[data-difficulty="normal"]').classList.add('active');
         updateDetailedSettingsUI();
         Debugger.init();
+        I18n.init();
+        Appearance.init();
     }
 
     initialize();

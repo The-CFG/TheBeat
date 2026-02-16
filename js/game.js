@@ -4,8 +4,11 @@ const Game = {
         settings: {
             mode: 'random',
             difficulty: 'normal',
-            noteSpeed: CONFIG.DIFFICULTY_SPEED.normal,
+            noteSpeed: CONFIG.DIFFICULTY_SPEED.normal, // 노트 하강 속도
+            noteSpawnSpeed: CONFIG.NOTE_SPAWN_SPEED.normal, // 노트 생성 속도
             dongtaProbability: CONFIG.SIMULTANEOUS_NOTE_PROBABILITY.normal,
+            maxSimultaneousNotes: CONFIG.MAX_SIMULTANEOUS_NOTES.normal,
+            dongtaNoteTypeProbabilities: CONFIG.SIMULTANEOUS_NOTE_TYPE_PROBABILITY.normal,
             longNoteProbability: CONFIG.LONG_NOTE_PROBABILITY.normal,
             falseNoteProbability: 0,
             lanes: 4,
@@ -241,7 +244,17 @@ const Game = {
                 const timeToHit = note.time - elapsedTime;
                 const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
                 const isLongNote = note.type === 'long_head';
-                const noteHeight = isLongNote ? (note.duration / 10) * this.state.settings.noteSpeed : 25;
+                
+                // 롱노트 높이 계산 시 최소 높이 적용
+                let noteHeight;
+                if (isLongNote) {
+                    const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                    const calculatedHeight = (note.duration / 10) * this.state.settings.noteSpeed;
+                    noteHeight = Math.max(calculatedHeight, minHeight);
+                } else {
+                    noteHeight = 25;
+                }
+                
                 const noteTopPosition = noteBottomPosition - noteHeight;
                 if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                     if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
@@ -249,15 +262,75 @@ const Game = {
                         if (laneEl) {
                             note.element = document.createElement('div');
                             note.element.className = 'note';
+                            
+                            // 레인 ID 저장 (레인별 색상 적용용)
+                            if (this.state.laneIdMapping && this.state.laneIdMapping[note.lane]) {
+                                note.element.dataset.lane = this.state.laneIdMapping[note.lane];
+                            }
+                            
                             if (isLongNote) note.element.classList.add('long');
                             if (note.type === 'false') note.element.classList.add('false');
-                            if (isLongNote) note.element.style.height = `${noteHeight}px`;
+                            
+                            // 레인별 색상 모드일 때 인라인 스타일 적용
+                            if (Appearance.settings.colorMode === 'lane' && note.element.dataset.lane) {
+                                const laneId = note.element.dataset.lane;
+                                const color = Appearance.settings.laneColors[laneId];
+                                if (color) {
+                                    if (isLongNote) {
+                                        const gradientStart = Appearance.adjustColor(color, -20);
+                                        note.element.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                                    } else {
+                                        note.element.style.backgroundColor = color;
+                                        if (note.type === 'false') {
+                                            note.element.style.boxShadow = `0 0 8px ${color}`;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // 롱노트는 최소 높이 보장 (원형 노트 대응)
+                            if (isLongNote) {
+                                const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                                note.element.style.height = `${Math.max(noteHeight, minHeight)}px`;
+                            }
                             laneEl.appendChild(note.element);
                         }
                     }
                 }
                 if (note.element && note.element.isConnected) {
-                    note.element.style.transform = `translateY(${noteTopPosition}px)`;
+                    // 롱노트가 판정되어 수축 중인 경우
+                    if (isLongNote && note.shrinking && note.tailTime) {
+                        const timeUntilTail = note.tailTime - elapsedTime;
+                        const currentDuration = Math.max(0, timeUntilTail);
+                        const calculatedHeight = (currentDuration / 10) * this.state.settings.noteSpeed;
+                        
+                        // 최소 높이 보장 (원형 노트 대응)
+                        const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                        const newHeight = Math.max(calculatedHeight, minHeight);
+                        
+                        // 판정선 위치(gameHeight - 100)에 노트 하단을 고정
+                        const fixedBottomPosition = gameHeight - 100;
+                        const fixedTopPosition = fixedBottomPosition - newHeight;
+                        
+                        note.element.style.transform = `translateY(${fixedTopPosition}px)`;
+                        note.element.style.height = `${newHeight}px`;
+                        
+                        // 꼬리에 도달하면 제거
+                        if (timeUntilTail <= 0) {
+                            note.element.remove();
+                            note.element = null;
+                        }
+                    } else {
+                        // 일반 노트 또는 수축 중이 아닌 롱노트
+                        note.element.style.transform = `translateY(${noteTopPosition}px)`;
+                        
+                        // 롱노트는 매 프레임 최소 높이 적용
+                        if (isLongNote && !note.shrinking) {
+                            const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                            const currentHeight = Math.max(noteHeight, minHeight);
+                            note.element.style.height = `${currentHeight}px`;
+                        }
+                    }
                 }
                 if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
                     this.handleJudgement('miss', note);
@@ -292,8 +365,14 @@ const Game = {
         } else {
             this.state.combo++;
             if (note.type === 'long_head') {
+                // 롱노트 헤드가 성공적으로 판정되면 수축 시작
+                note.shrinking = true;
+                note.shrinkStartTime = performance.now();
                 const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
-                if (tailNote) tailNote.headProcessed = true;
+                if (tailNote) {
+                    tailNote.headProcessed = true;
+                    note.tailTime = tailNote.time;
+                }
             }
         }
     },
@@ -342,6 +421,11 @@ const Game = {
 
     handleInputDown(laneIndex) {
         try {
+            // 카운트다운 중에는 입력 무시
+            if (this.state.gameState !== 'playing') {
+                return;
+            }
+            
             this.state.activeLanes[laneIndex] = true;
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
@@ -353,23 +437,34 @@ const Game = {
                 elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
             }
 
+            // 원형 노트일 때 판정 윈도우 확장
+            const isCircleMode = document.body.classList.contains('circle-notes');
+            const noteSize = isCircleMode ? 90 : 25; // 노트 높이
+            const extraWindow = isCircleMode ? (noteSize / 2) * (10 / this.state.settings.noteSpeed) : 0;
+            const judgementWindow = {
+                perfect: CONFIG.JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
+                good: CONFIG.JUDGEMENT_WINDOWS_MS.good + extraWindow,
+                bad: CONFIG.JUDGEMENT_WINDOWS_MS.bad + extraWindow,
+                miss: CONFIG.JUDGEMENT_WINDOWS_MS.miss + extraWindow
+            };
+
             let bestMatch = null;
             let smallestDiff = Infinity;
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
                 const note = this.state.notes[i];
-                if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
+                if (note.time - elapsedTime > judgementWindow.miss) break;
                 if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
                     const timeDiff = Math.abs(note.time - elapsedTime);
-                    if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                    if (timeDiff <= judgementWindow.miss && timeDiff < smallestDiff) {
                         smallestDiff = timeDiff;
                         bestMatch = note;
                     }
                 }
             }
             if (bestMatch) {
-                if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-                else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+                if (smallestDiff <= judgementWindow.perfect) this.handleJudgement('perfect', bestMatch);
+                else if (smallestDiff <= judgementWindow.good) this.handleJudgement('good', bestMatch);
+                else if (smallestDiff <= judgementWindow.bad) this.handleJudgement('bad', bestMatch);
             }
         } catch (err) {
             Debugger.logError(err, 'Game.handleInputDown');
@@ -377,9 +472,15 @@ const Game = {
     },
 
     handleInputUp(laneIndex) {
+        // 시각적 피드백은 항상 제거
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
+
+        // 카운트다운 중에는 판정 무시
+        if (this.state.gameState !== 'playing') {
+            return;
+        }
 
         let elapsedTime;
         if (this.state.settings.mode === 'music') {
@@ -388,23 +489,34 @@ const Game = {
             elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
         }
 
+        // 원형 노트일 때 판정 윈도우 확장
+        const isCircleMode = document.body.classList.contains('circle-notes');
+        const noteSize = isCircleMode ? 90 : 25;
+        const extraWindow = isCircleMode ? (noteSize / 2) * (10 / this.state.settings.noteSpeed) : 0;
+        const judgementWindow = {
+            perfect: CONFIG.JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
+            good: CONFIG.JUDGEMENT_WINDOWS_MS.good + extraWindow,
+            bad: CONFIG.JUDGEMENT_WINDOWS_MS.bad + extraWindow,
+            miss: CONFIG.JUDGEMENT_WINDOWS_MS.miss + extraWindow
+        };
+
         let bestMatch = null;
         let smallestDiff = Infinity;
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
-            if (note.time - elapsedTime > CONFIG.JUDGEMENT_WINDOWS_MS.miss) break;
+            if (note.time - elapsedTime > judgementWindow.miss) break;
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
                 const timeDiff = Math.abs(note.time - elapsedTime);
-                if (timeDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.miss && timeDiff < smallestDiff) {
+                if (timeDiff <= judgementWindow.miss && timeDiff < smallestDiff) {
                     smallestDiff = timeDiff;
                     bestMatch = note;
                 }
             }
         }
         if (bestMatch) {
-            if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.perfect) this.handleJudgement('perfect', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.good) this.handleJudgement('good', bestMatch);
-            else if (smallestDiff <= CONFIG.JUDGEMENT_WINDOWS_MS.bad) this.handleJudgement('bad', bestMatch);
+            if (smallestDiff <= judgementWindow.perfect) this.handleJudgement('perfect', bestMatch);
+            else if (smallestDiff <= judgementWindow.good) this.handleJudgement('good', bestMatch);
+            else if (smallestDiff <= judgementWindow.bad) this.handleJudgement('bad', bestMatch);
         }
     },
 
@@ -446,6 +558,10 @@ const Game = {
             UI.showScreen('menu');
             return;
         }
+        
+        // 레인 인덱스 → 레인 ID 매핑 저장
+        this.state.laneIdMapping = keyOrder;
+        
         const keysForCurrentLanes = keyOrder.map(keyId => activeKeyMap[keyId]);
         this.state.keyMapping = keysForCurrentLanes.map(keyName => {
             const upperKeyName = keyName.charAt(0).toUpperCase() + keyName.slice(1);
@@ -457,6 +573,7 @@ const Game = {
             lane.className = 'lane';
             lane.style.width = '100px';
             lane.dataset.laneIndex = i;
+            lane.dataset.laneId = keyOrder[i]; // 레인 ID도 저장
             const keyHint = document.createElement('div');
             keyHint.className = 'key-hint';
             const keyName = keysForCurrentLanes[i];
@@ -478,41 +595,131 @@ const Game = {
         if (totalNotesToGenerate < CONFIG.NOTE_COUNT_MIN) totalNotesToGenerate = CONFIG.NOTE_COUNT_MIN;
         if (totalNotesToGenerate > CONFIG.NOTE_COUNT_MAX) totalNotesToGenerate = CONFIG.NOTE_COUNT_MAX;
         const simProbability = this.state.settings.dongtaProbability;
+        const maxSimultaneous = this.state.settings.maxSimultaneousNotes;
+        const dongtaTypeProbs = this.state.settings.dongtaNoteTypeProbabilities;
         const longNoteProbability = this.state.settings.longNoteProbability;
         const falseNoteProbability = this.state.settings.falseNoteProbability;
         let generatedNotesCount = 0;
         let currentTime = 1000;
         let noteIdCounter = 0;
+        
+        // 노트 타입 결정 함수 (동타용)
+        const determineNoteType = () => {
+            const rand = Math.random();
+            const cumulative = {
+                tap: dongtaTypeProbs.tap,
+                long: dongtaTypeProbs.tap + dongtaTypeProbs.long,
+                false: dongtaTypeProbs.tap + dongtaTypeProbs.long + dongtaTypeProbs.false
+            };
+            
+            if (rand < cumulative.tap) return 'tap';
+            if (rand < cumulative.long) return 'long';
+            return 'false';
+        };
+        
+        // 각 레인에서 롱노트가 활성화된 시간 추적
+        const activeLongNotes = new Map(); // lane -> endTime
+        
         while (generatedNotesCount < totalNotesToGenerate) {
-            const canGenerateSimultaneous = this.state.settings.lanes > 1 && (totalNotesToGenerate - generatedNotesCount >= 2);
-            const canGenerateLongNote = (totalNotesToGenerate - generatedNotesCount >= 1);
+            const remainingNotes = totalNotesToGenerate - generatedNotesCount;
+            const canGenerateSimultaneous = this.state.settings.lanes > 1 && remainingNotes >= 2;
+            const canGenerateLongNote = remainingNotes >= 1;
+            
+            // 현재 시간에 사용 가능한 레인 찾기 (롱노트가 진행 중이지 않은 레인)
+            const getAvailableLanes = () => {
+                const available = [];
+                for (let i = 0; i < this.state.settings.lanes; i++) {
+                    const longNoteEndTime = activeLongNotes.get(i);
+                    if (!longNoteEndTime || currentTime >= longNoteEndTime) {
+                        available.push(i);
+                    }
+                }
+                return available;
+            };
+            
             if (canGenerateSimultaneous && Math.random() < simProbability) {
-                const availableLanes = Array.from({ length: this.state.settings.lanes }, (_, i) => i);
+                // 동시타 생성
+                const availableLanes = getAvailableLanes();
+                if (availableLanes.length < 2) {
+                    // 사용 가능한 레인이 부족하면 일반 노트 생성
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
+                    continue;
+                }
+                
+                const numSimultaneous = Math.min(
+                    maxSimultaneous,
+                    availableLanes.length,
+                    remainingNotes
+                );
+                const actualCount = Math.max(2, Math.floor(Math.random() * (numSimultaneous - 1)) + 2);
+                
+                // 사용 가능한 레인 섞기
                 for (let i = availableLanes.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [availableLanes[i], availableLanes[j]] = [availableLanes[j], availableLanes[i]];
                 }
-                this.state.notes.push({ lane: availableLanes[0], time: currentTime, type: 'tap' });
-                this.state.notes.push({ lane: availableLanes[1], time: currentTime, type: 'tap' });
-                generatedNotesCount += 2;
+                
+                // 동시타 노트 생성
+                for (let i = 0; i < actualCount && i < availableLanes.length; i++) {
+                    const lane = availableLanes[i];
+                    const noteType = determineNoteType();
+                    
+                    if (noteType === 'long') {
+                        const duration = 500 + Math.random() * 1000;
+                        const noteId = noteIdCounter++;
+                        this.state.notes.push({ lane, time: currentTime, duration, type: 'long_head', noteId });
+                        this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
+                        activeLongNotes.set(lane, currentTime + duration);
+                    } else {
+                        this.state.notes.push({ lane, time: currentTime, type: noteType });
+                    }
+                }
+                
+                generatedNotesCount += actualCount;
             } else if (canGenerateLongNote && Math.random() < longNoteProbability) {
-                const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                // 일반 롱노트 (동타 아님)
+                const availableLanes = getAvailableLanes();
+                if (availableLanes.length === 0) {
+                    // 사용 가능한 레인이 없으면 건너뛰기
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
+                    continue;
+                }
+                
+                const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
                 const duration = 500 + Math.random() * 1000;
                 const noteId = noteIdCounter++;
                 this.state.notes.push({ lane, time: currentTime, duration, type: 'long_head', noteId });
                 this.state.notes.push({ lane, time: currentTime + duration, type: 'long_tail', noteId });
-                currentTime += duration;
+                activeLongNotes.set(lane, currentTime + duration);
                 generatedNotesCount += 1;
             } else if (falseNoteProbability > 0 && Math.random() < falseNoteProbability) {
-                const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                // 일반 가짜 노트
+                const availableLanes = getAvailableLanes();
+                if (availableLanes.length === 0) {
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
+                    continue;
+                }
+                const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
                 this.state.notes.push({ lane, time: currentTime, type: 'false' });
                 generatedNotesCount++;
             } else {
-                const lane = Math.floor(Math.random() * this.state.settings.lanes);
+                // 일반 탭 노트
+                const availableLanes = getAvailableLanes();
+                if (availableLanes.length === 0) {
+                    const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+                    currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
+                    continue;
+                }
+                const lane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
                 this.state.notes.push({ lane, time: currentTime, type: 'tap' });
                 generatedNotesCount++;
             }
-            currentTime += 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+            // 노트 생성 속도를 적용하여 시간 증가 (속도가 높을수록 간격이 짧아짐)
+            const baseInterval = 500 - this.state.settings.lanes * CONFIG.NOTE_SPACING_FACTOR;
+            currentTime += baseInterval / this.state.settings.noteSpawnSpeed;
         }
         this.state.totalNotes = generatedNotesCount;
         this.state.notes.sort((a, b) => a.time - b.time);
