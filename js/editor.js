@@ -426,6 +426,23 @@ const Editor = {
                 }
                 noteEl.dataset.time = note.time;
                 noteEl.dataset.lane = note.lane;
+                
+                // 레인별 색상 모드일 때 인라인 스타일 적용
+                if (Appearance.settings.colorMode === 'lane' && note.lane) {
+                    const color = Appearance.settings.laneColors[note.lane];
+                    if (color) {
+                        if (note.duration) {
+                            const gradientStart = Appearance.adjustColor(color, -20);
+                            noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                        } else {
+                            noteEl.style.backgroundColor = color;
+                            if (note.type === 'false') {
+                                noteEl.style.boxShadow = `0 0 4px ${color}`;
+                            }
+                        }
+                    }
+                }
+                
                 DOM.editor.notesContainer.appendChild(noteEl);
             });
             
@@ -668,6 +685,9 @@ const Editor = {
             // 선택된 레인 수 가져오기
             const laneCount = parseInt(DOM.editor.previewLanesSelector.value) || 4;
             
+            // 레인 ID 매핑 가져오기
+            const laneIds = CONFIG.LANE_KEY_MAPPING_ORDER[laneCount];
+            
             // 게임 화면 레인 설정
             DOM.lanesContainer.innerHTML = '';
             DOM.lanesContainer.style.width = `${laneCount * 100}px`;
@@ -677,6 +697,9 @@ const Editor = {
                 lane.className = 'lane';
                 lane.style.width = '100px';
                 lane.dataset.laneIndex = i;
+                if (laneIds && laneIds[i]) {
+                    lane.dataset.laneId = laneIds[i]; // 레인 ID 저장
+                }
                 
                 const judgementLine = document.createElement('div');
                 judgementLine.className = 'judgement-line';
@@ -833,6 +856,12 @@ const Editor = {
             const noteEl = document.createElement('div');
             noteEl.className = 'note';
             
+            // 레인 ID 저장
+            const laneId = lane.dataset.laneId;
+            if (laneId) {
+                noteEl.dataset.lane = laneId;
+            }
+            
             const isLongNote = note.type === 'long_head';
             
             if (isLongNote) {
@@ -844,6 +873,22 @@ const Editor = {
             }
             if (note.type === 'false') {
                 noteEl.classList.add('false');
+            }
+            
+            // 레인별 색상 모드일 때 인라인 스타일 적용
+            if (Appearance.settings.colorMode === 'lane' && laneId) {
+                const color = Appearance.settings.laneColors[laneId];
+                if (color) {
+                    if (isLongNote) {
+                        const gradientStart = Appearance.adjustColor(color, -20);
+                        noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                    } else {
+                        noteEl.style.backgroundColor = color;
+                        if (note.type === 'false') {
+                            noteEl.style.boxShadow = `0 0 8px ${color}`;
+                        }
+                    }
+                }
             }
             
             lane.appendChild(noteEl);
