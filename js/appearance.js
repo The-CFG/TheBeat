@@ -151,7 +151,7 @@ const Appearance = {
             if (savePresetBtn) {
                 savePresetBtn.addEventListener('click', () => {
                     this.savePreset(this.currentPresetSlot);
-                    UI.showMessage('menu', `프리셋 ${this.currentPresetSlot}에 저장되었습니다.`);
+                    UI.showMessage('settings', `프리셋 ${this.currentPresetSlot}에 저장되었습니다.`);
                 });
             }
 
@@ -161,7 +161,7 @@ const Appearance = {
                 applyBtn.addEventListener('click', () => {
                     this.saveSettings();
                     this.applySettings();
-                    UI.showMessage('menu', '모양 설정이 적용되었습니다.');
+                    UI.showMessage('settings', '모양 설정이 적용되었습니다.');
                 });
             }
 
@@ -172,7 +172,7 @@ const Appearance = {
                     if (confirm('모든 모양 설정을 초기화하시겠습니까?')) {
                         this.resetSettings();
                         this.updatePreview();
-                        UI.showMessage('menu', '모양 설정이 초기화되었습니다.');
+                        UI.showMessage('settings', '모양 설정이 초기화되었습니다.');
                     }
                 });
             }
