@@ -231,14 +231,14 @@
                 </div>
                 <div id="settings-screen" class="hidden h-full flex flex-col justify-between overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
                     <div class="flex-grow flex flex-col min-h-0">
-                        <h2 class="text-3xl font-bold mb-4 text-white">환경설정</h2>
+                        <h2 class="text-3xl font-bold mb-4 text-white" data-i18n="settings">환경설정</h2>
                         <p id="settings-message" class="hidden text-center text-yellow-400 mb-4 py-2 bg-gray-700 rounded"></p>
                         <div id="settings-tabs" class="flex border-b border-gray-600 mb-4">
-                            <button data-tab="volume" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition active">음량</button>
-                            <button data-tab="appearance" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition">모양</button>
-                            <button data-tab="controls" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition">조작</button>
-                            <button data-tab="help" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition">도움말</button>
-                            <button data-tab="etc" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition">기타</button>
+                            <button data-tab="volume" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition active" data-i18n="volume">음량</button>
+                            <button data-tab="appearance" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition" data-i18n="appearance">모양</button>
+                            <button data-tab="controls" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition" data-i18n="controls">조작</button>
+                            <button data-tab="help" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition" data-i18n="help">도움말</button>
+                            <button data-tab="etc" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition" data-i18n="etc">기타</button>
                         </div>
                         <div class="flex-grow space-y-6 overflow-y-auto">
                             <div id="tab-content-volume" class="tab-content space-y-6">
@@ -489,14 +489,28 @@
                             </div>
                             <div id="tab-content-etc" class="tab-content hidden">
                                 <div>
-                                    <h3 class="text-xl font-semibold mb-2 text-white">디버그 모드</h3>
+                                    <h3 class="text-xl font-semibold mb-2 text-white flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <line x1="2" y1="12" x2="22" y2="12"/>
+                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                        </svg>
+                                        <span data-i18n="language">언어 / Language</span>
+                                    </h3>
+                                    <div class="flex gap-3 mt-3">
+                                        <button id="lang-ko" class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-semibold active">한국어</button>
+                                        <button id="lang-en" class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition font-semibold">English</button>
+                                    </div>
+                                </div>
+                                <div class="border-t border-gray-700 pt-4 mt-4">
+                                    <h3 class="text-xl font-semibold mb-2 text-white" data-i18n="debug_mode">디버그 모드</h3>
                                     <div class="flex items-center justify-between text-sm">
-                                        <label for="debug-mode-toggle">디버그 오버레이 활성화</label>
+                                        <label for="debug-mode-toggle" data-i18n="debug_overlay">디버그 오버레이 활성화</label>
                                         <input id="debug-mode-toggle" type="checkbox" class="h-5 w-5 bg-gray-700 rounded border-gray-600 text-blue-500 focus:ring-blue-500">
                                     </div>
                                 </div>
                                 <div class="border-t border-gray-700 pt-4 mt-4">
-                                    <h3 class="text-xl font-semibold mb-2 text-white">정보</h3>
+                                    <h3 class="text-xl font-semibold mb-2 text-white" data-i18n="info">정보</h3>
                                     <div class="text-gray-400 text-sm space-y-1">
                                         <p>(c) 2025 TheCFG All Rights Reserved.</p>
                                         <p>Dedicated by TheCFG,</p>
@@ -506,7 +520,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="settings-back-btn" class="w-full py-3 text-lg font-bold bg-gray-600 hover:bg-gray-500 rounded-lg transition mt-4 flex-shrink-0">돌아가기</button>
+                        <button id="settings-back-btn" class="w-full py-3 text-lg font-bold bg-gray-600 hover:bg-gray-500 rounded-lg transition mt-4 flex-shrink-0" data-i18n="back">돌아가기</button>
                     </div>
                 </div>
                 <!-- Result Screen -->
@@ -720,6 +734,7 @@
         <script defer src="js/config.js"></script>
         <script defer src="js/dom.js"></script>
         <script defer src="js/audio.js"></script>
+        <script defer src="js/i18n.js"></script>
         <script defer src="js/appearance.js"></script>
         <script defer src="js/ui.js"></script>
         <script defer src="js/editor.js"></script>
