@@ -584,6 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#difficulty-selector button[data-difficulty="normal"]').classList.add('active');
         updateDetailedSettingsUI();
         Debugger.init();
+        I18n.init();
         Appearance.init();
     }
 
