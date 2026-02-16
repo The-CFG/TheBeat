@@ -266,9 +266,30 @@
                                     </div>
                                 </div>
                                 
-                                <!-- 노트 색상 설정 -->
+                                <!-- 색상 모드 선택 -->
                                 <div>
-                                    <h3 class="text-lg font-semibold mb-3 text-white">노트 색상</h3>
+                                    <h3 class="text-lg font-semibold mb-3 text-white">색상 모드</h3>
+                                    <div class="flex space-x-4 btn-group" id="color-mode-selector">
+                                        <button data-mode="note-type" class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition active">노트별 색상</button>
+                                        <button data-mode="lane" class="flex-1 py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition">레인별 색상</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 프리셋 슬롯 -->
+                                <div>
+                                    <h3 class="text-lg font-semibold mb-3 text-white">색상 프리셋</h3>
+                                    <div class="flex space-x-2" id="color-preset-slots">
+                                        <button data-slot="1" class="preset-slot flex-1 py-2 px-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition border-2 border-transparent active">1</button>
+                                        <button data-slot="2" class="preset-slot flex-1 py-2 px-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition border-2 border-transparent">2</button>
+                                        <button data-slot="3" class="preset-slot flex-1 py-2 px-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition border-2 border-transparent">3</button>
+                                        <button data-slot="4" class="preset-slot flex-1 py-2 px-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition border-2 border-transparent">4</button>
+                                        <button data-slot="5" class="preset-slot flex-1 py-2 px-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition border-2 border-transparent">5</button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 노트별 색상 설정 -->
+                                <div id="note-type-colors" class="color-settings-panel">
+                                    <h3 class="text-lg font-semibold mb-3 text-white">노트 타입별 색상</h3>
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between">
                                             <label class="text-gray-300">기본 노트</label>
@@ -285,19 +306,78 @@
                                     </div>
                                 </div>
                                 
+                                <!-- 레인별 색상 설정 -->
+                                <div id="lane-colors" class="color-settings-panel hidden">
+                                    <h3 class="text-lg font-semibold mb-3 text-white">레인별 색상</h3>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">L4 레인</label>
+                                            <input type="color" id="color-lane-L4" value="#ef4444" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">L3 레인</label>
+                                            <input type="color" id="color-lane-L3" value="#f59e0b" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">L2 레인</label>
+                                            <input type="color" id="color-lane-L2" value="#eab308" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">L1 레인</label>
+                                            <input type="color" id="color-lane-L1" value="#84cc16" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">C1 레인</label>
+                                            <input type="color" id="color-lane-C1" value="#06b6d4" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">R1 레인</label>
+                                            <input type="color" id="color-lane-R1" value="#3b82f6" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">R2 레인</label>
+                                            <input type="color" id="color-lane-R2" value="#8b5cf6" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">R3 레인</label>
+                                            <input type="color" id="color-lane-R3" value="#a855f7" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <label class="text-gray-300">R4 레인</label>
+                                            <input type="color" id="color-lane-R4" value="#ec4899" class="w-16 h-10 rounded cursor-pointer bg-gray-700 border-2 border-gray-600">
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <!-- 미리보기 -->
                                 <div>
                                     <h3 class="text-lg font-semibold mb-3 text-white">미리보기</h3>
-                                    <div class="bg-gray-800 p-4 rounded-lg flex justify-center items-center space-x-4" style="min-height: 100px;">
-                                        <div id="preview-tap-note" class="note-preview" style="background-color: #63b3ed;"></div>
-                                        <div id="preview-long-note" class="note-preview note-preview-long" style="background: linear-gradient(to top, #818cf8, #a78bfa);"></div>
-                                        <div id="preview-false-note" class="note-preview" style="background-color: #fca5a5;"></div>
+                                    <div id="color-preview-container" class="bg-gray-800 p-4 rounded-lg" style="min-height: 100px;">
+                                        <!-- 노트별 미리보기 -->
+                                        <div id="preview-note-type" class="flex justify-center items-center space-x-4">
+                                            <div id="preview-tap-note" class="note-preview" style="background-color: #63b3ed;"></div>
+                                            <div id="preview-long-note" class="note-preview note-preview-long" style="background: linear-gradient(to top, #818cf8, #a78bfa);"></div>
+                                            <div id="preview-false-note" class="note-preview" style="background-color: #fca5a5;"></div>
+                                        </div>
+                                        <!-- 레인별 미리보기 -->
+                                        <div id="preview-lanes" class="hidden flex justify-center items-center flex-wrap gap-2">
+                                            <div class="note-preview" data-lane="L4" style="background-color: #ef4444;"></div>
+                                            <div class="note-preview" data-lane="L3" style="background-color: #f59e0b;"></div>
+                                            <div class="note-preview" data-lane="L2" style="background-color: #eab308;"></div>
+                                            <div class="note-preview" data-lane="L1" style="background-color: #84cc16;"></div>
+                                            <div class="note-preview" data-lane="C1" style="background-color: #06b6d4;"></div>
+                                            <div class="note-preview" data-lane="R1" style="background-color: #3b82f6;"></div>
+                                            <div class="note-preview" data-lane="R2" style="background-color: #8b5cf6;"></div>
+                                            <div class="note-preview" data-lane="R3" style="background-color: #a855f7;"></div>
+                                            <div class="note-preview" data-lane="R4" style="background-color: #ec4899;"></div>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <!-- 버튼들 -->
                                 <div class="flex space-x-3">
-                                    <button id="save-appearance-btn" class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded-lg transition font-semibold">저장</button>
+                                    <button id="save-preset-btn" class="flex-1 py-2 px-4 bg-green-600 hover:bg-green-500 rounded-lg transition font-semibold">프리셋 저장</button>
+                                    <button id="apply-appearance-btn" class="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded-lg transition font-semibold">적용</button>
                                     <button id="reset-appearance-btn" class="flex-1 py-2 px-4 bg-gray-600 hover:bg-gray-500 rounded-lg transition font-semibold">초기화</button>
                                 </div>
                             </div>
