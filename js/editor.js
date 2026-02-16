@@ -1,6 +1,7 @@
 const Editor = {
     state: {
         notes: [],
+        triggers: [], // BPM/속도 변경 트리거
         bpm: 120,
         snapDivision: 4,
         history: [],
@@ -272,6 +273,7 @@ const Editor = {
 
             switch (this.state.selectedNoteType) {
                 case 'long': this.placeLongNote(timeInMs, laneId); break;
+                case 'trigger': this.placeTrigger(timeInMs); break;
                 case 'tap': case 'false': this.placeSimpleNote(timeInMs, laneId); break;
             }
         } catch (err) {
@@ -310,6 +312,90 @@ const Editor = {
         }
     },
 
+    placeTrigger(time) {
+        this.state.pendingTriggerTime = time;
+        this.showTriggerModal();
+    },
+
+    showTriggerModal() {
+        // 현재 설정값으로 모달 초기화
+        DOM.triggerModal.bpmInput.value = this.state.bpm;
+        DOM.triggerModal.spawnSpeedInput.value = parseFloat(DOM.editor.noteSpawnSpeedInput?.value) || 1.5;
+        DOM.triggerModal.fallSpeedInput.value = parseFloat(DOM.editor.noteFallSpeedInput?.value) || 7;
+        DOM.triggerModal.container.classList.remove('hidden');
+    },
+
+    hideTriggerModal() {
+        DOM.triggerModal.container.classList.add('hidden');
+        this.state.pendingTriggerTime = null;
+    },
+
+    confirmTrigger() {
+        const time = this.state.pendingTriggerTime;
+        if (time == null) return;
+
+        const bpm = parseFloat(DOM.triggerModal.bpmInput.value);
+        const spawnSpeed = parseFloat(DOM.triggerModal.spawnSpeedInput.value);
+        const fallSpeed = parseFloat(DOM.triggerModal.fallSpeedInput.value);
+
+        // 기존 동일 시간 트리거 제거
+        this.state.triggers = this.state.triggers.filter(t => Math.abs(t.time - time) >= 10);
+        
+        // 새 트리거 추가
+        this.state.triggers.push({
+            time,
+            bpm,
+            spawnSpeed,
+            fallSpeed
+        });
+
+        this.state.triggers.sort((a, b) => a.time - b.time);
+        this.renderTriggers();
+        this.hideTriggerModal();
+        this.setDirty(true);
+    },
+
+    renderTriggers() {
+        try {
+            DOM.editor.notesContainer.querySelectorAll('.editor-trigger').forEach(t => t.remove());
+            const container = DOM.editor.container;
+            if (container.clientWidth === 0) return;
+            const adjustedBeatHeight = this._getAdjustedBeatHeight();
+            const beatsPerSecond = this.state.bpm / 60;
+
+            this.state.triggers.forEach(trigger => {
+                const triggerEl = document.createElement('div');
+                triggerEl.className = 'editor-trigger';
+                triggerEl.style.width = '100%';
+                triggerEl.style.height = '3px';
+                triggerEl.style.backgroundColor = '#fbbf24';
+                triggerEl.style.position = 'absolute';
+                triggerEl.style.left = '0';
+                triggerEl.style.cursor = 'pointer';
+                triggerEl.style.zIndex = '5';
+                
+                const beats = (trigger.time / 1000) * beatsPerSecond;
+                const yPosition = beats * adjustedBeatHeight;
+                triggerEl.style.top = `${yPosition}px`;
+                
+                triggerEl.dataset.time = trigger.time;
+                triggerEl.title = `BPM: ${trigger.bpm}, 속도: ${trigger.spawnSpeed}x, 하강: ${trigger.fallSpeed}`;
+                
+                // 클릭 시 삭제
+                triggerEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.state.triggers = this.state.triggers.filter(t => t.time !== trigger.time);
+                    this.renderTriggers();
+                    this.setDirty(true);
+                });
+                
+                DOM.editor.notesContainer.appendChild(triggerEl);
+            });
+        } catch (err) {
+            Debugger.logError(err, 'Editor.renderTriggers');
+        }
+    },
+
     renderNotes() {
         try {
             DOM.editor.notesContainer.querySelectorAll('.editor-note').forEach(n => n.remove());
@@ -342,6 +428,9 @@ const Editor = {
                 noteEl.dataset.lane = note.lane;
                 DOM.editor.notesContainer.appendChild(noteEl);
             });
+            
+            // 트리거도 함께 렌더링
+            this.renderTriggers();
         } catch (err) {
             Debugger.logError(err, 'Editor.renderNotes');
         }
@@ -367,6 +456,7 @@ const Editor = {
                 bpm: this.state.bpm,
                 startTimeOffset: this.state.startTimeOffset,
                 notes: gameNotes.sort((a, b) => a.time - b.time),
+                triggers: this.state.triggers || []
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chart, null, 2));
             const downloadAnchorNode = document.createElement('a');
@@ -387,6 +477,7 @@ const Editor = {
             this.resetEditorState();
             this.state.history = [];
             this.state.bpm = chartData.bpm || 120;
+            this.state.triggers = chartData.triggers || [];
             this.state.notes = chartData.notes.map(note => {
                 const measure = this._getMeasureFromTime(note.time);
                 let newNote = { ...note, measure };
