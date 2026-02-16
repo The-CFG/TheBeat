@@ -518,6 +518,28 @@ body.circle-notes .judgement-line {
         padding-top: 0.5rem !important;
         padding-bottom: 0.5rem !important;
     }
+    
+    /* Compact playing screen stats */
+    #playing-screen .bg-gray-700 {
+        padding: 0.5rem !important;
+    }
+    
+    #playing-screen .text-3xl {
+        font-size: 1.5rem !important;
+    }
+    
+    #playing-screen .text-xl {
+        font-size: 1.125rem !important;
+    }
+    
+    #playing-screen .space-y-1 > * + * {
+        margin-top: 0.25rem !important;
+    }
+    
+    /* Ensure buttons are always visible */
+    #playing-screen {
+        padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    }
 }
 
 /* Prevent touch callouts and selections on game elements only */
@@ -533,6 +555,8 @@ body.circle-notes .judgement-line {
 
 /* Allow scrolling in UI area */
 #ui-area,
+#menu-screen,
+#playing-screen,
 #editor-screen,
 #settings-screen,
 #result-screen {
@@ -544,6 +568,12 @@ body.circle-notes .judgement-line {
 #ui-area button,
 #ui-area input,
 #ui-area select,
+#menu-screen button,
+#menu-screen input,
+#menu-screen select,
+#playing-screen button,
+#playing-screen input,
+#playing-screen select,
 #editor-screen button,
 #editor-screen input,
 #editor-screen select,
@@ -560,6 +590,7 @@ body.circle-notes .judgement-line {
 #editor-screen,
 #settings-screen {
     -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
 }
 
 /* Better trigger visibility */
