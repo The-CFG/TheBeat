@@ -197,6 +197,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Trigger modal event listeners
+        DOM.triggerModal.confirmBtn.addEventListener('click', () => {
+            Editor.confirmTrigger();
+        });
+
+        DOM.triggerModal.cancelBtn.addEventListener('click', () => {
+            Editor.hideTriggerModal();
+        });
+
+        DOM.triggerModal.container.addEventListener('click', (e) => {
+            if (e.target === DOM.triggerModal.container) {
+                Editor.hideTriggerModal();
+            }
+        });
+
         document.getElementById('mode-selector').addEventListener('click', (e) => {
             if (e.target.tagName !== 'BUTTON') return;
             Game.state.settings.mode = e.target.dataset.mode;
