@@ -116,5 +116,13 @@ const DOM = {
             statusLabel: document.getElementById('keybind-status-label'),
             saveBtn: document.getElementById('save-keybinds-btn')
         }
+    },
+    triggerModal: {
+        container: document.getElementById('trigger-modal'),
+        bpmInput: document.getElementById('trigger-bpm'),
+        spawnSpeedInput: document.getElementById('trigger-spawn-speed'),
+        fallSpeedInput: document.getElementById('trigger-fall-speed'),
+        confirmBtn: document.getElementById('trigger-confirm-btn'),
+        cancelBtn: document.getElementById('trigger-cancel-btn')
     }
 };
