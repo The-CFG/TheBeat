@@ -25,6 +25,7 @@ const DOM = {
     messages: {
         menu: document.getElementById('menu-message'),
         editor: document.getElementById('editor-message'),
+        settings: document.getElementById('settings-message'),
     },
     difficulty: {
         toggleBtn: document.getElementById('toggle-details-btn'),
