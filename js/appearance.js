@@ -1,12 +1,31 @@
 const Appearance = {
     settings: {
         noteShape: 'bar', // 'bar' or 'circle'
+        colorMode: 'note-type', // 'note-type' or 'lane'
         colors: {
             tap: '#63b3ed',
             long: '#a78bfa',
             false: '#fca5a5'
+        },
+        laneColors: {
+            L4: '#ef4444',
+            L3: '#f59e0b',
+            L2: '#eab308',
+            L1: '#84cc16',
+            C1: '#06b6d4',
+            R1: '#3b82f6',
+            R2: '#8b5cf6',
+            R3: '#a855f7',
+            R4: '#ec4899'
         }
     },
+    
+    presets: {
+        'note-type': [{}, {}, {}, {}, {}], // 5 slots for note-type mode
+        'lane': [{}, {}, {}, {}, {}]        // 5 slots for lane mode
+    },
+    
+    currentPresetSlot: 1,
 
     _logError(err, context) {
         if (typeof Debugger !== 'undefined' && Debugger.logError) {
@@ -22,10 +41,13 @@ const Appearance = {
             
             // 로컬 스토리지에서 설정 불러오기
             this.loadSettings();
+            this.loadPresets();
             console.log('[Appearance] Settings loaded:', this.settings);
             
             // 초기 UI 반영
             this.applySettings();
+            this.updateColorModeUI();
+            this.updatePresetSlotsUI();
             
             // 미리보기 요소가 있을 때만 업데이트
             if (document.getElementById('preview-tap-note')) {
@@ -62,28 +84,76 @@ const Appearance = {
                 });
             }
 
-            // 색상 변경
+            // 색상 변경 (노트별)
             ['tap', 'long', 'false'].forEach(type => {
                 const colorInput = document.getElementById(`color-${type}-note`);
                 if (colorInput) {
                     colorInput.addEventListener('input', (e) => {
                         this.settings.colors[type] = e.target.value;
                         this.updatePreview();
-                        // 즉시 CSS 변수 업데이트 (저장하지 않고도 미리보기)
                         this.updateCSSVariables();
-                        // 기존 노트들도 강제로 업데이트
+                        this.forceUpdateNotes();
+                    });
+                }
+            });
+            
+            // 색상 변경 (레인별)
+            ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'].forEach(lane => {
+                const colorInput = document.getElementById(`color-lane-${lane}`);
+                if (colorInput) {
+                    colorInput.addEventListener('input', (e) => {
+                        this.settings.laneColors[lane] = e.target.value;
+                        this.updatePreview();
+                        this.updateCSSVariables();
                         this.forceUpdateNotes();
                     });
                 }
             });
 
-            // 저장 버튼
-            const saveBtn = document.getElementById('save-appearance-btn');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', () => {
+            // 색상 모드 선택
+            const colorModeSelector = document.getElementById('color-mode-selector');
+            if (colorModeSelector) {
+                colorModeSelector.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        const mode = e.target.dataset.mode;
+                        this.settings.colorMode = mode;
+                        this.updateColorModeUI();
+                        this.updatePreview();
+                        this.updateCSSVariables();
+                        this.forceUpdateNotes();
+                    }
+                });
+            }
+            
+            // 프리셋 슬롯 선택
+            const presetSlots = document.getElementById('color-preset-slots');
+            if (presetSlots) {
+                presetSlots.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        const slot = parseInt(e.target.dataset.slot);
+                        this.currentPresetSlot = slot;
+                        this.loadPreset(slot);
+                        this.updatePresetSlotsUI();
+                    }
+                });
+            }
+            
+            // 프리셋 저장 버튼
+            const savePresetBtn = document.getElementById('save-preset-btn');
+            if (savePresetBtn) {
+                savePresetBtn.addEventListener('click', () => {
+                    this.savePreset(this.currentPresetSlot);
+                    UI.showMessage('menu', `프리셋 ${this.currentPresetSlot}에 저장되었습니다.`);
+                });
+            }
+
+            // 적용 버튼
+            const applyBtn = document.getElementById('apply-appearance-btn');
+            if (applyBtn) {
+                applyBtn.addEventListener('click', () => {
                     this.saveSettings();
                     this.applySettings();
-                    UI.showMessage('menu', '모양 설정이 저장되었습니다.');
+                    UI.showMessage('menu', '모양 설정이 적용되었습니다.');
                 });
             }
 
@@ -158,6 +228,23 @@ const Appearance = {
                     falsePreview.style.height = '25px';
                 }
             }
+            
+            // 레인별 미리보기 업데이트
+            ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'].forEach(lane => {
+                const preview = document.querySelector(`#preview-lanes .note-preview[data-lane="${lane}"]`);
+                if (preview && this.settings.laneColors[lane]) {
+                    preview.style.backgroundColor = this.settings.laneColors[lane];
+                    if (this.settings.noteShape === 'circle') {
+                        preview.style.borderRadius = '50%';
+                        preview.style.width = '40px';
+                        preview.style.height = '40px';
+                    } else {
+                        preview.style.borderRadius = '5px';
+                        preview.style.width = '50px';
+                        preview.style.height = '20px';
+                    }
+                }
+            });
         } catch (err) {
             this._logError(err, 'Appearance.updatePreview');
         }
@@ -240,6 +327,14 @@ const Appearance = {
             if (tapInput) tapInput.value = this.settings.colors.tap;
             if (longInput) longInput.value = this.settings.colors.long;
             if (falseInput) falseInput.value = this.settings.colors.false;
+            
+            // 레인별 색상 입력 업데이트
+            ['L4', 'L3', 'L2', 'L1', 'C1', 'R1', 'R2', 'R3', 'R4'].forEach(lane => {
+                const input = document.getElementById(`color-lane-${lane}`);
+                if (input && this.settings.laneColors[lane]) {
+                    input.value = this.settings.laneColors[lane];
+                }
+            });
         } catch (err) {
             this._logError(err, 'Appearance.updateColorInputs');
         }
@@ -269,14 +364,27 @@ const Appearance = {
         try {
             this.settings = {
                 noteShape: 'bar',
+                colorMode: 'note-type',
                 colors: {
                     tap: '#63b3ed',
                     long: '#a78bfa',
                     false: '#fca5a5'
+                },
+                laneColors: {
+                    L4: '#ef4444',
+                    L3: '#f59e0b',
+                    L2: '#eab308',
+                    L1: '#84cc16',
+                    C1: '#06b6d4',
+                    R1: '#3b82f6',
+                    R2: '#8b5cf6',
+                    R3: '#a855f7',
+                    R4: '#ec4899'
                 }
             };
             this.updateColorInputs();
             this.updateShapeUI();
+            this.updateColorModeUI();
             this.applySettings();
         } catch (err) {
             this._logError(err, 'Appearance.resetSettings');
@@ -297,18 +405,148 @@ const Appearance = {
         try {
             const notes = document.querySelectorAll('.note, .editor-note');
             notes.forEach(noteEl => {
-                if (noteEl.classList.contains('long')) {
-                    const gradientStart = this.adjustColor(this.settings.colors.long, -20);
-                    noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${this.settings.colors.long})`;
-                } else if (noteEl.classList.contains('false')) {
-                    noteEl.style.backgroundColor = this.settings.colors.false;
-                    noteEl.style.boxShadow = `0 0 8px ${this.settings.colors.false}`;
+                if (this.settings.colorMode === 'lane') {
+                    // 레인별 색상 모드
+                    const lane = noteEl.dataset.lane;
+                    if (lane && this.settings.laneColors[lane]) {
+                        const color = this.settings.laneColors[lane];
+                        if (noteEl.classList.contains('long')) {
+                            const gradientStart = this.adjustColor(color, -20);
+                            noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                        } else {
+                            noteEl.style.backgroundColor = color;
+                            if (noteEl.classList.contains('false')) {
+                                noteEl.style.boxShadow = `0 0 8px ${color}`;
+                            }
+                        }
+                    }
                 } else {
-                    noteEl.style.backgroundColor = this.settings.colors.tap;
+                    // 노트 타입별 색상 모드
+                    if (noteEl.classList.contains('long')) {
+                        const gradientStart = this.adjustColor(this.settings.colors.long, -20);
+                        noteEl.style.background = `linear-gradient(to top, ${gradientStart}, ${this.settings.colors.long})`;
+                    } else if (noteEl.classList.contains('false')) {
+                        noteEl.style.backgroundColor = this.settings.colors.false;
+                        noteEl.style.boxShadow = `0 0 8px ${this.settings.colors.false}`;
+                    } else {
+                        noteEl.style.backgroundColor = this.settings.colors.tap;
+                    }
                 }
             });
         } catch (err) {
             // 조용히 무시
+        }
+    },
+
+    updateColorModeUI() {
+        try {
+            // 색상 모드 버튼 활성화 상태 업데이트
+            const buttons = document.querySelectorAll('#color-mode-selector button');
+            buttons.forEach(btn => {
+                if (btn.dataset.mode === this.settings.colorMode) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // 해당 색상 설정 패널 표시/숨김
+            const noteTypePanel = document.getElementById('note-type-colors');
+            const lanePanel = document.getElementById('lane-colors');
+            const noteTypePreview = document.getElementById('preview-note-type');
+            const lanePreview = document.getElementById('preview-lanes');
+            
+            if (this.settings.colorMode === 'lane') {
+                if (noteTypePanel) noteTypePanel.classList.add('hidden');
+                if (lanePanel) lanePanel.classList.remove('hidden');
+                if (noteTypePreview) noteTypePreview.classList.add('hidden');
+                if (lanePreview) lanePreview.classList.remove('hidden');
+            } else {
+                if (noteTypePanel) noteTypePanel.classList.remove('hidden');
+                if (lanePanel) lanePanel.classList.add('hidden');
+                if (noteTypePreview) noteTypePreview.classList.remove('hidden');
+                if (lanePreview) lanePreview.classList.add('hidden');
+            }
+        } catch (err) {
+            this._logError(err, 'Appearance.updateColorModeUI');
+        }
+    },
+    
+    updatePresetSlotsUI() {
+        try {
+            const buttons = document.querySelectorAll('.preset-slot');
+            buttons.forEach(btn => {
+                const slot = parseInt(btn.dataset.slot);
+                if (slot === this.currentPresetSlot) {
+                    btn.classList.add('active');
+                    btn.classList.add('border-blue-500');
+                } else {
+                    btn.classList.remove('active');
+                    btn.classList.remove('border-blue-500');
+                }
+            });
+        } catch (err) {
+            this._logError(err, 'Appearance.updatePresetSlotsUI');
+        }
+    },
+    
+    savePreset(slot) {
+        try {
+            const index = slot - 1;
+            const mode = this.settings.colorMode;
+            
+            if (mode === 'note-type') {
+                this.presets['note-type'][index] = {
+                    noteShape: this.settings.noteShape,
+                    colors: { ...this.settings.colors }
+                };
+            } else {
+                this.presets['lane'][index] = {
+                    noteShape: this.settings.noteShape,
+                    laneColors: { ...this.settings.laneColors }
+                };
+            }
+            
+            localStorage.setItem('theBeat_colorPresets', JSON.stringify(this.presets));
+        } catch (err) {
+            this._logError(err, 'Appearance.savePreset');
+        }
+    },
+    
+    loadPreset(slot) {
+        try {
+            const index = slot - 1;
+            const mode = this.settings.colorMode;
+            const preset = this.presets[mode][index];
+            
+            if (preset && Object.keys(preset).length > 0) {
+                if (mode === 'note-type' && preset.colors) {
+                    this.settings.colors = { ...preset.colors };
+                    if (preset.noteShape) this.settings.noteShape = preset.noteShape;
+                } else if (mode === 'lane' && preset.laneColors) {
+                    this.settings.laneColors = { ...preset.laneColors };
+                    if (preset.noteShape) this.settings.noteShape = preset.noteShape;
+                }
+                
+                this.updateColorInputs();
+                this.updateShapeUI();
+                this.updatePreview();
+                this.updateCSSVariables();
+                this.forceUpdateNotes();
+            }
+        } catch (err) {
+            this._logError(err, 'Appearance.loadPreset');
+        }
+    },
+    
+    loadPresets() {
+        try {
+            const saved = localStorage.getItem('theBeat_colorPresets');
+            if (saved) {
+                this.presets = JSON.parse(saved);
+            }
+        } catch (err) {
+            this._logError(err, 'Appearance.loadPresets');
         }
     },
 
