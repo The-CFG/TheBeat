@@ -389,3 +389,75 @@ body.circle-notes .judgement-line {
     pointer-events: none;
     z-index: 5;
 }
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+    
+    .judgement-text {
+        font-size: 3rem;
+    }
+    
+    .combo-text {
+        font-size: 2rem;
+    }
+    
+    .countdown-text {
+        font-size: 4rem;
+    }
+    
+    /* Make buttons more touch-friendly */
+    button {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+    
+    input[type="range"] {
+        height: 40px;
+    }
+    
+    /* Optimize game area for mobile */
+    #game-area {
+        min-height: 250px;
+    }
+    
+    /* Better spacing for mobile UI */
+    #ui-area {
+        font-size: 0.9rem;
+    }
+    
+    /* Make sliders easier to use on mobile */
+    input[type="range"]::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+/* Prevent touch callouts and selections on game elements */
+#lanes-container,
+.note,
+.judgement-line {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Better trigger visibility */
+.editor-trigger {
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+}
+
+/* Improve modal for mobile */
+@media (max-width: 640px) {
+    #trigger-modal > div {
+        width: 90%;
+        max-width: none;
+    }
+}
