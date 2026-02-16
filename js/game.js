@@ -397,6 +397,11 @@ const Game = {
 
     handleInputDown(laneIndex) {
         try {
+            // 카운트다운 중에는 입력 무시
+            if (this.state.gameState !== 'playing') {
+                return;
+            }
+            
             this.state.activeLanes[laneIndex] = true;
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
@@ -443,9 +448,15 @@ const Game = {
     },
 
     handleInputUp(laneIndex) {
+        // 시각적 피드백은 항상 제거
         this.state.activeLanes[laneIndex] = false;
         const laneEl = DOM.lanesContainer.children[laneIndex];
         if (laneEl) laneEl.classList.remove('active-feedback');
+
+        // 카운트다운 중에는 판정 무시
+        if (this.state.gameState !== 'playing') {
+            return;
+        }
 
         let elapsedTime;
         if (this.state.settings.mode === 'music') {
