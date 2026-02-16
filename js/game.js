@@ -262,8 +262,32 @@ const Game = {
                         if (laneEl) {
                             note.element = document.createElement('div');
                             note.element.className = 'note';
+                            
+                            // 레인 ID 저장 (레인별 색상 적용용)
+                            if (this.state.laneIdMapping && this.state.laneIdMapping[note.lane]) {
+                                note.element.dataset.lane = this.state.laneIdMapping[note.lane];
+                            }
+                            
                             if (isLongNote) note.element.classList.add('long');
                             if (note.type === 'false') note.element.classList.add('false');
+                            
+                            // 레인별 색상 모드일 때 인라인 스타일 적용
+                            if (Appearance.settings.colorMode === 'lane' && note.element.dataset.lane) {
+                                const laneId = note.element.dataset.lane;
+                                const color = Appearance.settings.laneColors[laneId];
+                                if (color) {
+                                    if (isLongNote) {
+                                        const gradientStart = Appearance.adjustColor(color, -20);
+                                        note.element.style.background = `linear-gradient(to top, ${gradientStart}, ${color})`;
+                                    } else {
+                                        note.element.style.backgroundColor = color;
+                                        if (note.type === 'false') {
+                                            note.element.style.boxShadow = `0 0 8px ${color}`;
+                                        }
+                                    }
+                                }
+                            }
+                            
                             // 롱노트는 최소 높이 보장 (원형 노트 대응)
                             if (isLongNote) {
                                 const minHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
@@ -534,6 +558,10 @@ const Game = {
             UI.showScreen('menu');
             return;
         }
+        
+        // 레인 인덱스 → 레인 ID 매핑 저장
+        this.state.laneIdMapping = keyOrder;
+        
         const keysForCurrentLanes = keyOrder.map(keyId => activeKeyMap[keyId]);
         this.state.keyMapping = keysForCurrentLanes.map(keyName => {
             const upperKeyName = keyName.charAt(0).toUpperCase() + keyName.slice(1);
@@ -545,6 +573,7 @@ const Game = {
             lane.className = 'lane';
             lane.style.width = '100px';
             lane.dataset.laneIndex = i;
+            lane.dataset.laneId = keyOrder[i]; // 레인 ID도 저장
             const keyHint = document.createElement('div');
             keyHint.className = 'key-hint';
             const keyName = keysForCurrentLanes[i];
