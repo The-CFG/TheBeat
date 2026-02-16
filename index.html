@@ -10,11 +10,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="w-screen h-screen flex items-center justify-center bg-[#2d3748] overflow-hidden touch-none">
+<body class="w-screen h-screen flex items-center justify-center bg-[#2d3748]">
 
 <div class="w-full h-full flex flex-col md:flex-row overflow-hidden">
     <!-- Game Area -->
-    <div id="game-area" class="w-full md:w-3/5 h-2/5 md:h-full bg-black relative flex justify-center">
+    <div id="game-area" class="w-full md:w-3/5 h-2/5 md:h-full bg-black relative flex justify-center touch-none">
         <div id="lanes-container" class="h-full flex relative">
             <!-- Lanes will be generated here -->
         </div>
@@ -25,7 +25,7 @@
         </div>
     </div>
             <!-- UI Area -->
-            <div id="ui-area" class="w-full md:w-2/5 h-3/5 md:h-full p-2 md:p-4 lg:p-8 flex flex-col justify-start bg-[#2d3748] overflow-y-auto">
+            <div id="ui-area" class="w-full md:w-2/5 h-3/5 md:h-full p-2 md:p-4 lg:p-8 flex flex-col justify-start bg-[#2d3748] overflow-y-auto overflow-x-hidden touch-auto" style="-webkit-overflow-scrolling: touch;">
                 <!-- Menu Screen -->
                 <div id="menu-screen" class="flex flex-col flex-shrink-0">
                     <div class="flex justify-between items-center mb-8">
@@ -211,7 +211,7 @@
                         <button id="give-up-btn" class="w-full py-3 text-lg font-bold bg-red-600 hover:bg-red-500 rounded-lg transition">포기하기</button>
                     </div>
                 </div>
-                <div id="settings-screen" class="hidden h-full flex flex-col justify-between">
+                <div id="settings-screen" class="hidden h-full flex flex-col justify-between overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
                     <div class="flex-grow flex flex-col min-h-0">
                         <h2 class="text-3xl font-bold mb-4 text-white">환경설정</h2>
                         <div id="settings-tabs" class="flex border-b border-gray-600 mb-4">
@@ -411,7 +411,7 @@
                     </div>
                 </div>
                 <!-- Result Screen -->
-                <div id="result-screen" class="hidden h-full flex flex-col justify-center items-center text-center">
+                <div id="result-screen" class="hidden h-full flex flex-col justify-center items-center text-center overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
                     <h2 class="text-4xl sm:text-5xl font-bold mb-4 text-white">게임 결과</h2>
                     <div class="w-full bg-gray-700 p-6 rounded-lg">
                         <p class="text-2xl text-gray-400 mb-2">최종 점수</p>
@@ -428,8 +428,8 @@
                     <button id="back-to-menu-btn" class="mt-8 w-full max-w-sm py-4 text-xl font-bold bg-blue-600 hover:bg-blue-500 rounded-lg transition">메인으로 돌아가기</button>
                 </div>
                 <!-- Editor Screen -->
-                <div id="editor-screen" class="hidden flex flex-col h-full text-white">
-                    <div class="flex-shrink-0">
+                <div id="editor-screen" class="hidden flex flex-col h-full text-white overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
+                    <div class="flex-shrink-0 touch-auto">
                         <h2 class="text-3xl font-bold mb-4">차트 에디터<span id="editor-dirty-indicator" class="text-yellow-400 ml-2"></span></h2>
                         <div id="editor-message" class="hidden p-3 mb-4 text-center bg-red-500 rounded-lg"></div>
                         <!-- 상단 컨트롤 영역 -->
