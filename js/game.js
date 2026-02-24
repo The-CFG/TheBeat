@@ -411,12 +411,8 @@ const Game = {
             return;
         }
         if (this.state.gameState !== 'playing' || this.state.isPaused) return;
-        
-        // 키보드 자동 반복(key repeat) 방지
-        if (e.repeat) return;
-        
         const laneIndex = this.state.keyMapping.findIndex(code => code === e.keyCode || code === e.key.toUpperCase().charCodeAt(0));
-        if (laneIndex === -1) return;
+        if (laneIndex === -1 || this.state.activeLanes[laneIndex]) return;
         this.handleInputDown(laneIndex);
     },
 
@@ -507,26 +503,9 @@ const Game = {
                 if (smallestDiff <= currentWindow.perfect) this.handleJudgement('perfect', bestMatch);
                 else if (smallestDiff <= currentWindow.good) this.handleJudgement('good', bestMatch);
                 else if (smallestDiff <= currentWindow.bad) this.handleJudgement('bad', bestMatch);
-                
-                // 탭 노트나 가짜 노트는 처리 후 즉시 시각적 피드백 제거 (빠른 연타 가능)
-                if (bestMatch.type === 'tap' || bestMatch.type === 'false') {
-                    this.state.activeLanes[laneIndex] = false;
-                    const laneEl = DOM.lanesContainer.children[laneIndex];
-                    if (laneEl) laneEl.classList.remove('active-feedback');
-                }
             } else if (tooEarlyNote) {
                 // 판정 가능한 노트가 없지만 너무 일찍 누른 노트가 있으면 MISS 처리
                 this.handleJudgement('miss', tooEarlyNote);
-                
-                // MISS 처리 후에도 시각적 피드백 제거
-                this.state.activeLanes[laneIndex] = false;
-                const laneEl = DOM.lanesContainer.children[laneIndex];
-                if (laneEl) laneEl.classList.remove('active-feedback');
-            } else {
-                // 판정 가능한 노트가 전혀 없는 경우에도 피드백 제거 (헛키)
-                this.state.activeLanes[laneIndex] = false;
-                const laneEl = DOM.lanesContainer.children[laneIndex];
-                if (laneEl) laneEl.classList.remove('active-feedback');
             }
         } catch (err) {
             Debugger.logError(err, 'Game.handleInputDown');
