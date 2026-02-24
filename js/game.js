@@ -441,30 +441,55 @@ const Game = {
             const isCircleMode = document.body.classList.contains('circle-notes');
             const noteSize = isCircleMode ? 90 : 25; // 노트 높이
             const extraWindow = isCircleMode ? (noteSize / 2) * (10 / this.state.settings.noteSpeed) : 0;
-            const judgementWindow = {
+            
+            // Late 판정 윈도우 (노트가 지나간 후)
+            const lateWindow = {
                 perfect: CONFIG.JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
                 good: CONFIG.JUDGEMENT_WINDOWS_MS.good + extraWindow,
                 bad: CONFIG.JUDGEMENT_WINDOWS_MS.bad + extraWindow,
                 miss: CONFIG.JUDGEMENT_WINDOWS_MS.miss + extraWindow
+            };
+            
+            // Early 판정 윈도우 (노트가 도달하기 전) - 더 엄격함
+            const earlyWindow = {
+                perfect: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
+                good: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.good + extraWindow,
+                bad: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.bad + extraWindow,
+                miss: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.miss + extraWindow
             };
 
             let bestMatch = null;
             let smallestDiff = Infinity;
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
                 const note = this.state.notes[i];
-                if (note.time - elapsedTime > judgementWindow.miss) break;
+                
+                // 노트가 너무 멀리 있으면 탐색 중단 (Early miss 윈도우 기준)
+                if (note.time - elapsedTime > earlyWindow.miss) break;
+                
                 if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
-                    const timeDiff = Math.abs(note.time - elapsedTime);
-                    if (timeDiff <= judgementWindow.miss && timeDiff < smallestDiff) {
-                        smallestDiff = timeDiff;
+                    const timeDiff = note.time - elapsedTime;
+                    const isEarly = timeDiff > 0; // 노트가 아직 도달 안 함
+                    const absTimeDiff = Math.abs(timeDiff);
+                    
+                    // Early vs Late 윈도우 선택
+                    const currentWindow = isEarly ? earlyWindow : lateWindow;
+                    
+                    // 해당 윈도우 내에 있는지 확인
+                    if (absTimeDiff <= currentWindow.miss && absTimeDiff < smallestDiff) {
+                        smallestDiff = absTimeDiff;
                         bestMatch = note;
                     }
                 }
             }
+            
             if (bestMatch) {
-                if (smallestDiff <= judgementWindow.perfect) this.handleJudgement('perfect', bestMatch);
-                else if (smallestDiff <= judgementWindow.good) this.handleJudgement('good', bestMatch);
-                else if (smallestDiff <= judgementWindow.bad) this.handleJudgement('bad', bestMatch);
+                const timeDiff = bestMatch.time - elapsedTime;
+                const isEarly = timeDiff > 0;
+                const currentWindow = isEarly ? earlyWindow : lateWindow;
+                
+                if (smallestDiff <= currentWindow.perfect) this.handleJudgement('perfect', bestMatch);
+                else if (smallestDiff <= currentWindow.good) this.handleJudgement('good', bestMatch);
+                else if (smallestDiff <= currentWindow.bad) this.handleJudgement('bad', bestMatch);
             }
         } catch (err) {
             Debugger.logError(err, 'Game.handleInputDown');
@@ -493,30 +518,55 @@ const Game = {
         const isCircleMode = document.body.classList.contains('circle-notes');
         const noteSize = isCircleMode ? 90 : 25;
         const extraWindow = isCircleMode ? (noteSize / 2) * (10 / this.state.settings.noteSpeed) : 0;
-        const judgementWindow = {
+        
+        // Late 판정 윈도우 (노트가 지나간 후)
+        const lateWindow = {
             perfect: CONFIG.JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
             good: CONFIG.JUDGEMENT_WINDOWS_MS.good + extraWindow,
             bad: CONFIG.JUDGEMENT_WINDOWS_MS.bad + extraWindow,
             miss: CONFIG.JUDGEMENT_WINDOWS_MS.miss + extraWindow
+        };
+        
+        // Early 판정 윈도우 (노트가 도달하기 전) - 더 엄격함
+        const earlyWindow = {
+            perfect: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.perfect + extraWindow,
+            good: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.good + extraWindow,
+            bad: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.bad + extraWindow,
+            miss: CONFIG.EARLY_JUDGEMENT_WINDOWS_MS.miss + extraWindow
         };
 
         let bestMatch = null;
         let smallestDiff = Infinity;
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
-            if (note.time - elapsedTime > judgementWindow.miss) break;
+            
+            // 노트가 너무 멀리 있으면 탐색 중단
+            if (note.time - elapsedTime > earlyWindow.miss) break;
+            
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
-                const timeDiff = Math.abs(note.time - elapsedTime);
-                if (timeDiff <= judgementWindow.miss && timeDiff < smallestDiff) {
-                    smallestDiff = timeDiff;
+                const timeDiff = note.time - elapsedTime;
+                const isEarly = timeDiff > 0;
+                const absTimeDiff = Math.abs(timeDiff);
+                
+                // Early vs Late 윈도우 선택
+                const currentWindow = isEarly ? earlyWindow : lateWindow;
+                
+                // 해당 윈도우 내에 있는지 확인
+                if (absTimeDiff <= currentWindow.miss && absTimeDiff < smallestDiff) {
+                    smallestDiff = absTimeDiff;
                     bestMatch = note;
                 }
             }
         }
+        
         if (bestMatch) {
-            if (smallestDiff <= judgementWindow.perfect) this.handleJudgement('perfect', bestMatch);
-            else if (smallestDiff <= judgementWindow.good) this.handleJudgement('good', bestMatch);
-            else if (smallestDiff <= judgementWindow.bad) this.handleJudgement('bad', bestMatch);
+            const timeDiff = bestMatch.time - elapsedTime;
+            const isEarly = timeDiff > 0;
+            const currentWindow = isEarly ? earlyWindow : lateWindow;
+            
+            if (smallestDiff <= currentWindow.perfect) this.handleJudgement('perfect', bestMatch);
+            else if (smallestDiff <= currentWindow.good) this.handleJudgement('good', bestMatch);
+            else if (smallestDiff <= currentWindow.bad) this.handleJudgement('bad', bestMatch);
         }
     },
 
