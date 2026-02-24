@@ -242,9 +242,7 @@ const Game = {
                     }
                 }
                 const timeToHit = note.time - elapsedTime;
-                // 노트의 중앙이 판정선에 닿도록 조정 (막대형 노트 높이 25px의 절반 = 12.5px)
-                const noteCenterOffset = document.body.classList.contains('circle-notes') ? 45 : 12.5;
-                const noteCenterPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
+                const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
                 const isLongNote = note.type === 'long_head';
                 
                 // 롱노트 높이 계산 시 최소 높이 적용
@@ -254,11 +252,9 @@ const Game = {
                     const calculatedHeight = (note.duration / 10) * this.state.settings.noteSpeed;
                     noteHeight = Math.max(calculatedHeight, minHeight);
                 } else {
-                    noteHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
+                    noteHeight = 25;
                 }
                 
-                // 노트의 바닥 위치를 중앙 + 높이의 절반으로 계산
-                const noteBottomPosition = noteCenterPosition + (noteHeight / 2);
                 const noteTopPosition = noteBottomPosition - noteHeight;
                 if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                     if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
