@@ -460,14 +460,23 @@ const Game = {
 
             let bestMatch = null;
             let smallestDiff = Infinity;
+            let tooEarlyNote = null; // 너무 일찍 누른 노트
+            
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
                 const note = this.state.notes[i];
                 
-                // 노트가 너무 멀리 있으면 탐색 중단 (Early miss 윈도우 기준)
-                if (note.time - elapsedTime > earlyWindow.miss) break;
-                
                 if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
                     const timeDiff = note.time - elapsedTime;
+                    
+                    // 너무 일찍 눌렀는지 확인 (early miss 윈도우보다 더 이전)
+                    if (timeDiff > earlyWindow.miss) {
+                        // 가장 가까운 "너무 이른" 노트 저장
+                        if (!tooEarlyNote || timeDiff < (tooEarlyNote.time - elapsedTime)) {
+                            tooEarlyNote = note;
+                        }
+                        continue; // 아직 판정 불가능한 노트
+                    }
+                    
                     const isEarly = timeDiff > 0; // 노트가 아직 도달 안 함
                     const absTimeDiff = Math.abs(timeDiff);
                     
@@ -490,6 +499,9 @@ const Game = {
                 if (smallestDiff <= currentWindow.perfect) this.handleJudgement('perfect', bestMatch);
                 else if (smallestDiff <= currentWindow.good) this.handleJudgement('good', bestMatch);
                 else if (smallestDiff <= currentWindow.bad) this.handleJudgement('bad', bestMatch);
+            } else if (tooEarlyNote) {
+                // 판정 가능한 노트가 없지만 너무 일찍 누른 노트가 있으면 MISS 처리
+                this.handleJudgement('miss', tooEarlyNote);
             }
         } catch (err) {
             Debugger.logError(err, 'Game.handleInputDown');
@@ -537,14 +549,23 @@ const Game = {
 
         let bestMatch = null;
         let smallestDiff = Infinity;
+        let tooEarlyNote = null; // 너무 일찍 떤 노트
+        
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
             
-            // 노트가 너무 멀리 있으면 탐색 중단
-            if (note.time - elapsedTime > earlyWindow.miss) break;
-            
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
                 const timeDiff = note.time - elapsedTime;
+                
+                // 너무 일찍 뗐는지 확인 (early miss 윈도우보다 더 이전)
+                if (timeDiff > earlyWindow.miss) {
+                    // 가장 가까운 "너무 이른" 노트 저장
+                    if (!tooEarlyNote || timeDiff < (tooEarlyNote.time - elapsedTime)) {
+                        tooEarlyNote = note;
+                    }
+                    continue; // 아직 판정 불가능한 노트
+                }
+                
                 const isEarly = timeDiff > 0;
                 const absTimeDiff = Math.abs(timeDiff);
                 
@@ -567,6 +588,9 @@ const Game = {
             if (smallestDiff <= currentWindow.perfect) this.handleJudgement('perfect', bestMatch);
             else if (smallestDiff <= currentWindow.good) this.handleJudgement('good', bestMatch);
             else if (smallestDiff <= currentWindow.bad) this.handleJudgement('bad', bestMatch);
+        } else if (tooEarlyNote) {
+            // 판정 가능한 노트가 없지만 너무 일찍 뗀 노트가 있으면 MISS 처리
+            this.handleJudgement('miss', tooEarlyNote);
         }
     },
 

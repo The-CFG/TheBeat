@@ -1,9 +1,9 @@
 const CONFIG = {
     DIFFICULTY_SPEED: { easy: 4, normal: 7, hard: 10 },
     NOTE_SPAWN_SPEED: { easy: 1.0, normal: 1.5, hard: 2.0 }, // 노트 생성 속도 배율
-    JUDGEMENT_WINDOWS_MS: { perfect: 50, good: 100, bad: 150, miss: 200 },
+    JUDGEMENT_WINDOWS_MS: { perfect: 50, good: 100, bad: 130, miss: 180 }, // Late 판정 (늦은 입력) - 덜 관대하게 조정
     // Early 판정 윈도우 (노트 도달 전 입력) - Late보다 더 엄격함
-    EARLY_JUDGEMENT_WINDOWS_MS: { perfect: 30, good: 60, bad: 100, miss: 150 },
+    EARLY_JUDGEMENT_WINDOWS_MS: { perfect: 30, good: 60, bad: 100, miss: 130 },
     VALID_LANES: [4, 5, 6, 7, 8],
     SIMULTANEOUS_NOTE_PROBABILITY: {
         easy: 0.1,
