@@ -534,7 +534,12 @@ const Editor = {
 
             if (!this.state.isPlaying) {
                 this.state.playbackStartTime = performance.now() - (this.state.timeWhenPaused || 0);
-                if (isMusicLoaded) await DOM.musicPlayer.play();
+                if (isMusicLoaded) {
+                    // 일시정지 후 재생 시 음악 플레이어의 currentTime을 올바른 위치로 설정
+                    const elapsedSeconds = (this.state.timeWhenPaused || 0) / 1000;
+                    DOM.musicPlayer.currentTime = elapsedSeconds;
+                    await DOM.musicPlayer.play();
+                }
                 DOM.editor.playBtn.textContent = "일시정지";
                 this.state.isPlaying = true;
                 
