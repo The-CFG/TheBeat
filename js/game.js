@@ -38,7 +38,6 @@ const Game = {
         countdownIntervalId: null,
         unprocessedNoteIndex: 0,
         chartData: null,
-        notes: [],
     },
 
     resetState() {
@@ -54,6 +53,9 @@ const Game = {
         this.state.settings.bpm = 120;
         this.state.animationFrameId = null;
         this.state.countdownIntervalId = null;
+        // Bug #2: notes 배열 초기화 (이전 게임 데이터 잔존 방지)
+        // Bug #4: notes를 새 배열로 교체하면 모든 headProcessed 플래그도 함께 초기화됨
+        this.state.notes = [];
     },
 
     runCountdown(onComplete) {
@@ -135,8 +137,11 @@ const Game = {
 
             this.cancelCountdown();
 
-            cancelAnimationFrame(this.state.animationFrameId);
-            this.state.animationFrameId = null;
+            // Bug #22: animationFrameId가 있으면 반드시 취소
+            if (this.state.animationFrameId) {
+                cancelAnimationFrame(this.state.animationFrameId);
+                this.state.animationFrameId = null;
+            }
 
             if (this.state.settings.mode === 'music' && DOM.musicPlayer.src) {
                 DOM.musicPlayer.pause();
@@ -144,7 +149,8 @@ const Game = {
                 // 다음 플레이를 위해 깨끗한 상태로 만듭니다.
                 DOM.musicPlayer.load();
 
-                if (DOM.musicPlayer.src.startsWith('blob:')) {
+                // Bug #23: blob URL revoke 처리
+                if (DOM.musicPlayer.src && DOM.musicPlayer.src.startsWith('blob:')) {
                     URL.revokeObjectURL(DOM.musicPlayer.src);
                 }
             }
@@ -337,7 +343,15 @@ const Game = {
                     }
                 }
                 if (!note.processed && timeToHit < -CONFIG.JUDGEMENT_WINDOWS_MS.miss) {
-                    this.handleJudgement('miss', note);
+                    // Bug #15: processed 체크는 handleJudgement 내부에서 이미 처리되나
+                    // updateNotes의 auto-miss와 handleInputDown의 miss가 중복되지 않도록
+                    // long_tail의 경우 headProcessed 상태 확인
+                    if (note.type !== 'long_tail' || note.headProcessed) {
+                        this.handleJudgement('miss', note);
+                    } else if (note.type === 'long_tail' && !note.headProcessed) {
+                        // head가 판정 안 된 tail은 그냥 processed 처리
+                        note.processed = true;
+                    }
                 }
             }
         } catch (err) {
@@ -353,21 +367,23 @@ const Game = {
             const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
             if (headNote && headNote.element) {
                 headNote.element.remove();
-                headNote.element = null;
+                headNote.element = null; // Bug #3: 참조 제거로 메모리 누수 방지
             }
         } else if ((note.type === 'tap' || note.type === 'false') && note.element) {
             note.element.remove();
-            note.element = null;
+            note.element = null; // Bug #3: 참조 제거로 메모리 누수 방지
         }
         this.state.judgements[judgement]++;
         if (note.type !== 'long_head') {
             this.state.processedNotes++;
         }
-        this.state.score += CONFIG.POINTS[judgement];
+        // Bug #21: NaN 방지 - 점수가 숫자인지 확인
+        const points = CONFIG.POINTS[judgement] || 0;
+        this.state.score = (isNaN(this.state.score) ? 0 : this.state.score) + points;
         if (judgement === 'miss' || judgement === 'bad') {
             this.state.combo = 0;
         } else {
-            this.state.combo++;
+            this.state.combo = (isNaN(this.state.combo) ? 0 : this.state.combo) + 1;
             if (note.type === 'long_head') {
                 // 롱노트 헤드가 성공적으로 판정되면 수축 시작
                 note.shrinking = true;
@@ -410,6 +426,7 @@ const Game = {
             this.togglePause();
             return;
         }
+        // Bug #6: 일시정지 중 키 입력 완전히 차단
         if (this.state.gameState !== 'playing' || this.state.isPaused) return;
         
         // 키보드 자동 반복(key repeat) 방지
@@ -421,6 +438,7 @@ const Game = {
     },
 
     handleKeyUp(e) {
+        // Bug #6: 일시정지 중 키 업 이벤트도 차단
         if (this.state.gameState !== 'playing' || this.state.isPaused) return;
         const laneIndex = this.state.keyMapping.findIndex(code => code === e.keyCode || code === e.key.toUpperCase().charCodeAt(0));
         if (laneIndex === -1) return;
@@ -433,6 +451,9 @@ const Game = {
             if (this.state.gameState !== 'playing') {
                 return;
             }
+            
+            // Bug #5: 동시타 판정 충돌 방지 - isPaused 추가 체크
+            if (this.state.isPaused) return;
             
             this.state.activeLanes[laneIndex] = true;
             const laneEl = DOM.lanesContainer.children[laneIndex];
@@ -701,8 +722,10 @@ const Game = {
             lane.addEventListener('mousedown', (e) => { e.preventDefault(); this.handleInputDown(i); });
             lane.addEventListener('mouseup', (e) => { e.preventDefault(); this.handleInputUp(i); });
             lane.addEventListener('mouseleave', (e) => { if (this.state.activeLanes[i]) this.handleInputUp(i); });
-            lane.addEventListener('touchstart', (e) => { e.preventDefault(); this.handleInputDown(i); });
-            lane.addEventListener('touchend', (e) => { e.preventDefault(); this.handleInputUp(i); });
+            // Bug #18: touchstart/touchend 이벤트만 사용하고, touch 이벤트가 처리된 경우 mouse 이벤트가 중복 발생하지 않도록
+            // preventDefault()는 이미 touch 핸들러에서 호출됨 (e.preventDefault()로 mouse 이벤트 억제)
+            lane.addEventListener('touchstart', (e) => { e.preventDefault(); this.handleInputDown(i); }, { passive: false });
+            lane.addEventListener('touchend', (e) => { e.preventDefault(); this.handleInputUp(i); }, { passive: false });
             DOM.lanesContainer.appendChild(lane);
         }
     },
