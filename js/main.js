@@ -24,6 +24,18 @@ const Debugger = {
             titleEl.addEventListener('mousedown', (e) => this.dragStart(e));
             titleEl.addEventListener('touchstart', (e) => this.dragStart(e));
         }
+        
+        // X 버튼 이벤트 리스너 추가
+        const debugCloseBtn = document.getElementById('debug-close-btn');
+        if (debugCloseBtn) {
+            debugCloseBtn.addEventListener('click', () => {
+                this.toggle(false);
+                // 체크박스도 해제
+                if (DOM.settings.debugModeToggle) {
+                    DOM.settings.debugModeToggle.checked = false;
+                }
+            });
+        }
     },
 
     toggle(isEnabled) {
@@ -205,6 +217,14 @@ document.addEventListener('DOMContentLoaded', () => {
         DOM.triggerModal.cancelBtn.addEventListener('click', () => {
             Editor.hideTriggerModal();
         });
+        
+        // X 버튼 이벤트 리스너 추가
+        const triggerCloseBtn = document.getElementById('trigger-close-btn');
+        if (triggerCloseBtn) {
+            triggerCloseBtn.addEventListener('click', () => {
+                Editor.hideTriggerModal();
+            });
+        }
 
         DOM.triggerModal.container.addEventListener('click', (e) => {
             if (e.target === DOM.triggerModal.container) {
@@ -579,6 +599,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function initialize() {
+        // 페이지 로드 시 모든 모달과 오버레이가 숨겨져 있는지 확인
+        const modalsAndOverlays = [
+            document.getElementById('debug-overlay'),
+            document.getElementById('trigger-modal')
+        ];
+        
+        modalsAndOverlays.forEach(element => {
+            if (element && !element.classList.contains('hidden')) {
+                element.classList.add('hidden');
+            }
+        });
+        
         setupEventListeners();
         document.querySelector('#mode-selector button[data-mode="random"]').classList.add('active');
         document.querySelector('#difficulty-selector button[data-difficulty="normal"]').classList.add('active');
