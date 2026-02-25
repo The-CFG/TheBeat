@@ -242,7 +242,9 @@ const Game = {
                     }
                 }
                 const timeToHit = note.time - elapsedTime;
-                const noteBottomPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
+                // 노트의 중앙이 판정선에 닿도록 조정 (막대형 노트 높이 25px의 절반 = 12.5px)
+                const noteCenterOffset = document.body.classList.contains('circle-notes') ? 45 : 12.5;
+                const noteCenterPosition = gameHeight - 100 - (timeToHit * this.state.settings.noteSpeed / 10);
                 const isLongNote = note.type === 'long_head';
                 
                 // 롱노트 높이 계산 시 최소 높이 적용
@@ -252,9 +254,11 @@ const Game = {
                     const calculatedHeight = (note.duration / 10) * this.state.settings.noteSpeed;
                     noteHeight = Math.max(calculatedHeight, minHeight);
                 } else {
-                    noteHeight = 25;
+                    noteHeight = document.body.classList.contains('circle-notes') ? 90 : 25;
                 }
                 
+                // 노트의 바닥 위치를 중앙 + 높이의 절반으로 계산
+                const noteBottomPosition = noteCenterPosition + (noteHeight / 2);
                 const noteTopPosition = noteBottomPosition - noteHeight;
                 if (!note.element && !note.processed && (note.type === 'tap' || isLongNote || note.type === 'false')) {
                     if (noteTopPosition < gameHeight && noteBottomPosition > -50) {
@@ -407,8 +411,12 @@ const Game = {
             return;
         }
         if (this.state.gameState !== 'playing' || this.state.isPaused) return;
+        
+        // 키보드 자동 반복(key repeat) 방지
+        if (e.repeat) return;
+        
         const laneIndex = this.state.keyMapping.findIndex(code => code === e.keyCode || code === e.key.toUpperCase().charCodeAt(0));
-        if (laneIndex === -1 || this.state.activeLanes[laneIndex]) return;
+        if (laneIndex === -1) return;
         this.handleInputDown(laneIndex);
     },
 
@@ -468,6 +476,18 @@ const Game = {
                 if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
                     const timeDiff = note.time - elapsedTime;
                     
+                    // 노트가 화면에 그려지지 않았으면 판정 불가
+                    if (!note.element) {
+                        // 너무 일찍 눌렀는지 확인 (early miss 윈도우보다 더 이전)
+                        if (timeDiff > earlyWindow.miss) {
+                            // 가장 가까운 "너무 이른" 노트 저장
+                            if (!tooEarlyNote || timeDiff < (tooEarlyNote.time - elapsedTime)) {
+                                tooEarlyNote = note;
+                            }
+                        }
+                        continue; // 화면에 없는 노트는 건너뜀
+                    }
+                    
                     // 너무 일찍 눌렀는지 확인 (early miss 윈도우보다 더 이전)
                     if (timeDiff > earlyWindow.miss) {
                         // 가장 가까운 "너무 이른" 노트 저장
@@ -499,9 +519,26 @@ const Game = {
                 if (smallestDiff <= currentWindow.perfect) this.handleJudgement('perfect', bestMatch);
                 else if (smallestDiff <= currentWindow.good) this.handleJudgement('good', bestMatch);
                 else if (smallestDiff <= currentWindow.bad) this.handleJudgement('bad', bestMatch);
+                
+                // 탭 노트나 가짜 노트는 처리 후 즉시 시각적 피드백 제거 (빠른 연타 가능)
+                if (bestMatch.type === 'tap' || bestMatch.type === 'false') {
+                    this.state.activeLanes[laneIndex] = false;
+                    const laneEl = DOM.lanesContainer.children[laneIndex];
+                    if (laneEl) laneEl.classList.remove('active-feedback');
+                }
             } else if (tooEarlyNote) {
                 // 판정 가능한 노트가 없지만 너무 일찍 누른 노트가 있으면 MISS 처리
                 this.handleJudgement('miss', tooEarlyNote);
+                
+                // MISS 처리 후에도 시각적 피드백 제거
+                this.state.activeLanes[laneIndex] = false;
+                const laneEl = DOM.lanesContainer.children[laneIndex];
+                if (laneEl) laneEl.classList.remove('active-feedback');
+            } else {
+                // 판정 가능한 노트가 전혀 없는 경우에도 피드백 제거 (헛키)
+                this.state.activeLanes[laneIndex] = false;
+                const laneEl = DOM.lanesContainer.children[laneIndex];
+                if (laneEl) laneEl.classList.remove('active-feedback');
             }
         } catch (err) {
             Debugger.logError(err, 'Game.handleInputDown');
@@ -556,6 +593,13 @@ const Game = {
             
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
                 const timeDiff = note.time - elapsedTime;
+                
+                // 롱노트 head의 element가 있는지 확인 (화면에 그려졌는지)
+                const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
+                if (headNote && !headNote.element) {
+                    // head가 화면에 없으면 tail도 판정 불가
+                    continue;
+                }
                 
                 // 너무 일찍 뗐는지 확인 (early miss 윈도우보다 더 이전)
                 if (timeDiff > earlyWindow.miss) {
