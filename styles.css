@@ -15,6 +15,11 @@
     --safe-area-inset-right: env(safe-area-inset-right, 0px);
 }
 
+/* hidden 클래스 명시적 정의 - Tailwind가 로드 안 되거나 덮어씌워질 경우 대비 */
+.hidden {
+    display: none !important;
+}
+
 /* 모바일 브라우저 주소창/네비게이션 바 대응 */
 html, body {
     height: 100vh;
@@ -307,6 +312,23 @@ body:not(.lane-color-mode) .editor-note.false {
     font-family: monospace;
     font-size: 12px;
     backdrop-filter: blur(2px);
+    flex-direction: column;
+}
+
+/* hidden 클래스가 없을 때만 표시 */
+#debug-overlay:not(.hidden) {
+    display: flex;
+}
+
+/* 모바일 환경에서 디버그 오버레이 크기 조정 */
+@media (max-width: 768px) {
+    #debug-overlay {
+        top: 5px;
+        right: 5px;
+        left: 5px;
+        width: auto;
+        max-height: 70vh;
+    }
 }
 
 #debug-overlay .title {
