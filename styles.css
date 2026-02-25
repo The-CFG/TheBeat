@@ -25,6 +25,11 @@ body {
     font-family: 'Inter', sans-serif;
     background-color: #2d3748; /* UI 영역 배경색과 통일 */
     color: #e2e8f0;
+    overscroll-behavior: auto;
+}
+
+/* 게임 영역만 오버스크롤 방지 */
+#game-area {
     overscroll-behavior: none;
 }
 .key-hint {
@@ -661,8 +666,9 @@ body:not(.lane-color-mode) .editor-note.false {
 #editor-screen,
 #settings-screen,
 #result-screen {
-    touch-action: pan-y;
+    touch-action: pan-y pan-x;
     overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Allow interaction with UI controls */
@@ -689,9 +695,17 @@ body:not(.lane-color-mode) .editor-note.false {
 #playing-screen,
 #result-screen,
 #editor-screen,
-#settings-screen {
+#settings-screen,
+.tab-content {
     -webkit-overflow-scrolling: touch;
     overflow-y: auto;
+    touch-action: pan-y;
+}
+
+/* 설정 화면 내부 스크롤 가능 영역 */
+#settings-screen .flex-grow {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
 }
 
 /* Better trigger visibility */
