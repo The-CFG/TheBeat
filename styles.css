@@ -6,8 +6,13 @@
     --note-false-color: #fca5a5;
     /* 모바일 브라우저 하단 여백 - JavaScript에서 동적으로 설정됨 */
     --vh: 1vh;
-    --safe-bottom: 80px;
+    --safe-bottom: max(80px, env(safe-area-inset-bottom, 0px));
     --mobile-bottom-padding: var(--safe-bottom);
+    /* Safe area insets for notch/navigation bars */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
 }
 
 /* 모바일 브라우저 주소창/네비게이션 바 대응 */
@@ -468,6 +473,17 @@ body:not(.lane-color-mode) .editor-note.false {
     #result-screen {
         padding-bottom: var(--mobile-bottom-padding) !important;
     }
+    
+    /* 설정 화면의 탭 콘텐츠에도 하단 여백 추가 */
+    #settings-screen .tab-content {
+        padding-bottom: calc(var(--mobile-bottom-padding) + 20px) !important;
+    }
+    
+    /* 설정 화면 하단 버튼 컨테이너에 추가 여백 */
+    #settings-screen .flex.gap-3,
+    #settings-screen .grid.gap-3 {
+        margin-bottom: 20px !important;
+    }
 }
 
 /* Tablet and mobile by screen size */
@@ -702,10 +718,20 @@ body:not(.lane-color-mode) .editor-note.false {
     touch-action: pan-y;
 }
 
+/* 모든 스크롤 가능한 영역에 안전한 하단 여백 적용 */
+#menu-screen > *:last-child,
+#playing-screen > *:last-child,
+#result-screen > *:last-child,
+#editor-screen > *:last-child,
+#settings-screen .tab-content > *:last-child {
+    margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+}
+
 /* 설정 화면 내부 스크롤 가능 영역 */
 #settings-screen .flex-grow {
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
 }
 
 /* Better trigger visibility */
