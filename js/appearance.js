@@ -367,7 +367,6 @@ const Appearance = {
                 UI.showMessage('settings', '⚠️ 설정 저장 실패: 브라우저 저장 공간을 확인해주세요.');
             }
         }
-        }
     },
 
     loadSettings() {
@@ -375,7 +374,13 @@ const Appearance = {
             const saved = localStorage.getItem('theBeat_appearance');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                this.settings = { ...this.settings, ...parsed };
+                // 깊은 병합: 중첩 객체(colors, laneColors)도 올바르게 복원
+                this.settings = {
+                    ...this.settings,
+                    ...parsed,
+                    colors: { ...this.settings.colors, ...(parsed.colors || {}) },
+                    laneColors: { ...this.settings.laneColors, ...(parsed.laneColors || {}) },
+                };
             }
         } catch (err) {
             this._logError(err, 'Appearance.loadSettings');
