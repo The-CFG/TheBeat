@@ -282,7 +282,7 @@ const Game = {
                             if (note.type === 'false') note.element.classList.add('false');
                             
                             // 레인별 색상 모드일 때 인라인 스타일 적용
-                            if (Appearance.settings.colorMode === 'lane' && note.element.dataset.lane) {
+                            if (typeof Appearance !== 'undefined' && Appearance.settings.colorMode === 'lane' && note.element.dataset.lane) {
                                 const laneId = note.element.dataset.lane;
                                 const color = Appearance.settings.laneColors[laneId];
                                 if (color) {
