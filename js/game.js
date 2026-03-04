@@ -241,7 +241,17 @@ const Game = {
                     }
                     continue;
                 }
-                if (note.type === 'long_head' && note.processed) {
+                // processed됐지만 element가 남아있고 shrinking도 아닌 경우 (miss된 long_head 등) element 강제 제거
+                if (note.processed && note.element && !(note.type === 'long_head' && note.shrinking)) {
+                    note.element.remove();
+                    note.element = null;
+                    if (i === this.state.unprocessedNoteIndex) {
+                        this.state.unprocessedNoteIndex++;
+                    }
+                    continue;
+                }
+                if (note.type === 'long_head' && note.processed && note.shrinking) {
+                    // head가 성공 판정되어 수축 중일 때만 손을 뗐는지 감시
                     const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
                     if (tailNote && !tailNote.processed && !this.state.activeLanes[note.lane]) {
                         this.handleJudgement('miss', tailNote);
@@ -384,16 +394,15 @@ const Game = {
             this.state.combo = 0;
             if (note.type === 'long_head') {
                 // 롱노트 head가 miss/bad 판정되면 tail도 즉시 processed 처리
-                // (updateNotes의 activeLanes 체크로 인한 이중 miss 방지)
                 const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
                 if (tailNote && !tailNote.processed) {
                     tailNote.processed = true;
                     this.state.processedNotes++;
-                    // element가 있으면 제거
-                    if (note.element) {
-                        note.element.remove();
-                        note.element = null;
-                    }
+                }
+                // head 자신의 element 제거
+                if (note.element) {
+                    note.element.remove();
+                    note.element = null;
                 }
             }
         } else {
