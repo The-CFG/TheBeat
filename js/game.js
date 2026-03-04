@@ -422,6 +422,8 @@ const Game = {
     },
 
     handleKeyDown(e) {
+        // [개선 #3] 키가 눌린 정확한 시점을 최상단에서 즉시 캡처 (DOM 연산 전)
+        const hitTime = performance.now();
         if (e.key === 'Escape') {
             this.togglePause();
             return;
@@ -434,7 +436,8 @@ const Game = {
         
         const laneIndex = this.state.keyMapping.findIndex(code => code === e.keyCode || code === e.key.toUpperCase().charCodeAt(0));
         if (laneIndex === -1) return;
-        this.handleInputDown(laneIndex);
+        // 캡처한 hitTime을 파라미터로 전달
+        this.handleInputDown(laneIndex, hitTime);
     },
 
     handleKeyUp(e) {
@@ -445,7 +448,7 @@ const Game = {
         this.handleInputUp(laneIndex);
     },
 
-    handleInputDown(laneIndex) {
+    handleInputDown(laneIndex, hitTime) {
         try {
             // 카운트다운 중에는 입력 무시
             if (this.state.gameState !== 'playing') {
@@ -459,11 +462,15 @@ const Game = {
             const laneEl = DOM.lanesContainer.children[laneIndex];
             if (laneEl) laneEl.classList.add('active-feedback');
 
+            // [개선 #3] 전달받은 hitTime 사용 (없으면 현재 시각으로 fallback - 터치 이벤트 등)
+            const capturedTime = hitTime || performance.now();
+
             let elapsedTime;
             if (this.state.settings.mode === 'music') {
                 elapsedTime = Math.max(0, (DOM.musicPlayer.currentTime - this.state.settings.startTimeOffset) * 1000);
             } else {
-                elapsedTime = performance.now() - this.state.gameStartTime - this.state.totalPausedTime;
+                // [개선 #3] DOM 연산 전에 캡처한 시간으로 elapsed 계산 → 타이밍 오차 최소화
+                elapsedTime = capturedTime - this.state.gameStartTime - this.state.totalPausedTime;
             }
 
             // 원형 노트일 때 판정 윈도우 확장
@@ -491,17 +498,25 @@ const Game = {
             let smallestDiff = Infinity;
             let tooEarlyNote = null; // 너무 일찍 누른 노트
             
+            // [개선 #1, #2] Ghost Tap 방지: 뻘타로 인정할 최대 한계선 설정
+            // miss 윈도우보다 200ms 이전까지만 뻘타(tooEarlyNote)로 인정
+            const TOO_EARLY_LIMIT = earlyWindow.miss + 200;
+            
             for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
                 const note = this.state.notes[i];
                 
                 if (!note.processed && note.lane === laneIndex && (note.type === 'tap' || note.type === 'long_head' || note.type === 'false')) {
                     const timeDiff = note.time - elapsedTime;
                     
+                    // [개선 #1, #2] TOO_EARLY_LIMIT을 초과하면 더 먼 미래 노트이므로 루프 즉시 종료
+                    // → 미래 노트 소멸(Ghost Tap Bug) 방지 & O(1) 수준으로 탐색 성능 향상
+                    if (timeDiff > TOO_EARLY_LIMIT) {
+                        break;
+                    }
+                    
                     // 노트가 화면에 그려지지 않았으면 판정 불가
                     if (!note.element) {
-                        // 너무 일찍 눌렀는지 확인 (early miss 윈도우보다 더 이전)
                         if (timeDiff > earlyWindow.miss) {
-                            // 가장 가까운 "너무 이른" 노트 저장
                             if (!tooEarlyNote || timeDiff < (tooEarlyNote.time - elapsedTime)) {
                                 tooEarlyNote = note;
                             }
@@ -509,9 +524,8 @@ const Game = {
                         continue; // 화면에 없는 노트는 건너뜀
                     }
                     
-                    // 너무 일찍 눌렀는지 확인 (early miss 윈도우보다 더 이전)
+                    // 너무 일찍 눌렀는지 확인 (early miss 윈도우 초과, TOO_EARLY_LIMIT 이하)
                     if (timeDiff > earlyWindow.miss) {
-                        // 가장 가까운 "너무 이른" 노트 저장
                         if (!tooEarlyNote || timeDiff < (tooEarlyNote.time - elapsedTime)) {
                             tooEarlyNote = note;
                         }
@@ -556,7 +570,13 @@ const Game = {
                 const laneEl = DOM.lanesContainer.children[laneIndex];
                 if (laneEl) laneEl.classList.remove('active-feedback');
             } else {
-                // 판정 가능한 노트가 전혀 없는 경우에도 피드백 제거 (헛키)
+                // [개선 #4] 완벽한 허공 탭: 판정 노트도 없고 tooEarlyNote도 없는 경우
+                // 미래 노트를 소멸시키지 않고, 콤보만 초기화 (점수 패널티 없음)
+                if (this.state.combo > 0) {
+                    this.state.combo = 0;
+                    UI.showJudgementFeedback('MISS', 0);
+                    UI.updateScoreboard();
+                }
                 this.state.activeLanes[laneIndex] = false;
                 const laneEl = DOM.lanesContainer.children[laneIndex];
                 if (laneEl) laneEl.classList.remove('active-feedback');
@@ -609,11 +629,19 @@ const Game = {
         let smallestDiff = Infinity;
         let tooEarlyNote = null; // 너무 일찍 떤 노트
         
+        // [개선 #1, #2] 롱노트 Tail도 동일하게 Ghost Tap 방지 한계선 적용
+        const TOO_EARLY_LIMIT = earlyWindow.miss + 200;
+        
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
             
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
                 const timeDiff = note.time - elapsedTime;
+                
+                // [개선 #1, #2] TOO_EARLY_LIMIT 초과 시 즉시 루프 종료 → 미래 롱노트 소멸 방지
+                if (timeDiff > TOO_EARLY_LIMIT) {
+                    break;
+                }
                 
                 // 롱노트 head의 element가 있는지 확인 (화면에 그려졌는지)
                 const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
@@ -622,9 +650,8 @@ const Game = {
                     continue;
                 }
                 
-                // 너무 일찍 뗐는지 확인 (early miss 윈도우보다 더 이전)
+                // 너무 일찍 뗐는지 확인 (early miss 윈도우 초과, TOO_EARLY_LIMIT 이하)
                 if (timeDiff > earlyWindow.miss) {
-                    // 가장 가까운 "너무 이른" 노트 저장
                     if (!tooEarlyNote || timeDiff < (tooEarlyNote.time - elapsedTime)) {
                         tooEarlyNote = note;
                     }
