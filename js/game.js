@@ -382,6 +382,20 @@ const Game = {
         this.state.score = (isNaN(this.state.score) ? 0 : this.state.score) + points;
         if (judgement === 'miss' || judgement === 'bad') {
             this.state.combo = 0;
+            if (note.type === 'long_head') {
+                // 롱노트 head가 miss/bad 판정되면 tail도 즉시 processed 처리
+                // (updateNotes의 activeLanes 체크로 인한 이중 miss 방지)
+                const tailNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_tail');
+                if (tailNote && !tailNote.processed) {
+                    tailNote.processed = true;
+                    this.state.processedNotes++;
+                    // element가 있으면 제거
+                    if (note.element) {
+                        note.element.remove();
+                        note.element = null;
+                    }
+                }
+            }
         } else {
             this.state.combo = (isNaN(this.state.combo) ? 0 : this.state.combo) + 1;
             if (note.type === 'long_head') {
@@ -635,14 +649,14 @@ const Game = {
         for (let i = this.state.unprocessedNoteIndex; i < this.state.notes.length; i++) {
             const note = this.state.notes[i];
             
+            // [개선 #1, #2] 모든 노트에 대해 timeDiff 먼저 계산 후 한계선 초과 시 루프 종료
+            // (조건 필터 전에 체크해야 long_tail이 아닌 노트 사이에서도 올바르게 break됨)
+            const timeDiff = note.time - elapsedTime;
+            if (timeDiff > TOO_EARLY_LIMIT) {
+                break;
+            }
+
             if (!note.processed && note.lane === laneIndex && note.type === 'long_tail' && note.headProcessed) {
-                const timeDiff = note.time - elapsedTime;
-                
-                // [개선 #1, #2] TOO_EARLY_LIMIT 초과 시 즉시 루프 종료 → 미래 롱노트 소멸 방지
-                if (timeDiff > TOO_EARLY_LIMIT) {
-                    break;
-                }
-                
                 // 롱노트 head의 element가 있는지 확인 (화면에 그려졌는지)
                 const headNote = this.state.notes.find(n => n.noteId === note.noteId && n.type === 'long_head');
                 if (headNote && !headNote.element) {
