@@ -1,3 +1,8 @@
+/* hidden 클래스가 flex 등 display 클래스에 덮어씌워지지 않도록 강제 */
+.hidden {
+    display: none !important;
+}
+
 /* 노트 색상 CSS 변수 */
 :root {
     --note-tap-color: #63b3ed;

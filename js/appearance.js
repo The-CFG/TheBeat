@@ -37,12 +37,9 @@ const Appearance = {
 
     init() {
         try {
-            console.log('[Appearance] Initializing...');
-            
             // 로컬 스토리지에서 설정 불러오기
             this.loadSettings();
             this.loadPresets();
-            console.log('[Appearance] Settings loaded:', this.settings);
             
             // 초기 UI 반영
             this.applySettings();
@@ -56,8 +53,6 @@ const Appearance = {
             
             // 이벤트 리스너 등록
             this.setupEventListeners();
-            
-            console.log('[Appearance] Initialization complete');
         } catch (err) {
             this._logError(err, 'Appearance.init');
         }
@@ -269,14 +264,6 @@ const Appearance = {
             document.documentElement.style.setProperty('--note-long-gradient-start', gradientStart);
             
             document.documentElement.style.setProperty('--note-false-color', this.settings.colors.false);
-            
-            // 디버깅: 업데이트된 색상 확인
-            console.log('[Appearance] CSS Variables updated:', {
-                tap: this.settings.colors.tap,
-                long: this.settings.colors.long,
-                longGradient: gradientStart,
-                false: this.settings.colors.false
-            });
         } catch (err) {
             this._logError(err, 'Appearance.updateCSSVariables');
         }
@@ -300,24 +287,6 @@ const Appearance = {
             } else {
                 document.body.classList.remove('lane-color-mode');
             }
-
-            // 디버깅: 설정된 색상 확인
-            console.log('[Appearance] Colors applied:', {
-                mode: this.settings.colorMode,
-                tap: this.settings.colors.tap,
-                long: this.settings.colors.long,
-                longGradient: gradientStart,
-                false: this.settings.colors.false
-            });
-            
-            // 실제 적용 확인
-            const computedStyle = getComputedStyle(document.documentElement);
-            console.log('[Appearance] Computed CSS variables:', {
-                tap: computedStyle.getPropertyValue('--note-tap-color'),
-                long: computedStyle.getPropertyValue('--note-long-color'),
-                longGradient: computedStyle.getPropertyValue('--note-long-gradient-start'),
-                false: computedStyle.getPropertyValue('--note-false-color')
-            });
 
             // 노트 모양 클래스 적용
             if (this.settings.noteShape === 'circle') {

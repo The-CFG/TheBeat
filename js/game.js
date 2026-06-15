@@ -38,7 +38,6 @@ const Game = {
         countdownIntervalId: null,
         unprocessedNoteIndex: 0,
         chartData: null,
-        notes: [],
     },
 
     resetState() {
