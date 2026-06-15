@@ -10,8 +10,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* 터치 디바이스(모바일/태블릿) 감지 */
-        @media (hover: none) and (pointer: coarse) {
+        /* 터치 디바이스 레이아웃 - 좁은 화면(1024px 이하)에서만 세로 배치 */
+        @media (hover: none) and (pointer: coarse) and (max-width: 1024px) {
             body > div {
                 display: flex !important;
                 flex-direction: column !important;

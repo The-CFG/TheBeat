@@ -418,8 +418,7 @@ body:not(.lane-color-mode) .editor-note.false {
     z-index: 5;
 }
 
-/* Tablet and Mobile optimizations - iPad, Android tablets, phones */
-/* Touch device detection - applies to all touch devices regardless of screen size */
+/* Touch device UI improvements - applies to ALL touch devices regardless of screen size */
 @media (hover: none) and (pointer: coarse) {
     html, body {
         font-size: 14px;
@@ -428,8 +427,17 @@ body:not(.lane-color-mode) .editor-note.false {
         width: 100%;
         height: 100%;
     }
-    
-    /* Force proper flex layout on touch devices */
+
+    #ui-area {
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+        overflow-y: auto !important;
+    }
+}
+
+/* Touch device layout - column only on NARROW screens (phones/small tablets) */
+@media (hover: none) and (pointer: coarse) and (max-width: 1024px) {
+    /* Force column layout only on narrow touch devices */
     body > div {
         display: flex !important;
         flex-direction: column !important;
@@ -451,11 +459,8 @@ body:not(.lane-color-mode) .editor-note.false {
         flex: 1 1 0 !important;
         width: 100% !important;
         min-height: 0 !important;
-        -webkit-overflow-scrolling: touch !important;
-        overscroll-behavior: contain !important;
         overflow-y: scroll !important;
         padding: 0.5rem !important;
-        /* Add bottom padding to account for mobile browser UI */
         padding-bottom: calc(0.5rem + var(--mobile-bottom-padding)) !important;
     }
     
