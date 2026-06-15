@@ -75,7 +75,7 @@ const Debugger = {
     },
 
     logError(error, context = 'Unknown') {
-        console.error(`[${context}]`, error);
+        console.error(`[${context}]`, error && error.message ? error.message : error, error && error.stack ? error.stack : '');
         if (!this.isActive) return;
         const logContainer = DOM.debugLogContainer;
         const errorEl = document.createElement('p');
