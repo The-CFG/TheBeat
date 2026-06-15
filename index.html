@@ -13,9 +13,13 @@
         /* 터치 디바이스(모바일/태블릿) 감지 */
         @media (hover: none) and (pointer: coarse) {
             body > div {
+                display: flex !important;
                 flex-direction: column !important;
+                height: 100vh !important;
+                overflow: hidden !important;
             }
             #game-area {
+                flex: 0 0 auto !important;
                 width: 100% !important;
                 height: 35vh !important;
                 min-height: 200px !important;
@@ -23,7 +27,10 @@
             }
             #ui-area {
                 width: 100% !important;
-                flex: 1 1 auto !important;
+                flex: 1 1 0 !important;
+                min-height: 0 !important;
+                overflow-y: scroll !important;
+                -webkit-overflow-scrolling: touch !important;
             }
         }
     </style>
