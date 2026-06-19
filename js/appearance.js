@@ -330,7 +330,11 @@ const Appearance = {
         try {
             localStorage.setItem('theBeat_appearance', JSON.stringify(this.settings));
         } catch (err) {
+            // Bug #19: localStorage 저장 실패 시 사용자에게 알림 (시크릿 모드, 저장 공간 부족 등)
             this._logError(err, 'Appearance.saveSettings');
+            if (typeof UI !== 'undefined' && UI.showMessage) {
+                UI.showMessage('settings', '⚠️ 설정 저장 실패: 브라우저 저장 공간을 확인해주세요.');
+            }
         }
     },
 
@@ -339,7 +343,13 @@ const Appearance = {
             const saved = localStorage.getItem('theBeat_appearance');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                this.settings = { ...this.settings, ...parsed };
+                // 깊은 병합: 중첩 객체(colors, laneColors)도 올바르게 복원
+                this.settings = {
+                    ...this.settings,
+                    ...parsed,
+                    colors: { ...this.settings.colors, ...(parsed.colors || {}) },
+                    laneColors: { ...this.settings.laneColors, ...(parsed.laneColors || {}) },
+                };
             }
         } catch (err) {
             this._logError(err, 'Appearance.loadSettings');
@@ -495,7 +505,11 @@ const Appearance = {
             
             localStorage.setItem('theBeat_colorPresets', JSON.stringify(this.presets));
         } catch (err) {
+            // Bug #19: 프리셋 저장 실패 시 사용자에게 알림
             this._logError(err, 'Appearance.savePreset');
+            if (typeof UI !== 'undefined' && UI.showMessage) {
+                UI.showMessage('settings', '⚠️ 프리셋 저장 실패: 브라우저 저장 공간을 확인해주세요.');
+            }
         }
     },
     

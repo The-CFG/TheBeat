@@ -106,52 +106,52 @@
                             <div id="detailed-difficulty-settings" class="hidden mt-4 p-4 bg-gray-800 rounded-lg space-y-4">
                                 <div>
                                     <div class="flex justify-between items-center text-gray-300">
-                                        <label for="note-fall-speed-slider">노트 하강 속도</label>
+                                        <label for="note-fall-speed-slider" data-i18n="note_fall_speed">노트 하강 속도</label>
                                         <span id="note-fall-speed-value" class="font-mono">7</span>
                                     </div>
                                     <input id="note-fall-speed-slider" type="range" min="1" max="20" value="7" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-300">
-                                        <label for="note-spawn-speed-slider">노트 속도 (생성 빈도)</label>
+                                        <label for="note-spawn-speed-slider" data-i18n="note_spawn_speed">노트 속도 (생성 빈도)</label>
                                         <span id="note-spawn-speed-value" class="font-mono">1.5x</span>
                                     </div>
                                     <input id="note-spawn-speed-slider" type="range" min="50" max="300" value="150" step="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-300">
-                                        <label for="dongta-prob-slider">동시타 확률</label>
+                                        <label for="dongta-prob-slider" data-i18n="dongta_probability">동시타 확률</label>
                                         <span id="dongta-prob-value" class="font-mono">25%</span>
                                     </div>
                                     <input id="dongta-prob-slider" type="range" min="0" max="100" value="25" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-300">
-                                        <label for="max-simultaneous-slider">최대 동시타 개수</label>
+                                        <label for="max-simultaneous-slider" data-i18n="max_simultaneous">최대 동시타 개수</label>
                                         <span id="max-simultaneous-value" class="font-mono">3</span>
                                     </div>
                                     <input id="max-simultaneous-slider" type="range" min="2" max="8" value="3" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                 </div>
                                 <div class="border-t border-gray-700 pt-4">
-                                    <h4 class="text-sm font-semibold text-gray-400 mb-3">동시타 노트 타입 확률</h4>
+                                    <h4 class="text-sm font-semibold text-gray-400 mb-3" data-i18n="dongta_note_type_prob">동시타 노트 타입 확률</h4>
                                     <div class="space-y-3">
                                         <div>
                                             <div class="flex justify-between items-center text-gray-300">
-                                                <label for="dongta-tap-prob-slider" class="text-sm">기본 노트</label>
+                                                <label for="dongta-tap-prob-slider" class="text-sm" data-i18n="tap_note_short">기본 노트</label>
                                                 <span id="dongta-tap-prob-value" class="font-mono text-sm">70%</span>
                                             </div>
                                             <input id="dongta-tap-prob-slider" type="range" min="0" max="100" value="70" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                         </div>
                                         <div>
                                             <div class="flex justify-between items-center text-gray-300">
-                                                <label for="dongta-long-prob-slider" class="text-sm">롱 노트</label>
+                                                <label for="dongta-long-prob-slider" class="text-sm" data-i18n="long_note_short">롱 노트</label>
                                                 <span id="dongta-long-prob-value" class="font-mono text-sm">20%</span>
                                             </div>
                                             <input id="dongta-long-prob-slider" type="range" min="0" max="100" value="20" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                         </div>
                                         <div>
                                             <div class="flex justify-between items-center text-gray-300">
-                                                <label for="dongta-false-prob-slider" class="text-sm">가짜 노트</label>
+                                                <label for="dongta-false-prob-slider" class="text-sm" data-i18n="false_note_short">가짜 노트</label>
                                                 <span id="dongta-false-prob-value" class="font-mono text-sm">10%</span>
                                             </div>
                                             <input id="dongta-false-prob-slider" type="range" min="0" max="100" value="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
@@ -160,19 +160,19 @@
                                 </div>
                                 <div>
                                     <div class="flex justify-between items-center text-gray-300">
-                                        <label for="long-note-prob-slider">롱노트 확률</label>
+                                        <label for="long-note-prob-slider" data-i18n="long_note_probability">롱노트 확률</label>
                                         <span id="long-note-prob-value" class="font-mono">15%</span>
                                     </div>
                                     <input id="long-note-prob-slider" type="range" min="0" max="100" value="15" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
                                 </div>
                                 <div class="border-t border-gray-700 pt-4 space-y-4">
                                     <div class="flex items-center justify-between text-gray-300">
-                                        <label for="false-note-toggle">가짜 노트 활성화</label>
+                                        <label for="false-note-toggle" data-i18n="false_note_enable">가짜 노트 활성화</label>
                                         <input id="false-note-toggle" type="checkbox" class="h-5 w-5 bg-gray-700 rounded border-gray-600 text-blue-500 focus:ring-blue-500">
                                     </div>
                                     <div id="false-note-prob-container" class="hidden">
                                         <div class="flex justify-between items-center text-gray-300">
-                                            <label for="false-note-prob-slider">가짜 노트 등장 확률</label>
+                                            <label for="false-note-prob-slider" data-i18n="false_note_spawn_prob">가짜 노트 등장 확률</label>
                                             <span id="false-note-prob-value" class="font-mono">0%</span>
                                         </div>
                                         <input id="false-note-prob-slider" type="range" min="0" max="500" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
@@ -238,7 +238,14 @@
                 </div>
                 <div id="settings-screen" class="hidden h-full flex flex-col justify-between overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
                     <div class="flex-grow flex flex-col min-h-0">
-                        <h2 class="text-3xl font-bold mb-4 text-white" data-i18n="settings">환경설정</h2>
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-3xl font-bold text-white" data-i18n="settings">환경설정</h2>
+                            <button id="settings-back-btn" class="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition" aria-label="Close settings">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                         <p id="settings-message" class="hidden text-center text-yellow-400 mb-4 py-2 bg-gray-700 rounded"></p>
                         <div id="settings-tabs" class="flex border-b border-gray-600 mb-4">
                             <button data-tab="volume" class="tab-btn py-2 px-4 text-gray-300 hover:text-white transition active" data-i18n="volume">음량</button>
@@ -534,7 +541,6 @@
                                 </div>
                             </div>
                         </div>
-                        <button id="settings-back-btn" class="w-full py-3 text-lg font-bold bg-gray-600 hover:bg-gray-500 rounded-lg transition mt-4 flex-shrink-0" data-i18n="back">돌아가기</button>
                     </div>
                 </div>
                 <!-- Result Screen -->
@@ -565,47 +571,47 @@
                             <div class="flex flex-col space-y-2">
                                 <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">음악 설정</h3>
                                 <div class="flex items-center space-x-2">
-                                    <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-3 bg-teal-600 hover:bg-teal-500 rounded transition text-sm">음악 불러오기</label>
+                                    <label for="audio-file-input-editor" class="cursor-pointer text-center flex-1 py-2 px-3 bg-teal-600 hover:bg-teal-500 rounded transition text-sm" data-i18n="load_music_editor">음악 불러오기</label>
                                     <input type="file" id="audio-file-input-editor" accept="*" class="hidden">
-                                    <span id="audio-file-name-editor" class="text-xs text-gray-400 flex-1 truncate">선택된 파일 없음</span>
+                                    <span id="audio-file-name-editor" class="text-xs text-gray-400 flex-1 truncate" data-i18n="no_file_selected">선택된 파일 없음</span>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <label for="editor-start-time" class="text-sm">시작(초):</label>
+                                    <label for="editor-start-time" class="text-sm" data-i18n="start_time_sec">시작(초):</label>
                                     <input type="number" id="editor-start-time" value="0" min="0" class="w-20 p-1 bg-gray-700 rounded text-sm">
                                 </div>
                                 <!-- [수정] 재생/정지 버튼과 미리보기 레인 선택 추가 -->
                                 <div class="flex items-center space-x-2">
-                                    <label for="editor-preview-lanes" class="text-sm">미리보기:</label>
+                                    <label for="editor-preview-lanes" class="text-sm" data-i18n="preview_label">미리보기:</label>
                                     <select id="editor-preview-lanes" class="p-1 bg-gray-700 rounded text-sm flex-1">
-                                        <option value="4" selected>4레인</option>
-                                        <option value="5">5레인</option>
-                                        <option value="6">6레인</option>
-                                        <option value="7">7레인</option>
-                                        <option value="8">8레인</option>
+                                        <option value="4" selected data-i18n="lanes_4">4레인</option>
+                                        <option value="5" data-i18n="lanes_5">5레인</option>
+                                        <option value="6" data-i18n="lanes_6">6레인</option>
+                                        <option value="7" data-i18n="lanes_7">7레인</option>
+                                        <option value="8" data-i18n="lanes_8">8레인</option>
                                     </select>
                                 </div>
                                 <div class="flex items-center space-x-2 pt-1">
-                                    <button id="editor-play-btn" class="flex-1 py-1 px-2 bg-green-600 hover:bg-green-500 rounded text-sm">재생</button>
-                                    <button id="editor-stop-btn" class="flex-1 py-1 px-2 bg-gray-500 hover:bg-gray-400 rounded text-sm">정지</button>
+                                    <button id="editor-play-btn" class="flex-1 py-1 px-2 bg-green-600 hover:bg-green-500 rounded text-sm" data-i18n="play">재생</button>
+                                    <button id="editor-stop-btn" class="flex-1 py-1 px-2 bg-gray-500 hover:bg-gray-400 rounded text-sm" data-i18n="stop">정지</button>
                                 </div>
                             </div>
                             <!-- 2. 차트 설정 (변경 없음) -->
                             <div class="flex flex-col space-y-2">
-                                <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">차트 설정</h3>
+                                <h3 class="text-lg font-semibold border-b border-gray-600 pb-1" data-i18n="chart_settings">차트 설정</h3>
                                 <div class="flex items-center space-x-2">
                                     <label for="bpm-input" class="text-sm">BPM:</label>
                                     <input type="number" id="bpm-input" value="120" class="w-20 p-1 bg-gray-700 rounded text-sm">
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <label for="editor-note-spawn-speed" class="text-sm">노트속도:</label>
+                                    <label for="editor-note-spawn-speed" class="text-sm" data-i18n="note_speed">노트속도:</label>
                                     <input type="number" id="editor-note-spawn-speed" value="1.5" step="0.1" min="0.5" max="3.0" class="w-20 p-1 bg-gray-700 rounded text-sm">
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <label for="editor-note-fall-speed" class="text-sm">하강속도:</label>
+                                    <label for="editor-note-fall-speed" class="text-sm" data-i18n="fall_speed">하강속도:</label>
                                     <input type="number" id="editor-note-fall-speed" value="7" min="1" max="20" class="w-20 p-1 bg-gray-700 rounded text-sm">
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <label for="editor-snap-selector" class="text-sm">분할:</label>
+                                    <label for="editor-snap-selector" class="text-sm" data-i18n="snap_division">분할:</label>
                                     <select id="editor-snap-selector" class="p-1 bg-gray-700 rounded text-sm">
                                         <option value="4">1/4</option>
                                         <option value="8">1/8</option>
@@ -616,29 +622,29 @@
                                     </select>
                                 </div>
                                 <div class="flex items-center space-x-2">
-                                    <label class="text-sm">마디:</label>
+                                    <label class="text-sm" data-i18n="measures">마디:</label>
                                     <button id="editor-add-measure-btn" class="px-2 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-sm">+</button>
                                     <button id="editor-remove-measure-btn" class="px-2 py-0.5 bg-gray-600 hover:bg-gray-500 rounded text-sm">-</button>
                                 </div>
                                 <div id="editor-note-type-selector" class="flex space-x-2 btn-group pt-1">
-                                    <button data-type="tap" class="w-10 h-8 bg-blue-500 hover:bg-blue-400 rounded transition active" title="기본 노트"></button>
-                                    <button data-type="long" class="w-10 h-8 bg-purple-500 hover:bg-purple-400 rounded transition" title="롱 노트"></button>
-                                    <button data-type="false" class="w-10 h-8 bg-red-400 hover:bg-red-300 rounded transition" title="가짜 노트"></button>
+                                    <button data-type="tap" class="w-10 h-8 bg-blue-500 hover:bg-blue-400 rounded transition active" data-i18n="tap_note" title="기본 노트"></button>
+                                    <button data-type="long" class="w-10 h-8 bg-purple-500 hover:bg-purple-400 rounded transition" data-i18n="long_note" title="롱 노트"></button>
+                                    <button data-type="false" class="w-10 h-8 bg-red-400 hover:bg-red-300 rounded transition" data-i18n="false_note" title="가짜 노트"></button>
                                     <button data-type="trigger" class="w-10 h-8 bg-yellow-500 hover:bg-yellow-400 rounded transition" title="설정 트리거">⚙️</button>
                                 </div>
                             </div>
                             <!-- 3. 관리 -->
                             <div class="flex flex-col space-y-2">
-                                <h3 class="text-lg font-semibold border-b border-gray-600 pb-1">관리</h3>
+                                <h3 class="text-lg font-semibold border-b border-gray-600 pb-1" data-i18n="management">관리</h3>
                                 <!-- [수정] 저장 버튼과 파일명 입력 칸 추가 -->
                                 <div class="flex items-center space-x-2">
-                                    <input type="text" id="editor-chart-filename" placeholder="파일명" class="flex-grow p-1 bg-gray-700 rounded text-sm min-w-0">
-                                    <button id="editor-save-btn" class="py-1 px-2 bg-blue-600 hover:bg-blue-500 rounded text-sm">저장</button>
+                                    <input type="text" id="editor-chart-filename" class="flex-grow p-1 bg-gray-700 rounded text-sm min-w-0" data-i18n="filename" placeholder="파일명">
+                                    <button id="editor-save-btn" class="py-1 px-2 bg-blue-600 hover:bg-blue-500 rounded text-sm" data-i18n="save">저장</button>
                                 </div>
                                 <div class="grid grid-cols-2 gap-2 pt-1">
-                                    <button id="editor-load-btn" class="py-1 px-2 bg-purple-600 hover:bg-purple-500 rounded text-sm">열기</button>
-                                    <button id="editor-reset-btn" class="py-1 px-2 bg-red-700 hover:bg-red-600 rounded text-sm">재설정</button>
-                                    <button id="editor-back-btn" class="col-span-2 py-1 px-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">메인 메뉴</button>
+                                    <button id="editor-load-btn" class="py-1 px-2 bg-purple-600 hover:bg-purple-500 rounded text-sm" data-i18n="open">열기</button>
+                                    <button id="editor-reset-btn" class="py-1 px-2 bg-red-700 hover:bg-red-600 rounded text-sm" data-i18n="reset_chart">재설정</button>
+                                    <button id="editor-back-btn" class="col-span-2 py-1 px-2 bg-gray-600 hover:bg-gray-500 rounded text-sm" data-i18n="main_menu">메인 메뉴</button>
                                 </div>
                             </div>
                         </div>
@@ -683,25 +689,25 @@
         <!-- Trigger Settings Modal -->
         <div id="trigger-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
             <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                <h3 class="text-xl font-bold text-white mb-4">설정 트리거 배치</h3>
-                <p class="text-gray-300 text-sm mb-4">이 시점부터 BPM, 노트 속도, 하강 속도를 변경합니다.</p>
+                <h3 class="text-xl font-bold text-white mb-4" data-i18n="trigger_modal_title">설정 트리거 배치</h3>
+                <p class="text-gray-300 text-sm mb-4" data-i18n="trigger_modal_desc">이 시점부터 BPM, 노트 속도, 하강 속도를 변경합니다.</p>
                 <div class="space-y-4">
                     <div>
                         <label class="text-sm text-gray-300">BPM:</label>
                         <input type="number" id="trigger-bpm" class="w-full p-2 bg-gray-700 rounded text-white" value="120">
                     </div>
                     <div>
-                        <label class="text-sm text-gray-300">노트 속도:</label>
+                        <label class="text-sm text-gray-300" data-i18n="note_speed">노트 속도:</label>
                         <input type="number" id="trigger-spawn-speed" class="w-full p-2 bg-gray-700 rounded text-white" value="1.5" step="0.1">
                     </div>
                     <div>
-                        <label class="text-sm text-gray-300">하강 속도:</label>
+                        <label class="text-sm text-gray-300" data-i18n="fall_speed">하강 속도:</label>
                         <input type="number" id="trigger-fall-speed" class="w-full p-2 bg-gray-700 rounded text-white" value="7">
                     </div>
                 </div>
                 <div class="flex space-x-3 mt-6">
-                    <button id="trigger-confirm-btn" class="flex-1 py-2 bg-green-600 hover:bg-green-500 rounded text-white">배치</button>
-                    <button id="trigger-cancel-btn" class="flex-1 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white">취소</button>
+                    <button id="trigger-confirm-btn" class="flex-1 py-2 bg-green-600 hover:bg-green-500 rounded text-white" data-i18n="place">배치</button>
+                    <button id="trigger-cancel-btn" class="flex-1 py-2 bg-gray-600 hover:bg-gray-500 rounded text-white" data-i18n="cancel">취소</button>
                 </div>
             </div>
         </div>
